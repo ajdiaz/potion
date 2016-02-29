@@ -1,0 +1,46 @@
+# !/bin/bash
+# vim:ft=sh:
+
+# fun: fstab::exists <device>
+# txt: return true if device is set in fstab
+fstab::exists () {
+  std::mute grep -q "^$1" /etc/fstab
+}
+
+# fun: fstab::create <device> <mntpoint> <type> [options] [dump] [pass]
+# txt: create fstab entry for specified device
+# env: FSTAB_REMOUNT: remount device if true
+fstab::create () {
+  echo "$1 $2 $3 ${4:-defaults} ${5:-1} ${6:-2}" >> /etc/fstab
+  ${FSTAB_REMOUNT:-false} && mount -oremount,${4} "$2"
+  ${FSTAB_MOUNT:-false} && mount "$2"
+  true
+}
+
+# fun: fstab::destroy <device>
+# txt: remove fstab entry for specified device.
+fstab::destroy () {
+  local fstab="$(grep -v "^$1" /etc/fstab)"
+  echo "$fstab" > /etc/fstab
+}
+
+# fun: fstab::present <device> <mntpoint> <type> [options] [dump] [pass]
+# txt: ensure that fstab entry for device is present
+# env: FSTAB_REMOUNT: remount device if true
+fstab::present () {
+  if ! fstab::exists "$@"; then
+    fstab::create "$@" &&
+      out::info "created fstab for device: $1" ||
+      err::trace "Unable to create fstab for device: $1"
+  fi
+}
+
+# fun: fstab::absent <device>
+# txt: ensure that specified device has not entry in fstab
+fstab::absent () {
+  if fstab::exists "$@"; then
+    fstab::destroy "$@" &&
+      out::info "destroyed fstab for device: $1" ||
+      err::trace "Unable to destroy fstab for device: $1"
+  fi
+}

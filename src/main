@@ -1,0 +1,107 @@
+#! /bin/bash
+
+VERSION="0.1"
+
+# fun: main::init
+# txt: print nice potion logo and some custom messages at the beginning.
+main::init () {
+  out::user ""
+  out::user "${COLOR_USER}                                   o${COLOR_NONE}"
+  out::user "${COLOR_USER}                                     o${COLOR_NONE}"
+  out::user "                                   ___"
+  out::user "${COLOR_WARN} ____       _   _                  ${COLOR_NONE}| |"
+  local m="${COLOR_WARN}|  _ \\ ___ | |_(_) ___  _ __       "
+  m+="${COLOR_NONE}|${COLOR_USER}o${COLOR_NONE}|"
+  out::user "$m"
+  local m="${COLOR_WARN}| |_) / _ \| __| |/ _ \| '_ \\    ${COLOR_NONE}.'   '."
+  out::user "$m"
+  local m="${COLOR_WARN}|  __/ (_) | |_| | (_) | | | |  ${COLOR_NONE}/   "
+  m+="${COLOR_USER}o${COLOR_NONE}   \\"
+  out::user "$m"
+  local m="${COLOR_WARN}|_|   \\___/ \\__|_|\___/|_| |_|  "
+  m+="${COLOR_NONE}:${COLOR_USER}____o__${COLOR_NONE}:"
+  out::user "$m"
+  local m="                                '.${COLOR_USER}"
+  m+="_____${COLOR_NONE}.'"
+  out::user "$m"
+  out::user "${COLOR_USER}version${COLOR_NONE} ${VERSION}" 
+  out::user "detected hardware architecture: $(std::arch)"
+  out::user "detected os family: $(os::family)"
+  out::user "detected os provider: $(os::provider)"
+  out::info "starting potion"
+}
+
+# general options handlers
+main::opt_debug () { set -x; return 1; }
+main::opt_version () { out::info "Potion $VERSION"; exit 0; }
+main::opt_quiet () { QUIET=true; return 1;}
+
+# create action
+main::create::opt_artifacts () { main__create__artifacts="$1"; return 2; }
+main::create::opt_compress () { main__create__compress=true; return 1; }
+main::create::opt_output () { main__create__output="$1"; return 2;}
+
+main::create () {
+  local output=$'#! /bin/bash\nPOTION_COMPILED=true\n'
+  main::init
+  out::info "output file: ${main__create__output:=./a.potion}"
+  output+="$(<$0)"$'\n'
+  if [ "${main__create__artifacts}" ]; then
+    [ -d "${main__create__artifacts}" ] ||
+      err::trace "Artifacts directory does not exists or isn't a directory"
+
+    [ -r "${main__create__artifacts}" ] ||
+      err::trace "Unable to read artifacts directory"
+
+    artifacts="$(cd ${main__create__artifacts} &&
+                 tar -c . | base64)"
+    output+=$'\n'"POTION_ARTIFACTS='${artifacts}'"$'\n'
+
+    out::info "dumped artifacts from: ${main__create__artifacts}"
+  fi
+  out::info "created core launcher"
+  for template in "$@"; do
+    [ -r "$template" ] ||
+      err::trace "Unable to find template: $template"
+    output+="$(<$template)"$'\n'
+    out::info "dumping template: $template"
+  done
+  output+=$'\ncontext::run\n'
+  if ${main__create__compress:-false}; then
+    local launcher="#!/bin/bash"$'\n'
+    launcher+="POTION_PAYLOAD='$(echo "${output}" | gzip -9 | base64)'"$'\n'
+    launcher+='exec bash < <(echo "$POTION_PAYLOAD" | base64 -d | gzip -d)'
+    launcher+=$'\n'
+    output="$launcher"
+  fi
+  echo "${output}" > "${main__create__output}"
+}
+
+main::run_compiled () {
+  main::init
+  out::info "running compiled potion"
+}
+
+# fun: main [arguments]
+# txt: function to create random errors and weird behaviour.
+main () {
+  # if this is a compiled potion, we don't need main
+  ${POTION_COMPILED:-false} && main::run_compiled "$@" && return 0
+  
+  arg::opt MAIN -q --quiet   main::opt_quiet   'do not output messages'
+  arg::opt MAIN -d --debug   main::opt_debug   'enable debug mode'
+  arg::opt MAIN -V --version main::opt_version 'show program version number'
+
+  arg::action create main::create 'create new potion from templates'
+  arg::param create "infredients+" \
+    'path to the ingredient files to make the potion'
+  arg::opt create -o: --output: main::create::opt_output \
+    'set path to output potion filename'
+  arg::opt create -a: --artifacts: main::create::opt_artifacts \
+    'set path to artifacts directory'
+  arg::opt create -c  --compress   main::create::opt_compress \
+    'create compressed potion (require gzip)'
+
+  arg::parse "$@"
+}
+shopt -s expand_aliases

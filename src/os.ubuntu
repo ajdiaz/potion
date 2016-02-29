@@ -1,0 +1,8 @@
+#! /bin/bash
+
+# fun: os::relase::ubuntu
+# txt: return specific relese for ubuntu operating systems.
+os::release::ubuntu () {
+  IFS='=' read _ release < <(grep "^DISTRIB_RELEASE=" /etc/lsb-release)
+  echo "$release"
+}

@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# fun: artifact::hmac <artifact_name>
+# txt: print to stdout the HMAC of the artifact passed as argument.
+# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
+#      sha1, md5, sha256, sha512. The proper helper tool must be installed
+#      on the system.
+artifact::hmac () {
+  if artifact::exists "$1"; then
+    file::hmac "${POTION_TMPDIR}/_artifacts/$1"
+  else
+    err::trace "Missing artifact while calculating HMAC: $1"
+  fi
+}
+
+# fun: artifact::enable
+# txt: return true if artifact support is enabled.
+artifact::enable () {
+  [ "$POTION_ARTIFACTS" ]
+}
+
+# fun: artifact::extract
+# txt: extract artifacts if enabled
+artifact::extract () {
+  artifact::enable || return 0
+  [ -e "${POTION_TMPDIR}/.artifacts" ] && return 0
+
+  tmp::create
+  mkdir -p _artifacts
+  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C ./_artifacts ||
+    err::trace "Unable to extract artifacts"
+  touch ${POTION_TMPDIR}/.artifacts
+}
+
+# fun: artifact::exists <artifact_name>
+# txt: return true if the artifact exists, false otherwise.
+artifact::exists () {
+  artifact::extract
+  [ -r "${POTION_TMPDIR}/_artifacts/$1" ]
+}
+# fun: artifact::read <artifact_name>
+# txt: read and eval specific artifact from potion.
+artifact::read () {
+  artifact::extract
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  if ${ARTIFACT_EVAL:-false}; then
+    local content="$(< ${POTION_TMPDIR}/_artifacts/$1)"
+    eval echo -n \""${content}"\"
+  else
+    cat "${POTION_TMPDIR}/_artifacts/$1"
+  fi
+}

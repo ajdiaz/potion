@@ -1,0 +1,44 @@
+#! /bin/bash
+
+# fun: srv::exists::systemd
+# txt: implements srv::exists for systemd provider.
+srv::exists::systemd () {
+  std::mute systemctl status "${1}"
+  [ $? -ne 3 ]
+}
+
+# fun: srv::present::systemd
+# txt: implements srv::present for systemd provider.
+srv::present::systemd () {
+  if ! srv::exists::systemd "$1"; then
+    srv::create::systemd "$1" &&
+      out::info "created service: $1" ||
+      err::trace "Unable to create service: $1"
+  fi
+}
+
+# fun: srv::absent::systemd
+# txt: implements srv::absent for systemd provider.
+srv::absent::systemd () {
+  if srv::exists::systemd "$1"; then
+    srv::destroy::systemd "$1" &&
+      out::info "destroyed service: $1" ||
+      err::trace "Unable to destroy service: $1"
+  fi
+}
+
+# fun: srv::create::systemd
+# txt: implements srv::create for systemd provider.
+srv::create::systemd () {
+  std::mute systemctl enable "${1}" ||
+    err::trace "Unable to enable service: $1"
+  std::mute systemctl start "${1}"
+}
+
+# fun: srv::destroy::systemd
+# txt: implements srv::destroy for systemd provider.
+srv::destroy::systemd () {
+  std::mute systemctl disable "${1}" ||
+    err::trace "Unable to disable: $1"
+  std::mute systemctl stop "${1}"
+}

@@ -1,0 +1,64 @@
+#! /bin/bash
+
+# fun: srv::sysinit
+# txt: return the sysinit type of the machine. Posible values are:
+#      systemd, upstart, sysv
+srv::sysinit () {
+  local si="$(cache::get _sysinit)"
+  [ "$si" ] && echo "$si" && return 0
+
+  if std::mute os::path systemctl; then
+    local si=systemd
+  elif std::mute os::path service; then
+    local si=upstart
+  elif std::mute os::patch initctl; then
+    local si=sysv
+  else
+    return 1
+  fi
+  cache::put _sysinit "$si"
+  echo "$si"
+  return 0
+}
+
+# fun: srv::exists <service>
+# txt: return true if the specific service is present in the system.
+srv::exists () {
+  local si="$(srv::sysinit)"
+
+  if std::func srv::exists::${si}; then
+    srv::exists::${si} "$@"
+    return $?
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+    return 1
+  fi
+}
+
+# fun: srv::present <service>
+# txt: ensure that specified service is installed on the system.
+srv::present () {
+  local si="$(srv::sysinit)"
+
+  if std::func srv::present::${si}; then
+    srv::present::${si} "$@"
+    return $?
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+    return 1
+  fi
+}
+
+# fun: srv::absent <service>
+# txt: ensure that specified service is not present on the system.
+srv::absent () {
+  local si="$(srv::sysinit)"
+
+  if std::func srv::absent::${si}; then
+    srv::absent::${si} "$@"
+    return $?
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+    return 1
+  fi
+}

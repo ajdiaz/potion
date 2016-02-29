@@ -1,0 +1,43 @@
+#! /bin/bash
+
+# fun: pkg::exists <package>
+# txt: return true if the specific package is present in the system.
+pkg::exists () {
+  local os="$(os::provider)"
+
+  if std::func pkg::exists::${os}; then
+    pkg::exists::${os} "$@"
+    return $?
+  else
+    err::trace "Potion does not support '$os' operating system... yet"
+    return 1
+  fi
+}
+
+# fun: pkg::present <package>
+# txt: ensure that specified package is installed on the system.
+pkg::present () {
+  local os="$(os::provider)"
+
+  if std::func pkg::present::${os}; then
+    pkg::present::${os} "$@"
+    return $?
+  else
+    err::trace "Potion does not support '$os' operating system... yet"
+    return 1
+  fi
+}
+
+# fun: pkg::absent <package>
+# txt: ensure that specified package is not present on the system.
+pkg::absent () {
+  local os="$(os::provider)"
+
+  if std::func pkg::absent::${os}; then
+    pkg::absent::${os} "$@"
+    return $?
+  else
+    err::trace "Potion does not support '$os' operating system... yet"
+    return 1
+  fi
+}

@@ -1,0 +1,10 @@
+
+
+context @general {
+  FILE_ARTIFACT="example.txt" \
+    file::present /tmp/sample.txt 0:0 644
+}
+
+context @basic {
+  pkg::present "vim"
+}

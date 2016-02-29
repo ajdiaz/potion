@@ -1,0 +1,62 @@
+#! /bin/bash
+
+pkg__ubuntu__aptopts='-q --yes '
+
+
+# fun: pkg::update::ubuntu
+# txt: update packages database in the machine
+# env: NOCACHE: if true do not cache results, so update will be performed on
+#               every call.
+pkg::update::ubuntu () {
+  DEBIAN_FRONTEND=noninteractive std::mute \
+    apt-get ${pkg__ubuntu__aptopts} update &&
+      out::info "updated package database" ||
+      err::trace "Unable to update package database"
+  ${NOCACHE:-false} || pkg__update__ubuntu=true
+}
+declare pkg__update__ubuntu=false
+
+# fun: pkg::exists::ubuntu
+# txt: implements pkg::exists for ubuntu OS provider.
+pkg::exists::ubuntu () {
+  dpkg -l | std::mute egrep "^ii\\s+*$1\\s+[^-]*"
+}
+
+# fun: pkg::present::ubuntu
+# txt: implements pkg::present for ubuntu OS provider.
+pkg::present::ubuntu () {
+  if ! pkg::exists::ubuntu "$1"; then
+    pkg::create::ubuntu "$1" &&
+      out::info "created package: $1" && return 0 ||
+      err::trace "Unable to create package: $1"
+    return 1
+  fi
+  return 0
+}
+
+# fun: pkg::absent::ubuntu
+# txt: implements pkg::absent for ubuntu OS provider.
+pkg::absent::ubuntu () {
+  if pkg::exists::ubuntu "$1"; then
+    pkg::destroy::ubuntu "$1" &&
+      out::info "destroyed package: $1" && return 0 ||
+      err::trace "Unable to destroy package: $1"
+    return 1
+  fi
+  return 0
+}
+
+# fun: pkg::create::ubuntu
+# txt: implements pkg::create for ubuntu OS provider.
+pkg::create::ubuntu () {
+  ${pkg__update__ubuntu:-false} || pkg::update::ubuntu
+  DEBIAN_FRONTEND=noninteractive std::mute \
+    apt-get ${pkg__ubuntu__aptopts} install "$1"
+}
+
+# fun: pkg::destroy::ubuntu
+# txt: implements pkg::create for ubuntu OS provider.
+pkg::destroy::ubuntu () {
+  DEBIAN_FRONTEND=noninteractive std::mute \
+    apt-get ${pkg__ubuntu__aptopts} purge "$1"
+}

@@ -1,0 +1,49 @@
+#! /bin/bash
+# req: err
+
+# fun: group::exists <groupname>
+# txt: return true or false if the specific groupname exists or not,
+#      respectively.
+group::exists () {
+  std::mute grep "^$1" /etc/group
+}
+
+# fun: group::create <groupname> [password]
+# txt: create specific groupname passed as argument.
+# env: GROUP_SYSTEM: if true create system group (false by default).
+# env: GROUP_GID: if set, try to use as GID for the group.
+group::create () {
+  local ua_opts=""
+  local ua_opts+="${GROUP_SYSTEM:+-r }"
+  local ua_opts+="${GROUP_GID:+-g ${GROUP_GID} }"
+  groupadd $ua_opts "$1"
+}
+
+# fun: group::destroy <groupname>
+# txt: destroy the groupname passed as argument.
+group::destroy () {
+  groupdel "$1"
+}
+
+
+# fun: group::present <groupname> [password]
+# txt: create group if not exists
+# env: GROUP_SYSTEM: if true create system group (false by default).
+# env: GROUP_GID: if set, try to use as GID for the group.
+group::present () {
+  if ! group::exists "$1"; then
+    group::create "$@" &&
+      out::info "created group $1" ||
+      err::trace "unable to create group $1"
+  fi
+}
+
+# fun: group::absent <groupname>
+# txt: destroy groupname if exists
+group::absent () {
+  if group::exists "$1"; then
+    group::destroy "$@" &&
+      out::info "destroyed group $1" ||
+      err:trace "unable to destroy group $1"
+  fi
+}

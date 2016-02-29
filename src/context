@@ -1,0 +1,11 @@
+#! /bin/bash
+
+alias context=function
+
+context::run () {
+  while read d f context; do
+    out::info "found context: $context"
+    $context &
+  done < <(declare -F | grep '^declare -f @')
+  wait
+}

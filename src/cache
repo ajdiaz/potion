@@ -1,0 +1,16 @@
+#! /bin/bash
+
+# fun: cache::get <key>
+# txt: get the value of the key from the potion in-memory cache.
+cache::get () {
+  echo "${cache__contents["$1"]}"
+}
+
+# fun: cache::put <key> <value>
+# txt: save the content of the specified key to the in-memory potion's
+# cache.
+cache::put () {
+  cache__contents["$1"]="$2"
+}
+
+declare -A cache__contents

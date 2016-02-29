@@ -1,0 +1,34 @@
+#! /bin/bash
+
+TZ_DIR="/usr/share/zoneinfo"
+
+# fun: tz::exists <zonename>
+# txt: if timezone especified in argument is set return true, otherwise
+#      return false.
+tz::exists () {
+  [ -r /etc/localtime ] || return 1
+  local current="$(file::hmac /etc/localtime)"
+  local decided="$(file::hmac /usr/share/zoneinfo/$1)"
+
+  [ "$current" == "$decided" ]  
+}
+
+# fun: tz::present <zonename>
+# txt: ensure that specified timezone is set.
+tz::present () {
+  if ! tz::exists "$1"; then
+    std::mute ln -sf "${TZ_DIR}/$1" /etc/localtime &&
+      out::info "created tz: $1" ||
+      err::trace "Unable to create tz: $1"
+  fi
+}
+
+# fun: tz::absent <zonename>
+# txt: ensure that the specified timezone is not set.
+tz::absent () {
+  if tz::exists "$1"; then
+    std::mute rm -f /etc/localtime &&
+      out::info "destroyed tz: $1" ||
+      err::trace "Unable to destroy tz: $1"
+  fi
+}

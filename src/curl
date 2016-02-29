@@ -1,0 +1,7 @@
+#! /bin/bash
+
+# fun: curl::get <url>
+# txt: get an object from url and output it to stdout
+curl::get () {
+  command curl -qsSL "$1"
+}

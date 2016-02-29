@@ -1,0 +1,115 @@
+#! /bin/bash
+
+SUDOERS_DIR=/etc/sudoers.d
+
+# fun: sudo::sytax <file>
+# txt: return true if syntax of sudoers file is correct, or false otherwise.
+sudo::syntax () {
+  std::mute visudo -cf "$1"
+}
+
+# fun: sudo::user::exists <username> <sudoline>
+# txt: return true if user has configured the specific sudoline.
+sudo::user::exists () {
+  std::mute grep "^$1 $2$" "${SUDOERS_DIR}/20_user_$1"
+}
+
+# fun: sudo::user::create <username> <sudoline>
+# txt: create sudoers config for the specific username, using sudo line
+#      passed as argument. This function also checks sudo syntax.
+sudo::user::create () {
+  echo "$1 $2" >> "${SUDOERS_DIR}/20_user_$1"
+  if ! sudo::syntax "${SUDOERS_DIR}/20_user_$1"; then
+    rm -f "${SUDOERS_DIR}/20_user_$1"
+    err::trace "Invalid syntax in sudoers file: '$2'"
+  fi
+  true
+}
+
+# fun: sudo::user::destroy <username> <sudoline>
+# txt: destroy the specifc sudoers permissions for the username.
+sudo::user::destroy () {
+  local data="$(grep -v "^$1 $2$" "${SUDOERS_DIR}/20_user_$1")"
+  echo "$data" > "${SUDOERS_DIR}/20_user_$1"
+  if ! sudo::syntax "${SUDOERS_DIR}/20_user_$1"; then
+    rm -f "${SUDOERS_DIR}/20_user_$1"
+    err::trace "Invalid syntax in sudoers file: '$2'"
+  fi
+}
+
+# fun: sudo::user::present <username> [permissions]
+# txt: ensure that specific user has permissions passed as argument, or if
+#      not permissions defined grant root permissions.
+sudo::user::present () {
+  local grant="${2:-ALL=(ALL) NOPASSWD: ALL}"
+  if ! sudo::user::exists "$1" "$grant"; then
+    sudo::user::create "$1" "${grant}" &&
+      out::info "created sudo permissions for user $1 ('$grant')" ||
+      err::trace "Unable to create sudo permissions for user $1 ('$grant')"
+  fi
+}
+
+# fun: sudo::user::absent <username> [permissions]
+# txt: ensure that the specific permission for the specific username is not
+#      granted.
+sudo::user::absent () {
+  local grant="${2:-ALL=(ALL) NOPASSWD: ALL}"
+  if sudo::user::exists "$1" "$grant"; then
+    sudo::user::destroy "$1" "${grant}" &&
+      out::info "destroyed sudo permissions for user $1 ('$grant')" ||
+      err::trace "Unable to destroy sudo permissions for user $1 ('$grant')"
+  fi
+}
+
+# fun: sudo::group::exists <username> <sudoline>
+# txt: return true if group has configured the specific sudoline.
+sudo::group::exists () {
+  std::mute grep "^%$1 $2$" "${SUDOERS_DIR}/20_group_$1"
+}
+
+# fun: sudo::group::create <groupname> <sudoline>
+# txt: create sudoers config for the specific groupname, using sudo line
+#      passed as argument. This function also checks sudo syntax.
+sudo::group::create () {
+  echo "%$1 $2" >> "${SUDOERS_DIR}/20_group_$1"
+  if ! sudo::syntax "${SUDOERS_DIR}/20_group_$1"; then
+    rm -f "${SUDOERS_DIR}/20_group_$1"
+    err::trace "Invalid syntax in sudoers file: '$2'"
+  fi
+  true
+}
+
+# fun: sudo::group::destroy <groupname> <sudoline>
+# txt: destroy the specifc sudoers permissions for the groupname.
+sudo::group::destroy () {
+  local data="$(grep -v "^%$1 $2$" "${SUDOERS_DIR}/20_group_$1")"
+  echo "$data" > "${SUDOERS_DIR}/20_group_$1"
+  if ! sudo::syntax "${SUDOERS_DIR}/20_group_$1"; then
+    rm -f "${SUDOERS_DIR}/20_group_$1"
+    err::trace "Invalid syntax in sudoers file: '$2'"
+  fi
+}
+
+# fun: sudo::group::present <groupname> [permissions]
+# txt: ensure that specific group has permissions passed as argument, or if
+#      not permissions defined grant root permissions.
+sudo::group::present () {
+  local grant="${2:-ALL=(ALL) NOPASSWD: ALL}"
+  if ! sudo::group::exists "$1" "$grant"; then
+    sudo::group::create "$1" "${grant}" &&
+      out::info "created sudo permissions for group $1 ('$grant')" ||
+      err::trace "Unable to create sudo permissions for group $1 ('$grant')"
+  fi
+}
+
+# fun: sudo::group::absent <groupname> [permissions]
+# txt: ensure that the specific permission for the specific groupname is not
+#      granted.
+sudo::group::absent () {
+  local grant="${2:-ALL=(ALL) NOPASSWD: ALL}"
+  if sudo::group::exists "$1" "$grant"; then
+    sudo::group::destroy "$1" "${grant}" &&
+      out::info "destroyed sudo permissions for group $1 ('$grant')" ||
+      err::trace "Unable to destroy sudo permissions for group $1 ('$grant')"
+  fi
+}

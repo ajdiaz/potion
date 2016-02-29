@@ -1,0 +1,12 @@
+#! /bin/bash
+
+POTION_TMPDIR="/tmp/_potion"
+
+tmp::create () {
+  mkdir -p "${POTION_TMPDIR}" && cd "${POTION_TMPDIR}"
+  std::add_quit_handler tmp tmp::destroy
+}
+
+tmp::destroy () {
+  cd / && rm -rf "${POTION_TMPDIR}"
+}

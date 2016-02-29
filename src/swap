@@ -1,0 +1,60 @@
+#! /bin/bash
+
+# fun: swap::exists
+# txt: return true if swap is enabled
+swap::exists () {
+  read _ swap _ < <(free | grep '^Swap:')
+  [ "$swap" != "0" ]
+}
+
+
+# fun: swap::create <device|file> <size>
+# txt: create a swap in device or file for size of size MiB.
+# env: SWAP_FORMAT: if true create also define, if false just enable swap
+swap::create () {
+  [ -b "$1" ] && local isdevice=true || local isdevice=false
+
+  if ${SWAP_FORMAT:-false}; then
+    if ${isdevice:-false}; then
+      std::mute blkid "$1" ||
+        std::mute mkswap "$1" ||
+        err::trace "Unable to make swap for device: $1"
+    else
+      [ -r "$1" ] ||
+        std::mute dd if=/dev/zero of=$1 count=$2 bs=1M &&
+          std::mute mkswap "$1" && chmod 0660 "$1" ||
+          err::trace "Unable to make swap for file: $1"
+
+    fi
+  fi
+  std::mute swapon "$1"
+}
+
+# fun: swap::destroy <device|file>
+# txt: disable swap in specific device or file.
+swap::destroy () {
+  std::mute swapoff "$1"
+}
+
+
+# fun: swap::present <device|file> <size>
+# txt: ensure that swap is enable in specified device or file and specified
+#      size.
+# env: SWAP_FORMAT: if true create also define, if false just enable swap
+swap::present () {
+  if ! swap::exists; then
+    swap::create "$@" &&
+      out::info "created swap: $1 ($2 MiB)" ||
+      err::trace "Unable to create swap: $1"
+  fi
+}
+
+# fun: swap::absent <device|file>
+# txt: ensure that specified device is not enabled for swap
+swap::absent () {
+  if swap::exists; then
+    swap::destroy "$@" &&
+      out::info "destroyed swap: $1" ||
+      err::trace "Unable to destroy swap: $1"
+  fi
+}
