@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: arg
+# txt: The ``arg`` module provides a number of functions to parse arguments
+#      from commandline.
 
 declare -A arg__opt_arg
 declare -A arg__opt_long
@@ -213,6 +216,10 @@ arg::param () {
   arg__param["$1,$2"]="$3"
 }
 #!/bin/bash
+# mod: artifact
+# txt: The ``artifact`` module contains function to access to artifacts. An
+#      artifact is a file embedded in potion compiled object, usually you
+#      want to set some configuration files as artifacts.
 
 # fun: artifact::hmac <artifact_name>
 # txt: print to stdout the HMAC of the artifact passed as argument.
@@ -267,6 +274,8 @@ artifact::read () {
   fi
 }
 #! /bin/bash
+# mod: cache
+# txt: The ``cache`` module provides a simple in-memory cache.
 
 # fun: cache::get <key>
 # txt: get the value of the key from the potion in-memory cache.
@@ -283,9 +292,14 @@ cache::put () {
 
 declare -A cache__contents
 #! /bin/bash
+# mod: context
+# txt: This internal module provides functionality to run different context
+#      in paralell.
 
 alias context=function
 
+# fun: context::run
+# txt: run all context in paralell.
 context::run () {
   while read d f context; do
     out::info "found context: $context"
@@ -294,6 +308,8 @@ context::run () {
   wait
 }
 #! /bin/bash
+# mod: curl
+# txt: The curl module offers a way to access to HTTP resources easily.
 
 # fun: curl::get <url>
 # txt: get an object from url and output it to stdout
@@ -301,9 +317,14 @@ curl::get () {
   command curl -qsSL "$1"
 }
 #! /bin/bash
+# mod: debug
+# txt: The debug module enable or disable debug featuring.
 
 ${DEBUG:+set -x}
 #! /bin/bash
+# mod: dir
+# txt: The ``dir`` module provides functions to ensure that specified
+#      directory is created or destroyed.
 
 # fun: dir::exists <fname>
 # txt: return true if dir exists, or none otherwise
@@ -346,6 +367,9 @@ dir::absent () {
   fi
 }
 #! /bin/bash
+# mod: disk
+# txt: The ``disk`` module provides a way to format and mount specified
+#      block devices.
 
 # fun: disk::exists::format <device>
 # txt: return true if device is formatted.
@@ -436,7 +460,9 @@ disk::absent () {
 }
 
 #! /bin/bash
-# req: out
+# mod: err
+# txt: The ``err`` module offers a way to stop potion execution with
+#      a traceback.
 
 # fun: err::trace
 # txt: print to stderr a traceback of an error.
@@ -454,6 +480,9 @@ err::trace () {
   exit 127
 }
 #! /bin/bash
+# mod: file
+# txt: The ``file`` module provides functions to ensure that specified file
+#      exists or not in the system and also has specified content.
 
 # fun: file::hmac <path_to_file>
 # txt: print to stdout the HMAC of the content of the file passed as
@@ -539,7 +568,8 @@ file::absent () {
   fi
 }
 # !/bin/bash
-# vim:ft=sh:
+# mod: fstab
+# txt: The ``fstab`` module provides functions to add entries to fstab file.
 
 # fun: fstab::exists <device>
 # txt: return true if device is set in fstab
@@ -585,7 +615,9 @@ fstab::absent () {
   fi
 }
 #! /bin/bash
-# req: err
+# mod: group
+# txt: The ``group`` module offers a way to ensure that specified group of
+#      uses is created or not in the system.
 
 # fun: group::exists <groupname>
 # txt: return true or false if the specific groupname exists or not,
@@ -634,6 +666,9 @@ group::absent () {
   fi
 }
 #! /bin/bash
+# mod: host
+# txt: The ``host`` module provides functions to configure hostname of the
+#      machine.
 
 # fun: host::exists <hostname>
 # txt: return true if the FQDN of the node is equal to specified one.
@@ -680,6 +715,9 @@ host::absent () {
   fi
 }
 #! /bin/bash
+# mod: link
+# txt: The ``link`` module provides functions to ensure that specified
+#      symlink exists in the system and points to specified file.
 
 # fun: link::exists <link> <source>
 # txt: returnt true if the specified link exists and point to source.
@@ -721,6 +759,8 @@ link::absent () {
 }
 
 #! /bin/bash
+# mod: main
+# txt: The ``main`` module contain the specified potion body.
 
 VERSION="0.1"
 
@@ -828,6 +868,9 @@ main () {
 }
 shopt -s expand_aliases
 #! /bin/bash
+# mod: os
+# txt: The ``os`` module provides specified functions to guess the operating
+#      system related variables.
 
 # fun: os::family
 # txt: print to stdout the operating system family
@@ -869,6 +912,9 @@ os::release () {
 # env: PATH: contains the path to search file
 os::path () { type -P "$1" 2>/dev/null; }
 #! /bin/bash
+# mod: os.ubuntu
+# txt: The ``os.ubuntu`` module extends ``os`` module adding specific
+#      functions for Ubuntu based systems.
 
 # fun: os::relase::ubuntu
 # txt: return specific relese for ubuntu operating systems.
@@ -877,6 +923,9 @@ os::release::ubuntu () {
   echo "$release"
 }
 #! /bin/bash
+# mod: out
+# txt: The ``out`` module provides functions to output messages in stderr or
+#      stdout.
 
 # fun: out::log <message> [message_type]
 # txt: print to stdout a log line with specified message and prefixed by
@@ -920,6 +969,9 @@ out::warn () { out::log "$1" "${COLOR_WARN}warn${COLOR_NONE}" >&2; }
 # env: COLOR_USER defines the color to be used in this kind of messages.
 out::user () { out::log "$1" "${COLOR_USER}user${COLOR_NONE}"; }
 #! /bin/bash
+# mod: pkg
+# txt: The ``pkg`` module provides functions to ensure package installation
+#      on the system.
 
 # fun: pkg::exists <package>
 # txt: return true if the specific package is present in the system.
@@ -963,6 +1015,9 @@ pkg::absent () {
   fi
 }
 #! /bin/bash
+# mod: pkg.archlinux
+# txt: The ``pkg.archlinux`` module contains specific functions to install
+#      or remove packages in archlinux distribution.
 
 # fun: pkg::update::archlinux
 # txt: update packages database in the machine
@@ -1019,7 +1074,9 @@ pkg::destroy::archlinux () {
   std::mute pacman -R --noconfirm "$1"
 }
 #! /bin/bash
-
+# mod: pkg.ubuntu
+# txt: The ``pkg.ubuntu`` module contains specific functions to install or
+#      remove packages in ubuntu based distributions.
 pkg__ubuntu__aptopts='-q --yes '
 
 
@@ -1081,6 +1138,9 @@ pkg::destroy::ubuntu () {
     apt-get ${pkg__ubuntu__aptopts} purge "$1"
 }
 #! /bin/bash
+# mod: srv
+# txt: The ``srv`` module provides high-level functions to manage package
+#      installations.
 
 # fun: srv::sysinit
 # txt: return the sysinit type of the machine. Posible values are:
@@ -1145,6 +1205,9 @@ srv::absent () {
   fi
 }
 #! /bin/bash
+# mod: srv.systemd
+# txt: The ``srv.systemd`` module contains specific functions to configure
+#      services with systemd.
 
 # fun: srv::exists::systemd
 # txt: implements srv::exists for systemd provider.
@@ -1189,6 +1252,9 @@ srv::destroy::systemd () {
   std::mute systemctl stop "${1}"
 }
 #! /bin/bash
+# mod: srv.sysv
+# txt: The ``srv.sysv`` module contains specific functions to create and
+#      configure services in systemv init environments.
 
 # fun: srv::exists::sysv
 # txt: implements srv::exists for sysv provider.
@@ -1239,6 +1305,9 @@ srv::destroy::sysv () {
     out::fail "unable to stop service: $1"
 }
 #! /bin/bash
+# mod: srv.upstart
+# txt: The ``srv.upstart`` contains specific functions to create and
+#      configure services in upstart based systems.
 
 # fun: srv::exists::upstart
 # txt: implements srv::exists for upstart provider.
@@ -1289,6 +1358,8 @@ srv::destroy::upstart () {
     out::fail "unable to disable service: $1"
 }
 #! /bin/bash
+# mod: std
+# txt: The ``std`` module contains standard functions to work with potion.
 
 # fun: std::quit
 # txt: perform an exit clean of potion.
@@ -1385,6 +1456,9 @@ std::os::provider () {
 declare -A std__os__provider
 std__os__provider["/etc/arch-release"]="archlinux"
 #! /bin/bash
+# mod: sudo
+# txt: The ``sudo`` module provides functions to grant or deny permissions
+#      to specific users.
 
 SUDOERS_DIR=/etc/sudoers.d
 
@@ -1500,6 +1574,9 @@ sudo::group::absent () {
   fi
 }
 #! /bin/bash
+# mod: swap
+# txt: The ``swap`` module contains functions to create and configure swap
+#      space.
 
 # fun: swap::exists
 # txt: return true if swap is enabled
@@ -1560,6 +1637,9 @@ swap::absent () {
   fi
 }
 #! /bin/bash
+# mod: term
+# txt: The ``term`` module provides functions related with terminal
+#      configuration.
 
 # fun: term::attached
 # txt: return true if output is a terminal, false otherwise
@@ -1583,6 +1663,9 @@ if term::attached; then
   esac
 fi
 #! /bin/bash
+# mod: tmp
+# txt: The ``tmp`` module provides functions to create and destroy temporar
+#      directories.
 
 POTION_TMPDIR="/tmp/_potion"
 
@@ -1595,6 +1678,9 @@ tmp::destroy () {
   cd / && rm -rf "${POTION_TMPDIR}"
 }
 #! /bin/bash
+# mod: tz
+# txt: The ``tz`` module provides functions to configure timezone in the
+#      system.
 
 TZ_DIR="/usr/share/zoneinfo"
 
@@ -1629,7 +1715,8 @@ tz::absent () {
   fi
 }
 #! /bin/bash
-# req: err
+# mod: user
+# txt: The ``user`` module provides functions to manage users in the system.
 
 # fun: user::exists <username>
 # txt: return true or false if the specific username exists or not,
