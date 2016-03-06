@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: term
+# txt: The ``term`` module provides functions related with terminal
+#      configuration.
 
 # fun: term::attached
 # txt: return true if output is a terminal, false otherwise

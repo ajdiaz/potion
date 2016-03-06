@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: dir
+# txt: The ``dir`` module provides functions to ensure that specified
+#      directory is created or destroyed.
 
 # fun: dir::exists <fname>
 # txt: return true if dir exists, or none otherwise

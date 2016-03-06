@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: srv.sysv
+# txt: The ``srv.sysv`` module contains specific functions to create and
+#      configure services in systemv init environments.
 
 # fun: srv::exists::sysv
 # txt: implements srv::exists for sysv provider.

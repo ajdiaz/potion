@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: pkg.archlinux
+# txt: The ``pkg.archlinux`` module contains specific functions to install
+#      or remove packages in archlinux distribution.
 
 # fun: pkg::update::archlinux
 # txt: update packages database in the machine

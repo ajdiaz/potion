@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: arg
+# txt: The ``arg`` module provides a number of functions to parse arguments
+#      from commandline.
 
 declare -A arg__opt_arg
 declare -A arg__opt_long

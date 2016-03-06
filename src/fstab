@@ -1,5 +1,6 @@
 # !/bin/bash
-# vim:ft=sh:
+# mod: fstab
+# txt: The ``fstab`` module provides functions to add entries to fstab file.
 
 # fun: fstab::exists <device>
 # txt: return true if device is set in fstab

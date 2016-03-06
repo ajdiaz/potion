@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: srv
+# txt: The ``srv`` module provides high-level functions to manage package
+#      installations.
 
 # fun: srv::sysinit
 # txt: return the sysinit type of the machine. Posible values are:

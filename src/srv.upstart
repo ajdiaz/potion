@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: srv.upstart
+# txt: The ``srv.upstart`` contains specific functions to create and
+#      configure services in upstart based systems.
 
 # fun: srv::exists::upstart
 # txt: implements srv::exists for upstart provider.

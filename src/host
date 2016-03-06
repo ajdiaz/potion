@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: host
+# txt: The ``host`` module provides functions to configure hostname of the
+#      machine.
 
 # fun: host::exists <hostname>
 # txt: return true if the FQDN of the node is equal to specified one.

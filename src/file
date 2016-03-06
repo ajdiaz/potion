@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: file
+# txt: The ``file`` module provides functions to ensure that specified file
+#      exists or not in the system and also has specified content.
 
 # fun: file::hmac <path_to_file>
 # txt: print to stdout the HMAC of the content of the file passed as

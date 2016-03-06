@@ -1,7 +1,12 @@
 #! /bin/bash
+# mod: context
+# txt: This internal module provides functionality to run different context
+#      in paralell.
 
 alias context=function
 
+# fun: context::run
+# txt: run all context in paralell.
 context::run () {
   while read d f context; do
     out::info "found context: $context"

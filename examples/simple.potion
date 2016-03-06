@@ -1,10 +1,12 @@
+#! /bin/bash # Because potion syntax is bash compatible
 
-
-context @general {
+context @general
+{
   FILE_ARTIFACT="example.txt" \
     file::present /tmp/sample.txt 0:0 644
 }
 
-context @basic {
+context @basic
+{
   pkg::present "vim"
 }

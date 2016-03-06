@@ -1,5 +1,7 @@
 #! /bin/bash
-# req: err
+# mod: group
+# txt: The ``group`` module offers a way to ensure that specified group of
+#      uses is created or not in the system.
 
 # fun: group::exists <groupname>
 # txt: return true or false if the specific groupname exists or not,

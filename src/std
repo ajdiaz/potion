@@ -1,4 +1,6 @@
 #! /bin/bash
+# mod: std
+# txt: The ``std`` module contains standard functions to work with potion.
 
 # fun: std::quit
 # txt: perform an exit clean of potion.

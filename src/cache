@@ -1,4 +1,6 @@
 #! /bin/bash
+# mod: cache
+# txt: The ``cache`` module provides a simple in-memory cache.
 
 # fun: cache::get <key>
 # txt: get the value of the key from the potion in-memory cache.

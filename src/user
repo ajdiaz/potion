@@ -1,5 +1,6 @@
 #! /bin/bash
-# req: err
+# mod: user
+# txt: The ``user`` module provides functions to manage users in the system.
 
 # fun: user::exists <username>
 # txt: return true or false if the specific username exists or not,

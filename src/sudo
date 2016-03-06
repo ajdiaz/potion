@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: sudo
+# txt: The ``sudo`` module provides functions to grant or deny permissions
+#      to specific users.
 
 SUDOERS_DIR=/etc/sudoers.d
 

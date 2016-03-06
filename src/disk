@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: disk
+# txt: The ``disk`` module provides a way to format and mount specified
+#      block devices.
 
 # fun: disk::exists::format <device>
 # txt: return true if device is formatted.

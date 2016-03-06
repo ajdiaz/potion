@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: out
+# txt: The ``out`` module provides functions to output messages in stderr or
+#      stdout.
 
 # fun: out::log <message> [message_type]
 # txt: print to stdout a log line with specified message and prefixed by

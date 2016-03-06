@@ -1,4 +1,8 @@
 #!/bin/bash
+# mod: artifact
+# txt: The ``artifact`` module contains function to access to artifacts. An
+#      artifact is a file embedded in potion compiled object, usually you
+#      want to set some configuration files as artifacts.
 
 # fun: artifact::hmac <artifact_name>
 # txt: print to stdout the HMAC of the artifact passed as argument.

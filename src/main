@@ -1,4 +1,6 @@
 #! /bin/bash
+# mod: main
+# txt: The ``main`` module contain the specified potion body.
 
 VERSION="0.1"
 

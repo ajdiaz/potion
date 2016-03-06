@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: swap
+# txt: The ``swap`` module contains functions to create and configure swap
+#      space.
 
 # fun: swap::exists
 # txt: return true if swap is enabled

@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: tz
+# txt: The ``tz`` module provides functions to configure timezone in the
+#      system.
 
 TZ_DIR="/usr/share/zoneinfo"
 

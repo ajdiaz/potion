@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: os
+# txt: The ``os`` module provides specified functions to guess the operating
+#      system related variables.
 
 # fun: os::family
 # txt: print to stdout the operating system family

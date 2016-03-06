@@ -1,5 +1,7 @@
 #! /bin/bash
-# req: out
+# mod: err
+# txt: The ``err`` module offers a way to stop potion execution with
+#      a traceback.
 
 # fun: err::trace
 # txt: print to stderr a traceback of an error.

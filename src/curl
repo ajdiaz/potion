@@ -1,4 +1,6 @@
 #! /bin/bash
+# mod: curl
+# txt: The curl module offers a way to access to HTTP resources easily.
 
 # fun: curl::get <url>
 # txt: get an object from url and output it to stdout

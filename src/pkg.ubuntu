@@ -1,5 +1,7 @@
 #! /bin/bash
-
+# mod: pkg.ubuntu
+# txt: The ``pkg.ubuntu`` module contains specific functions to install or
+#      remove packages in ubuntu based distributions.
 pkg__ubuntu__aptopts='-q --yes '
 
 

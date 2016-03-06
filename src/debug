@@ -1,3 +1,5 @@
 #! /bin/bash
+# mod: debug
+# txt: The debug module enable or disable debug featuring.
 
 ${DEBUG:+set -x}

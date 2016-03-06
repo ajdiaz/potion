@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: link
+# txt: The ``link`` module provides functions to ensure that specified
+#      symlink exists in the system and points to specified file.
 
 # fun: link::exists <link> <source>
 # txt: returnt true if the specified link exists and point to source.

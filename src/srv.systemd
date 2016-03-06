@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: srv.systemd
+# txt: The ``srv.systemd`` module contains specific functions to configure
+#      services with systemd.
 
 # fun: srv::exists::systemd
 # txt: implements srv::exists for systemd provider.

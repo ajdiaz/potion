@@ -1,4 +1,7 @@
 #! /bin/bash
+# mod: tmp
+# txt: The ``tmp`` module provides functions to create and destroy temporar
+#      directories.
 
 POTION_TMPDIR="/tmp/_potion"
 
