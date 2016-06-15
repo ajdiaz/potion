@@ -1,0 +1,53 @@
+#! /bin/bash
+# mod: link
+# txt: The ``link`` module provides functions to ensure that specified
+#      symlink exists in the system and points to specified file.
+
+# fun: link::exists [name=]<link> target=<source>
+# txt: returnt true if the specified link exists and point to source.
+# opt: target: the target where link points to
+link::exists () {
+  eval $(std::parse "$@")
+  [ "$target" ] || err::trace "Link::exists require parameter target"
+  [ -L "$name" ] && [ "$(readlink "$name")" == "$target" ]
+}
+
+# private link::_create <link> <source>
+link::_create () {
+  std::run ln -sf "$2" "$1" && [ -L "$1" ]
+}
+
+# private link::_destroy <link> [source]
+link::_destroy () {
+  std::run rm -f "$1"
+}
+
+# fun: link::present [name=]<link> target=<source>
+# txt: ensure that the link exists and point to source.
+# opt: target: the target where link points to
+link::present () {
+  if ! link::exists "$@"; then
+    eval $(std::parse "$@")
+    link::_create "$name" "$target" &&
+      res::created link "$name" "target=$target" ||
+      err::trace "Unable to create link: $name ($target)"
+  else
+    return 1
+  fi
+}
+
+# fun: link::absent [name=]<link> target=<source>
+# txt: ensure that the specified link does not exists or not point to
+#      specified source.
+# opt: target: the target where link points to
+link::absent () {
+  eval $(std::parse "$@")
+  if link::exists "$@"; then
+    link::_destroy "$name" "$target" &&
+      res::deleted link "$name" "target=$target" ||
+      err::trace "Unable to destroy link: $name ($target)"
+  else
+    return 1
+  fi
+}
+

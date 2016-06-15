@@ -2,7 +2,8 @@
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.1"
+VERSION="0.2.3"
+CONTEXT="main"
 
 # fun: main::init
 # txt: print nice potion logo and some custom messages at the beginning.
@@ -30,22 +31,24 @@ main::init () {
   out::user "detected hardware architecture: $(std::arch)"
   out::user "detected os family: $(os::family)"
   out::user "detected os provider: $(os::provider)"
-  out::info "starting potion"
 }
 
 # general options handlers
-main::opt_debug () { set -x; return 1; }
-main::opt_version () { out::info "Potion $VERSION"; exit 0; }
+main::opt_debug () { set -x; return 1;}
+main::opt_version () { out::info "Potion $VERSION"; exit 0;}
 main::opt_quiet () { QUIET=true; return 1;}
+main::opt_pretend () { PRETEND=true; return 1;}
+main::opt_verbose () { VERBOSE=true; return 1;}
 
 # create action
-main::create::opt_artifacts () { main__create__artifacts="$1"; return 2; }
-main::create::opt_compress () { main__create__compress=true; return 1; }
+main::create::opt_artifacts () { main__create__artifacts="$1"; return 2;}
+main::create::opt_compress () { main__create__compress=true; return 1;}
 main::create::opt_output () { main__create__output="$1"; return 2;}
+main::create::opt_secrets () { main__create__secrets="$1"; return 2;}
 
 main::create () {
   local output=$'#! /bin/bash\nPOTION_COMPILED=true\n'
-  main::init
+  ${QUIET:-false} || main::init
   out::info "output file: ${main__create__output:=./a.potion}"
   output+="$(<$0)"$'\n'
   if [ "${main__create__artifacts}" ]; then
@@ -57,9 +60,13 @@ main::create () {
 
     artifacts="$(cd ${main__create__artifacts} &&
                  tar -c . | base64)"
-    output+=$'\n'"POTION_ARTIFACTS='${artifacts}'"$'\n'
+    output+=$'\n'"$(artifact::build "${main__create__artifacts}")"$'\n'
 
-    out::info "dumped artifacts from: ${main__create__artifacts}"
+    out::user "dumped artifacts from: ${main__create__artifacts}"
+  fi
+  if [ "${main__create__secrets}" ]; then
+    output+=$'\n'"secret::load '${main__create__secrets}'"$'\n'
+    out::user "set secret url to: ${main__create__secrets}"
   fi
   out::info "created core launcher"
   for template in "$@"; do
@@ -79,19 +86,39 @@ main::create () {
   echo "${output}" > "${main__create__output}"
 }
 
-main::run_compiled () {
-  main::init
-  out::info "running compiled potion"
+# run action
+main::run::opt_artifacts () { main__run__artifacts="$1"; return 2; }
+main::run::opt_secrets () { main__run__secrets="$1"; return 2; }
+main::run () {
+  main::init "in-line"
+  if [ "${main__run__artifacts}" ]; then
+    [ -d "${main__run__artifacts}" ] ||
+      err::trace "Artifacts directory does not exists or isn't a directory"
+
+    [ -r "${main__run__artifacts}" ] ||
+      err::trace "Unable to read artifacts directory"
+
+    eval $(artifact::build "${main__run__artifacts}")
+    out::user "dumped artifacts from: ${main__run__artifacts}"
+  fi
+  if [ "${main__run__secrets}" ]; then
+    secret::load "${main__run__secrets}"
+    out::user "loaded secrets from: ${main__run__secrets}"
+  fi
+  source "$@" || err::trace "Unable to load potion file(s): $@"
+  context::run
 }
 
 # fun: main [arguments]
 # txt: function to create random errors and weird behaviour.
 main () {
   # if this is a compiled potion, we don't need main
-  ${POTION_COMPILED:-false} && main::run_compiled "$@" && return 0
+  ${POTION_COMPILED:-false} && main::init && return 0
   
   arg::opt MAIN -q --quiet   main::opt_quiet   'do not output messages'
+  arg::opt MAIN -v --verbose main::opt_verbose 'enable verbose mode'
   arg::opt MAIN -d --debug   main::opt_debug   'enable debug mode'
+  arg::opt MAIN -p --pretend main::opt_pretend 'do nothing, just pretending'
   arg::opt MAIN -V --version main::opt_version 'show program version number'
 
   arg::action create main::create 'create new potion from templates'
@@ -103,6 +130,16 @@ main () {
     'set path to artifacts directory'
   arg::opt create -c  --compress   main::create::opt_compress \
     'create compressed potion (require gzip)'
+  arg::opt create -s:  --secrets:   main::create::opt_secrets \
+    'set a secret file or URL to store passwords'
+  
+  arg::action run main::run 'run potion template'
+  arg::param run "infredients+" \
+    'path to the ingredient files to make the potion'
+  arg::opt run -a: --artifacts: main::run::opt_artifacts \
+    'set path to artifacts directory'
+  arg::opt run -s:  --secrets:   main::run::opt_secrets \
+    'set a secret file or URL to store passwords'
 
   arg::parse "$@"
 }

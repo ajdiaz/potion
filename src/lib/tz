@@ -1,0 +1,47 @@
+#! /bin/bash
+# mod: tz
+# txt: The ``tz`` module provides functions to configure timezone in the
+#      system.
+
+TZ_DIR="/usr/share/zoneinfo"
+
+# fun: tz::exists [name=]<zonename>
+# txt: if timezone especified in argument is set return true, otherwise
+#      return false.
+tz::exists () {
+  [ -r /etc/localtime ] || return 1
+
+  eval $(std::parse "$@")
+  local current="$(file::_hmac file:///etc/localtime)"
+  local decided="$(file::_hmac file:///usr/share/zoneinfo/$name)"
+
+  [ "$current" == "$decided" ]  
+}
+
+# fun: tz::present [name=]<zonename>
+# txt: ensure that specified timezone is set.
+tz::present () {
+  eval $(std::parse "$@")
+
+  if ! tz::exists "$name"; then
+    std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime &&
+      res::created tz "$name" ||
+      err::trace "Unable to create tz: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: tz::absent [name=]<zonename>
+# txt: ensure that the specified timezone is not set.
+tz::absent () {
+  eval $(std::parse "$@")
+
+  if tz::exists "$name"; then
+    std::mute std::run rm -f /etc/localtime &&
+      res::deleted tz "$name" ||
+      err::trace "Unable to destroy tz: $name"
+  else
+    return 1
+  fi
+}

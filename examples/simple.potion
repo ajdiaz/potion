@@ -1,9 +1,27 @@
 #! /bin/bash # Because potion syntax is bash compatible
 
+# Contexts are groups of configuration which are independent between them.
+# Potion try to run context in parallel unless ONETHREAD environment
+# variable is set to true.
+#
+# Context are defined with ``context`` keyword, followed by the context
+# name. Context name must start by '@' character. Context name which start
+# with other character are internal, that is, potion will never run them,
+# but you can call them from other context.
 context @general
 {
-  FILE_ARTIFACT="example.txt" \
-    file::present /tmp/sample.txt 0:0 644
+  file::present \
+    name=/tmp/sample.txt \
+    mode=644 \
+    data="content of the file"
+  # you can also use artifacts as data.
+
+  internal_example
+}
+
+context internal_example
+{
+  out::info "This is an internal context"
 }
 
 context @basic

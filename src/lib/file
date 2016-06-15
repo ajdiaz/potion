@@ -1,0 +1,121 @@
+#! /bin/bash
+# mod: file
+# txt: The ``file`` module provides functions to ensure that specified file
+#      exists or not in the system and also has specified content.
+#      To creat content, use the ``data`` parameter, usually this parameter
+#      accepts a URL in the form:
+#      - file://x, where x is a file in the host where potion is executed.
+#      - artifact://x, an artifact provided in the potion file.
+#      - artifact+eval://x, an evaluate artifact.
+#      - http://x or https://x, a remote web site.
+#      - ftp://x, a FTP remote site.
+
+# private file::hmac <url>
+file::_hmac () {
+  ALGO="${ALGO:=sha1}"
+  local hmac=
+  local path="$(os::path ${ALGO}sum)"
+
+  if [ "$path" ]; then
+    hmac="$(file::_data "$1" | ${ALGO}sum)"
+    read hmac _ <<<"${hmac}"
+    echo "$hmac"
+  else
+    err::trace "Required binary '${ALGO}sum' is not installed"
+  fi
+}
+
+# private file::_data <url>
+file::_data () {
+  case "$1" in
+    artifact://*) 
+      local name="${1##artifact://}"
+      artifact::exists "${name}" ||
+        err::trace "Missing artifact: $1"
+      artifact::read "$name"
+      ;;
+    artifact+eval://*)
+      local name="${1##artifact+eval://}"
+      artifact::exists "${name}" ||
+        err::trace "Missing artifact: $1"
+      artifact::eval "$name"
+      ;;
+    http://*|https://*|ftp://*)
+      curl::get "$1"
+      ;;
+    file://*)
+      cat "${1#file://}"
+      ;;
+    *)
+      echo "$1"
+      ;;
+  esac
+}
+
+# fun: file::exists [name=]<fname> [options]
+# txt: return true if file exists, or none otherwise
+# opt: name: the filename to check for.
+# opt: data: the content URL
+file::exists () {
+  eval $(std::parse "$@")
+
+  [ -r "$name" ] || return 1
+
+  local old_hmac="$(file::_hmac "file://$name")"
+  local new_hmac="$(file::_hmac "$data")"
+  [ "$new_hmac" == "$old_hmac" ]
+}
+
+# private file::create <fname> <owner:group> <mode> <data>
+file::_create () {
+  # we required an explitic if here because of the redirection.
+  if ! ${PRETEND:-false}; then
+    file::_data "$4" > "$1" ||
+      err::trace "Unable to dump content to file: $1"
+  fi
+
+  std::run chown "${2:-0:0}" "$1" &&
+    std::run chmod "${3:-644}" "$1" ||
+    err::trace "Unable to set permissions to file: $1"
+}
+
+# private file::destroy <fname>
+file::_destroy () {
+  std::run rm -f "$1"
+}
+
+# fun: file::present [name=]<name> [options]
+# txt: ensure that file passed as argument exists.
+# opt: name: then file name to ensure
+# opt: user: the user owner the file
+# opt: group: the group owner the file
+# opt: mode: the octal mode of the file
+# opt: data: the content url
+file::present () {
+  eval $(std::parse "$@")
+  local group="${group:-$LOGNAME}"
+  local user="${user:-$LOGNAME}"
+
+  if ! file::exists "$name" "data=$data"; then
+    file::_create "$name" "${user}:${group}" "${mode:-644}" "$data" &&
+      res::created file \
+        "name=$name user=${user} group=${group} mode=${mode:-0644}" ||
+      err::trace "Unable to create file: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: file::absent [name=]<name> [options]
+# txt: ensure that file passed as argument does not exist.
+# opt: data: the content url (only removes the file if data is the same).
+file::absent () {
+  eval $(std::parse "$@")
+  if file::exists "$name" "data=$data"; then
+    file::_destroy "$name" &&
+      res::deleted file "name=$name" ||
+      err::trace "Unable to destroy file: $name"
+  else
+    return 1
+  fi
+}

@@ -1,0 +1,166 @@
+#! /bin/bash
+# This is a test potion file
+
+PRETEND=true # force pretend always
+
+context @test_dir
+{
+  dir::present name=/nonexistant user=root group=root mode=0755
+  dir::absent /tmp
+}
+
+context @test_format
+{
+  format::present name='/dev/hda1' fstype=xfs
+  format::absent name='.*'
+}
+
+context @test_file
+{
+  file::present \
+    name=/tmp/nonexistant \
+    user=root \
+    group=root \
+    mode=0644 \
+    data="normal string"
+
+  file::present \
+    name=/tmp/nonexistant2 \
+    user=root \
+    group=root \
+    mode=0644 \
+    data="file:///etc/motd"
+
+  file::present \
+    name=/tmp/nonexistant2 \
+    user=root \
+    group=root \
+    mode=0644 \
+    data="http://ajdiaz.me/potion/index.html"
+
+  file::present \
+    name=/tmp/nonexistant3 \
+    user=root \
+    group=root \
+    mode=0644 \
+    data="artifact://sample.txt"
+
+  file::present \
+    name=/tmp/nonexistant4 \
+    user=root \
+    group=root \
+    mode=0644 \
+    data="artifact+eval://sample.txt"
+
+  file::absent \
+    name=/etc/passwd \
+    data="none"
+
+  file::absent \
+    name=/etc/passwd
+}
+
+context @test_fstab
+{
+  fstab::present \
+    name=/dev/hda \
+    mount=/mnt \
+    fstype=xfs \
+    opts=defaults \
+    remount=true \
+    dump=0 \
+    pass=1
+
+  fstab::absent name='.*' # dirty hack to test absent
+}
+
+context @test_pkg
+{
+  pkg::present "vim"
+  pkg::absent "vim"
+}
+
+context @test_sudo
+{
+  sudo::user::present foo
+  sudo::user::absent root
+
+  sudo::group::present foo
+  sudo::group::absent root
+}
+
+context @test_swap
+{
+  swap::present /swap size=10 format=true
+  swap::absent /swap
+}
+
+context @test_tz
+{
+  tz::present Europe/Madrid
+  tz::absent Europe/Madrid
+}
+
+context @test_srv
+{
+  srv::present foo
+  srv::absent sshd
+  srv::present::_systemd foo_systemd
+  srv::present::_upstart foo_upstart
+  srv::present::_sysv foo_sysv
+}
+
+context @test_host
+{
+  host::present "foobar"
+  host::absent $(hostname)
+}
+
+context @test_link
+{
+  link::present /foo target=/
+  link::absent /foo target=/
+}
+
+context @test_user
+{
+  user::present \
+    name=foobar \
+    uid=1000 \
+    shell=/bin/sh \
+    gecos="one,two,,"
+
+  user::absent root
+}
+
+context @test_group
+{
+  group::present \
+    name=foobar \
+    gid=1000
+
+  group::absent root
+}
+
+context @test_refresh
+{
+  file::present /foobar && refresh srv sshd
+}
+
+context @test_mount
+{
+  mount::present proc
+  mount::absent /nonexistant
+
+  mount::present \
+    name=/dev/null \
+    mount=/mnt \
+    fstype="ext4"
+
+  mount::absent proc
+}
+
+context @test_secret
+{
+  [ "$(secret test)" == 'sample_secret' ] || err::trace 'Test secret failed'
+}

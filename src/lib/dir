@@ -1,0 +1,58 @@
+#! /bin/bash
+# mod: dir
+# txt: The ``dir`` module provides functions to ensure that specified
+#      directory is created or destroyed.
+
+# private dir::_create <dname> [owner] [mode]
+dir::_create () {
+  std::run mkdir -p "$1" &&
+    std::run chown "${2:-0:0}" "$1" &&
+    std::run chmod "${3:-755}" "$1"
+}
+
+# private dir::_destroy <dname>
+dir::_destroy () {
+  std::run rm -rf "$1"
+}
+
+# fun: dir::present [name=]<name> [options]
+# txt: ensure that specified directory name passed as argument exists, and
+#      create it if not.
+# opt: name: the name of the directory to be created.
+# opt: mode: the octal mode of the new directory (755) by default.
+# opt: user: the user owner the directory (root by default).
+# opt: group: the group owner the directory (root by default)
+dir::present () {
+  eval $(std::parse "$@")
+  if ! dir::exists "$name"; then
+    dir::_create "$name" "${user:-0}:${group:-0}" "${mode:-755}" &&
+      res::created dir "name=$name user=${user:-0} " \
+        "group=${group:-0} mode=${mode:-755}" ||
+      err::trace "Unable to create dir: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: dir::absent [name=]<name>
+# txt: ensure that directory named as arguement, does not exist, removing it
+#      if necessary.
+# opt: name: the name of the directory to be removed
+dir::absent () {
+  eval $(std::parse "$@")
+  if dir::exists "$name"; then
+    dir::_destroy "$name" &&
+      res::deleted dir "name=$name" ||
+      err::trace "Unable to destroy dir: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: dir::exists [name=<fname>]
+# txt: return true if directory name passed as argument exists, or false
+#      otherwise.
+dir::exists () {
+  eval $(std::parse "$@")
+  [ -d "$name" ]
+}

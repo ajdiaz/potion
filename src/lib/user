@@ -1,0 +1,94 @@
+#! /bin/bash
+# mod: user
+# txt: The ``user`` module provides functions to manage users in the system.
+
+# fun: user::exists [name=]<username>
+# txt: return true or false if the specific username exists or not,
+#      respectively.
+user::exists () {
+  eval $(std::parse "$@")
+  std::mute id "$name"
+}
+
+# private user::_home <username>
+user::_home () {
+  eval echo "~$1"
+}
+
+# private user::_create <username> [password]
+# create specific username passed as argument.
+# USER_BASE_DIR: set the base director to create home directories.
+# USER_COMMENT: set the GECOS field in user record.
+# USER_GROUPS: a comma separated list of groups for the user.
+# USER_NOHOME: if true do not create home directory (false by default).
+# USER_SYSTEM: if true create system user (false by default).
+# USER_UID: if set, try to force that UID as user id for the new user.
+# USER_SHELL: set the shell of the username.
+user::_create () {
+  local ua_opts=""
+  local ua_opts+="${USER_BASE_DIR:+-b ${USER_BASE_DIR} }"
+  local ua_opts+="${USER_COMMENT:+-c ${USER_COMMENT} }"
+  local ua_opts+="${USER_GROUPS:+-G ${USER_GROUPS} }"
+  if ${USER_NOHOME:-false}; then
+    local ua_opts+="-M "
+  else
+    local ua_opts+="-m "
+  fi
+  local ua_opts+="${USER_SYSTEM:+-r }"
+  local ua_opts+="${USER_UID:+-u ${USER_UID} }"
+  local ua_opts+="${USER_SHELL:+-s ${USER_SHELL} }"
+  std::run useradd $ua_opts "$1"
+}
+
+# private user::_destroy <username>
+# destroy the username passed as argument.
+# USER_KEEPDATA: if set do not remove home directory and other user files.
+user::_destroy () {
+  std::run userdel -f ${USER_KEEPDATA:--r} "$1"
+}
+
+
+# fun: user::present [name=<username>] [options]
+# txt: create user if not exists
+# opt: basedir: set the base director to create home directories.
+# opt: gecos: set the GECOS field in user record.
+# opt: groups: a comma separated list of groups for the user.
+# opt: nohome: if true do not create home directory (false by default).
+# opt: system: if true create system user (false by default).
+# opt: uid: if set, try to force that UID as user id for the new user.
+# opt: shell: set the shell of the username.
+# opt: password: the password for the user
+user::present () {
+  eval $(std::parse "$@")
+  if ! user::exists "$name"; then
+    USER_BASE_DIR="${basedir}" \
+    USER_COMMENT="${gecos}" \
+    USER_GROUPS="${groups}" \
+    USER_NOHOME="${nohome}" \
+    USER_SYSTEM="${system}" \
+    USER_UID="${uid}" \
+    USER_SHELL="${shell}" \
+    user::_create "$name" "$password" &&
+      res::created user "$name" basedir="$basedir" gecos="$gecos" \
+        groups="$groups" nohome="$nohome" system="$system" uid="$uid" \
+        shell="$shell" ||
+      err::trace "unable to create user: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: user::absent [name=]<username> [keepdata=true]
+# txt: destroy username if exists
+# opt: keepdata: if true do not remove user data.
+user::absent () {
+  eval $(std::parse "$@")
+  if user::exists "$name"; then
+    USER_KEEPDATA="${data}" \
+    user::_destroy "$name" &&
+      res::deleted user "$name" ||
+      err::trace "unable to destroy user $name"
+  else
+    return 1
+  fi
+}

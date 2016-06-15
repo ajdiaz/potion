@@ -1,0 +1,47 @@
+#! /bin/bash
+# mod: srv.upstart
+# txt: The ``srv.upstart`` contains specific functions to create and
+#      configure services in upstart based systems.
+
+# private srv::exists::upstart <service>
+srv::exists::_upstart () {
+  std::mute service "$1" status
+}
+
+# private srv::present::_upstart
+srv::present::_upstart () {
+  if ! srv::exists::_upstart "$1"; then
+    context::task::enqueue "srv::create::_upstart '$1'"
+  fi
+}
+
+# private srv::absent::_upstart
+srv::absent::_upstart () {
+  if srv::exists::_upstart "$1"; then
+    context::task::enqueue "srv::destroy::_upstart '$1'"
+  fi
+}
+
+# private srv::create::_upstart
+srv::create::_upstart () {
+  std::mute std::run update-rc.d "${1}" defaults ||
+    err::trace "Unable to enable service: $1"
+  std::mute std::run service "${1}" start ||
+    err::trace "Unable to start service: $1"
+  res::created srv "$1" engine=upstart
+}
+
+# private srv::destroy::_upstart
+srv::destroy::_upstart () {
+  std::mute std::run service "$1" stop ||
+    err::trace "Unable to stop service: $1"
+  std::mute std::run update-rc.d -f "${1}" remove ||
+    err::trace "Unable to disable service: $1"
+  res::deleted srv "$1" engine=upstart
+}
+
+# private srv::refresh::_upstart
+srv::refresh::_upstart () {
+  std::mute std::run service "$1" restart ||
+    err::trace "Unable to refresh service: $1"
+}

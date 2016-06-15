@@ -1,0 +1,47 @@
+#! /bin/bash
+# mod: srv.systemd
+# txt: The ``srv.systemd`` module contains specific functions to configure
+#      services with systemd.
+
+# private srv::exists::_systemd
+srv::exists::_systemd () {
+  std::mute systemctl is-active "${1}"
+}
+
+# private srv::present::_systemd
+srv::present::_systemd () {
+  if ! srv::exists::_systemd "$1"; then
+    context::task::enqueue "srv::create::_systemd '$1'"
+  fi
+}
+
+# private srv::absent::systemd
+srv::absent::_systemd () {
+  if srv::exists::_systemd "$1"; then
+    context::task::enqueue "srv::destroy::_systemd '$1'"
+  fi
+}
+
+# private srv::create::_systemd
+srv::create::_systemd () {
+  std::mute std::run systemctl enable "${1}" ||
+    err::trace "Unable to enable service: $1"
+  std::mute std::run systemctl start "${1}" ||
+    err::trace "Unable to start service: $1"
+  res::created srv "$1" engine=systemd
+}
+
+# private srv::destroy::_systemd
+srv::destroy::_systemd () {
+  std::mute std::run systemctl stop "${1}" ||
+    err::trace "Unable to stop service: $1"
+  std::mute std::run systemctl disable "${1}" ||
+    err::trace "Unable to disable service: $1"
+  res::deleted srv "$1" engine=systemd
+}
+
+# private srv::refresh::_systemd
+srv::refresh::_systemd () {
+  std::mute std::run systemctl restart "$1" ||
+    err::trace "Unable to refresh service: $1"
+}

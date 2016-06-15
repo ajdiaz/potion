@@ -3,44 +3,44 @@
 # txt: The ``pkg`` module provides functions to ensure package installation
 #      on the system.
 
-# fun: pkg::exists <package>
+# fun: pkg::exists [name=]<package>
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
+  eval $(std::parse "$@")
   local os="$(os::provider)"
 
-  if std::func pkg::exists::${os}; then
-    pkg::exists::${os} "$@"
+  if std::func pkg::_exists::${os}; then
+    pkg::_exists::${os} "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
-    return 1
   fi
 }
 
-# fun: pkg::present <package>
+# fun: pkg::present [name=]<package>
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
+  eval $(std::parse "$@")
   local os="$(os::provider)"
 
-  if std::func pkg::present::${os}; then
-    pkg::present::${os} "$@"
+  if std::func pkg::_present::${os}; then
+    pkg::_present::${os} "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
-    return 1
   fi
 }
 
-# fun: pkg::absent <package>
+# fun: pkg::absent [name=]<package>
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
+  eval $(std::parse "$@")
   local os="$(os::provider)"
 
-  if std::func pkg::absent::${os}; then
-    pkg::absent::${os} "$@"
+  if std::func pkg::_absent::${os}; then
+    pkg::_absent::${os} "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
-    return 1
   fi
 }

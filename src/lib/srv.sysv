@@ -1,0 +1,48 @@
+#! /bin/bash
+# mod: srv.sysv
+# txt: The ``srv.sysv`` module contains specific functions to create and
+#      configure services in systemv init environments.
+
+# private srv::exists::_sysv
+srv::exists::_sysv () {
+  std::mute /etc/init.d/"${1}" status
+}
+
+# private srv::present::_sysv
+srv::present::_sysv () {
+  if ! srv::exists::_sysv "$1"; then
+    context::task::enqueue "srv::create::_sysv '$1'"
+  fi
+}
+
+# private srv::absent::_sysv
+# txt: implements srv::absent for sysv provider.
+srv::absent::_sysv () {
+  if srv::exists::_sysv "$1"; then
+    context::task::enqueue "srv::destroy::_sysv '$1'"
+  fi
+}
+
+# private srv::create::sysv
+srv::create::_sysv () {
+  std::mute std::run ln -s "/etc/init.d/$1" "/etc/rc3.d/S20-$1" ||
+    err::trace "Unable to enable service: $1"
+  std::mute std::run "/etc/init.d/$1" start ||
+    err::trace "Unable to start service: $1"
+  res::created srv "$1" engine=sysv
+}
+
+# private srv::destroy::_sysv
+srv::destroy::_sysv () {
+  std::mute std::run rm -f "/etc/rc3.d/S20-${1}" ||
+    err::trace "Unable to disable service: $1"
+  std::mute std::run "/etc/init.d/${1}" stop
+    err::trace "Unable to stop service: $1"
+  res::deleted srv "$1" engine=sysv
+}
+
+# private srv::refresh::_sysv
+srv::refresh::_sysv () {
+  std::mute std::run "/etc/init.d/$1" restart ||
+    err::trace "Unable to refresh service: $1"
+}

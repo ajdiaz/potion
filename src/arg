@@ -8,6 +8,7 @@ declare -A arg__opt_long
 declare -A arg__opt_short
 declare -A arg__opt_help
 declare -A arg__actions
+declare -A arg__actions_help
 declare -A arg__param
 
 # fun: arg::opt <action> <short> <long> <handler> [help]
@@ -118,6 +119,7 @@ arg::usage::action::explain () {
       actions+="$(printf "  %-20s %s" \
                   "${action}" \
                   "${arg__actions_help["$action"]}")"
+      actions+=$'\n'
     done
   fi
   echo "$summ${sact:+" {$sact}"}${spam:+ $spam}"
@@ -126,7 +128,6 @@ arg::usage::action::explain () {
   if [ "$actions" ]; then
     echo "command line actions:"
     echo "$actions"
-    echo
   fi
   if [ "$param" ]; then
     echo "positional parameters:"

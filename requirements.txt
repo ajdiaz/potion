@@ -1,0 +1,8 @@
+grep
+egrep
+uname
+sha1sum
+tput
+date
+mkdir
+blkid

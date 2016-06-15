@@ -1,0 +1,57 @@
+#! /bin/bash
+# mod: host
+# txt: The ``host`` module provides functions to configure hostname of the
+#      machine.
+
+# fun: host::exists [name=]<hostname>
+# txt: return true if the FQDN of the node is equal to specified one.
+host::exists () {
+  eval $(std::parse "$@")
+  local host="$(hostname -f 2>/dev/null)"
+  [ "$host" == "$name" ]
+}
+
+# private host::_create <hostname>
+host::_create () {
+  if ! ${PRETEND:-false}; then
+    echo "${1%%.*}" > /etc/hostname
+    echo "127.0.1.1 $1 ${1%%.*}" > /etc/hosts
+    hostname "${1%%.*}"
+  fi
+}
+
+# private host::_destroy <hostname>
+host::_destroy () {
+  if ! ${PRETEND:-false}; then
+    local hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
+    echo > /etc/hostname
+    echo "$hosts" > /etc/hosts
+    hostname ''
+  fi
+}
+
+# fun: host::present [name=]<hostname>
+# txt: ensure than the node has the specified hostname.
+host::present () {
+  eval $(std::parse "$@")
+  if ! host::exists "$name"; then
+    host::_create "$name" &&
+      res::created host "$name" ||
+      err::trace "Unable to create host to: $1"
+  else
+    return 1
+  fi
+}
+
+# fun: host::absent [name=]<hostname>
+# txt: ensure than the node has not the specified hostname.
+host::absent () {
+  eval $(std::parse "$@")
+  if host::exists "$name"; then
+    host::_destroy "$name" &&
+      res::deleted host "$name" ||
+      err::trace "Unable to destroy host: $1"
+  else
+    return 1
+  fi
+}

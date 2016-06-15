@@ -1,0 +1,53 @@
+#! /bin/bash
+# mod: pkg.archlinux
+# txt: The ``pkg.archlinux`` module contains specific functions to install
+#      or remove packages in archlinux distribution.
+
+# private pkg::_update::archlinux
+pkg::_update::archlinux () {
+  mutex::run pkg_archlinux std::run std::mute pacman -Sy --noconfirm &&
+    out::user "updated package database" ||
+    err::trace "Unable to update package database"
+  if ! ${NOCACHE:-false}; then
+    tmp::create
+    : > pkg_update_archlinux
+  fi
+}
+
+# private pkg::_exists::archlinux <package>
+pkg::_exists::archlinux () {
+  mutex::run pkg_archlinux std::mute pacman -Q "$1"
+}
+
+# private pkg::_present::archlinux <package>
+pkg::_present::archlinux () {
+  if ! pkg::_exists::archlinux "$1"; then
+    pkg::_create::archlinux "$1" &&
+      res::created pkg "$1" ||
+      err::trace "Unable to create package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_absent::archlinux <package>
+pkg::_absent::archlinux () {
+  if pkg::_exists::archlinux "$1"; then
+    pkg::_destroy::archlinux "$1" &&
+      res::deleted pkg "$1" ||
+      err::trace "Unable to destroy package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_create::archlinux <package>
+pkg::_create::archlinux () {
+  tmp::exists pkg_update_archlinux || pkg::_update::archlinux
+  mutex::run pkg_archlinux std::run std::mute pacman -S --noconfirm "$1"
+}
+
+# private pkg::_destroy::archlinux <package>
+pkg::_destroy::archlinux () {
+  mutex::run pkg_archlinux std::run std::mute pacman -R --noconfirm "$1"
+}

@@ -1,0 +1,150 @@
+#! /bin/bash
+# mod: sudo
+# txt: The ``sudo`` module provides functions to grant or deny permissions
+#      to specific users.
+
+SUDOERS_DIR=/etc/sudoers.d
+
+# private sudo::sytax <file>
+sudo::_syntax () {
+  std::mute visudo -cf "$1"
+}
+
+# fun: sudo::user::exists [name=]<username> grant=<permissions>
+# txt: return true if user has specific permissions
+# opt: name: the username to check permissions
+# opt: grant: the permissions to granted to the user.
+sudo::user::exists () {
+  eval $(std::parse "$@")
+  std::mute grep "^$name $grant$" "${SUDOERS_DIR}/20_user_$name"
+}
+
+# private sudo::user::_create <username> <sudoline>
+sudo::user::_create () {
+  if ! ${PRETEND:-false}; then
+    echo "$1 $2" >> "${SUDOERS_DIR}/20_user_$1"
+    if ! sudo::_syntax "${SUDOERS_DIR}/20_user_$1"; then
+      rm -f "${SUDOERS_DIR}/20_user_$1"
+      err::trace "Invalid syntax in sudoers file: '$2'"
+    fi
+  fi
+}
+
+# private sudo::user::_destroy <username> <sudoline>
+sudo::user::_destroy () {
+  if ! ${PRETEND:-false}; then
+    local data="$(grep -v "^$1 $2$" "${SUDOERS_DIR}/20_user_$1")"
+    echo "$data" > "${SUDOERS_DIR}/20_user_$1"
+    if ! sudo::_syntax "${SUDOERS_DIR}/20_user_$1"; then
+      rm -f "${SUDOERS_DIR}/20_user_$1"
+      err::trace "Invalid syntax in sudoers file: '$2'"
+    fi
+  fi
+}
+
+# fun: sudo::user::present [name=]<username> grant=[permissions]
+# txt: ensure that specific user has permissions passed as argument, or if
+#      not permissions defined grant root permissions.
+# opt: name: the username to give permissions
+# opt: grant: the permissions to granted to the user (by default ALL
+#      NOPASSWD)
+sudo::user::present () {
+  eval $(std::parse "$@")
+  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+
+  if ! sudo::user::exists "$name" "grant=$grant"; then
+    sudo::user::_create "$name" "${grant}" &&
+      res::created sudo "user=$name" "grant=${grant}" ||
+      err::trace "Unable to create sudo permissions for user $1 ('$grant')"
+  else
+    return 1
+  fi
+}
+
+# fun: sudo::user::absent [name=]<username> grant=[permissions]
+# txt: ensure that the specific permission for the specific username is not
+#      granted.
+# opt: name: the username to give permissions
+# opt: grant: the permissions to granted to the user
+sudo::user::absent () {
+  eval $(std::parse "$@")
+  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+
+  if sudo::user::exists "$1" "grant=$grant"; then
+    sudo::user::_destroy "$1" "${grant}" &&
+      res::deleted sudo "user=$user" "grant=$grant" ||
+      err::trace "Unable to destroy sudo permissions for user $name ('$grant')"
+  else
+    return 1
+  fi
+}
+
+# fun: sudo::group::exists [name=]<username> grant=<sudoline>
+# txt: return true if group has configured the specific sudoline.
+# opt: name: the username to give permissions
+# opt: grant: the permissions to granted to the user
+sudo::group::exists () {
+  eval $(std::parse "$@")
+  std::mute grep "^%$name $grant$" "${SUDOERS_DIR}/20_group_$name"
+}
+
+# private sudo::group::_create <groupname> <sudoline>
+sudo::group::_create () {
+  if ! ${PRETEND:-false}; then
+    echo "%$1 $2" >> "${SUDOERS_DIR}/20_group_$1"
+    if ! sudo::_syntax "${SUDOERS_DIR}/20_group_$1"; then
+      rm -f "${SUDOERS_DIR}/20_group_$1"
+      err::trace "Invalid syntax in sudoers file: '$2'"
+    fi
+  fi
+}
+
+# private sudo::group::_destroy <groupname> <sudoline>
+sudo::group::_destroy () {
+  if ! ${PRETEND:-false}; then
+    local data="$(grep -v "^%$1 $2$" "${SUDOERS_DIR}/20_group_$1")"
+    echo "$data" > "${SUDOERS_DIR}/20_group_$1"
+    if ! sudo::_syntax "${SUDOERS_DIR}/20_group_$1"; then
+      rm -f "${SUDOERS_DIR}/20_group_$1"
+      err::trace "Invalid syntax in sudoers file: '$2'"
+    fi
+  fi
+}
+
+# fun: sudo::group::present [name=]<groupname> [grant=permissions]
+# txt: ensure that specific group has permissions passed as argument, or if
+#      not permissions defined grant root permissions.
+# opt: name: the username to give permissions
+# opt: grant: the permissions to granted to the user (by default ALL
+#      NOPASSWD)
+sudo::group::present () {
+  eval $(std::parse "$@")
+  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+
+  if ! sudo::group::exists "$name" "$grant"; then
+    sudo::group::_create "$name" "${grant}" &&
+      res::created sudo "group=$name" "grant=${grant}" ||
+      err::trace "Unable to create sudo permissions for group $name ('$grant')"
+  else
+    return 1
+  fi
+}
+
+# fun: sudo::group::absent [name=]<groupname> [grant=permissions]
+# txt: ensure that the specific permission for the specific groupname is not
+#      granted.
+# opt: name: the username to give permissions
+# opt: grant: the permissions to granted to the user (by default ALL
+#      NOPASSWD)
+sudo::group::absent () {
+  eval $(std::parse "$@")
+  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+
+  if sudo::group::exists "$name" "$grant"; then
+    sudo::group::destroy "$name" "${grant}" &&
+      res::deleted sudo "group=$name" "grant=${grant}" ||
+      err::trace "Unable to destroy sudo permissions for group $name ('$grant')"
+  else
+    return 1
+  fi
+}

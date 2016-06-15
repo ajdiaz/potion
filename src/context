@@ -5,12 +5,56 @@
 
 alias context=function
 
+declare -A __context__task
+# fun: context::task::enqueue <fun>
+# txt: enqueue a task to be done when context finished.
+context::task::enqueue () {
+  if ! std::strin "${__context__task["${CONTEXT}"]}" ",$1,"; then
+    __context__task["${CONTEXT}"]+=",$1,"
+  fi
+}
+
+# fun: context::task::apply <context>
+# txt: apply functions enqueued by context::task::enqueue.
+context::task::apply () {
+  task="${__context__task["${1}"]}"
+  if [ "$task" ]; then
+    export IFS=,
+    for t in $task; do
+      [ "$t" ] || continue
+      eval "${t}" || err::trace "Unable to apply post-context task: $t ($CONTEXT)"
+    done
+  fi
+}
+
+# fun: context::execute <name>
+# txt: Execute a context named as name.
+# var: CONTEXT contains the context name, and this variable will be
+#      propagated to other functions in the same context.
+context::execute () {
+  export CONTEXT="$1" && $1 && context::task::apply "$1"
+}
+
 # fun: context::run
 # txt: run all context in paralell.
 context::run () {
+  local tim="$(std::timestamp)"
+  local count=0
+  local cctx=0
+  [ "$POTION_COMPILED" ] && local kind="compiled" || local kind="in-line"
   while read d f context; do
-    out::info "found context: $context"
-    $context &
+    ((cctx++))
+  done < <(declare -F | grep '^declare -f @')
+  out::user "found ${cctx} contexts"
+  ${PRETEND:-false} &&
+    out::info "Starting $kind potion execution (pretending)" ||
+    out::info "Starting $kind potion execution"
+  while read d f context; do
+    context::execute $context &
+    ${ONETHREAD:-false} && wait
   done < <(declare -F | grep '^declare -f @')
   wait
+  context::task::apply "main"
+  tim="$(( $(std::timestamp) - $tim ))"
+  out::info "Finished potion exection in ${tim} seconds."
 }

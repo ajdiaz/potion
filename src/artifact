@@ -17,16 +17,10 @@ artifact::hmac () {
   fi
 }
 
-# fun: artifact::enable
-# txt: return true if artifact support is enabled.
-artifact::enable () {
-  [ "$POTION_ARTIFACTS" ]
-}
-
 # fun: artifact::extract
-# txt: extract artifacts if enabled
+# txt: extract artifacts if artifact support is enabled.
 artifact::extract () {
-  artifact::enable || return 0
+  [ "$POTION_ARTIFACTS" ] || return 0
   [ -e "${POTION_TMPDIR}/.artifacts" ] && return 0
 
   tmp::create
@@ -42,17 +36,32 @@ artifact::exists () {
   artifact::extract
   [ -r "${POTION_TMPDIR}/_artifacts/$1" ]
 }
+
 # fun: artifact::read <artifact_name>
-# txt: read and eval specific artifact from potion.
+# txt: read a specific artifact from potion.
 artifact::read () {
-  artifact::extract
   artifact::exists "$1" ||
     err::trace "Missing artifact: '$1'"
 
-  if ${ARTIFACT_EVAL:-false}; then
-    local content="$(< ${POTION_TMPDIR}/_artifacts/$1)"
-    eval echo -n \""${content}"\"
-  else
-    cat "${POTION_TMPDIR}/_artifacts/$1"
-  fi
+  cat "${POTION_TMPDIR}/_artifacts/$1"
+}
+
+
+# fun: artifact::read <artifact_name>
+# txt: read a specific artifact from potion.
+artifact::eval () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  local content="$(< ${POTION_TMPDIR}/_artifacts/$1)"
+  eval echo -n \""${content//\"/\\\"}"\"
+}
+
+# fun: artifacts::build <directory>
+# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
+#      variable to stdout with the encoded version of the artifacts.
+artifact::build () {
+  local artifacts="$(cd "$1" && tar -c . | base64 -w0)"
+  echo "POTION_ARTIFACTS='${artifacts}'"
+  echo
 }

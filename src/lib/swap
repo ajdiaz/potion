@@ -1,0 +1,67 @@
+#! /bin/bash
+# mod: swap
+# txt: The ``swap`` module contains functions to create and configure swap
+#      space.
+
+# fun: swap::exists
+# txt: return true if swap is enabled
+swap::exists () {
+  read _ swap _ < <(free | grep '^Swap:')
+  [ "$swap" != "0" ]
+}
+
+
+# private swap::_create <device|file> <size>
+swap::_create () {
+  [ -b "$1" ] && local isdevice=true || local isdevice=false
+
+  if ${SWAP_FORMAT:-false}; then
+    if ${isdevice:-false}; then
+      std::mute blkid "$1" ||
+        std::mute mkswap "$1" ||
+        err::trace "Unable to make swap for device: $1"
+    else
+      [ -r "$1" ] ||
+        std::mute std::run dd if=/dev/zero of=$1 count=$2 bs=1M &&
+          std::mute std::run mkswap "$1" && std::run chmod 0660 "$1" ||
+          err::trace "Unable to make swap for file: $1"
+    fi
+  fi
+  std::mute std::run swapon "$1"
+}
+
+# private swap::_destroy <device|file>
+swap::_destroy () {
+  std::mute std::run swapoff "$1"
+}
+
+# fun: swap::present [name=<device|file>] [size=<size>] [format=<true|false>]
+# txt: ensure that swap is enable in specified device or file and specified
+#      size.
+# opt: name: the device use as swap space.
+# opt: size: the size required if swap file is created
+# opt: format: if true, format swap space.
+swap::present () {
+  eval $(std::parse "$@")
+  if ! swap::exists; then
+    SWAP_FORMAT=${format:-false} swap::_create "$name" ${size:-0} &&
+      res::created swap "$name" "size=$size" ||
+      err::trace "Unable to create swap: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: swap::absent [name=]<device|file>
+# txt: ensure that specified device is not enabled for swap
+# opt: name: the device use as swap space.
+swap::absent () {
+  eval $(std::parse "$@")
+  if swap::exists; then
+    swap::_destroy "$name" &&
+      res::deleted "$name" ||
+      err::trace "Unable to destroy swap: $1"
+  else
+    return 1
+  fi
+}

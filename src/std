@@ -55,7 +55,7 @@ std::strin () {
 # txt: sleep for specified number of seconds. This function is pure-bash, so
 #      not need sleep(1) command.
 std::sleep () {
-  read -t "$1"
+  read -N 0 -t "$1" -s -r </dev/tty 3<&- 3<&0 <&3
 }
 
 # fun: std::func <func_name>
@@ -96,3 +96,50 @@ std::os::provider () {
 
 declare -A std__os__provider
 std__os__provider["/etc/arch-release"]="archlinux"
+
+# fun: std::timestamp
+# txt: return the UNIX timestamp
+std::timestamp () {
+  date +%s
+}
+
+# fun: std::parse <arg string>
+# txt: parse an argument string in the form key=value and promote this
+#      variables to environment.
+std::parse () {
+  local hasname=false
+  local fst="$1"; shift
+
+  [ "${fst#name=}" != "${fst}" ] || fst="name=$fst"
+
+  for arg in "$fst" "$@"; do
+    std::strin "$arg" "=" || err::trace "Invalid argument: $arg"
+    [ "${arg#name=}" != "${arg}" ] && hasname=true
+    echo -n "local ${arg/=/=\'}';"
+  done
+  ${hasname} || err::trace "The parameter 'name' is mandatory"
+  shift
+  echo
+}
+
+# fun: std::run <command>
+# txt: Run command passed as argument if $PRETEND is not set to true
+# env: PRETEND: if true do nothing.
+std::run () {
+  ${PRETEND:-false} || "$@"
+}
+
+# fun: std::installed <command>
+# txt: return true if command is installed in path
+std::installed () {
+  std::mute type -p "$1"
+}
+
+# fun: std::is_dir_empty <dir>
+# txt: return true if dir is empty
+std::is_dir_empty () {
+  for f in $1/*; do
+    [ "$f" == "$1/*" ] && return 0
+    return 1
+  done
+}

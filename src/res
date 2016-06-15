@@ -1,0 +1,42 @@
+#! /bin/bash
+# mod: res
+# txt: The ``res`` module provides a way to work with potion resources.
+
+res::created () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}CREATED${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::info "created $1: $2"
+}
+
+res::deleted () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}DELETED${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::warn "deleted $1: $2"
+}
+
+res::refreshed () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}REFRESH${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::info "refreshed $1: $2"
+}

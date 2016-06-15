@@ -1,0 +1,60 @@
+#! /bin/bash
+# mod: pkg.ubuntu
+# txt: The ``pkg.ubuntu`` module contains specific functions to install or
+#      remove packages in ubuntu based distributions.
+pkg__ubuntu__aptopts='-q --yes '
+
+# private pkg::_update::ubuntu
+pkg::_update::ubuntu () {
+  DEBIAN_FRONTEND=noninteractive \
+    mutex::run pkg_ubuntu std::mute \
+      std::run apt-get ${pkg__ubuntu__aptopts} update &&
+        out::user "updated package database" ||
+        err::trace "Unable to update package database"
+  local ret=$?
+  if ! ${NOCACHE:-false}; then
+    tmp::create
+    : > pkg_update_ubuntu
+  fi
+  return $ret
+}
+
+# private pkg::_exists::ubuntu <package>
+pkg::_exists::ubuntu () {
+  mutex::run pkg_ubuntu dpkg -l | std::mute egrep "^ii\\s+*$1\\s+[^-]*"
+}
+
+# private pkg::_present::ubuntu <package>
+pkg::_present::ubuntu () {
+  if ! pkg::_exists::ubuntu "$1"; then
+    pkg::_create::ubuntu "$1" &&
+      res::created pkg "$1" ||
+      err::trace "Unable to create package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_absent::ubuntu <package>
+pkg::absent::ubuntu () {
+  if pkg::_exists::ubuntu "$1"; then
+    pkg::_destroy::ubuntu "$1" &&
+      res::deleted pkg "$1" ||
+      err::trace "Unable to destroy package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_create::ubuntu <package>
+pkg::_create::ubuntu () {
+  tmp::exists pkg_update_ubuntu || pkg::_update::ubuntu
+  DEBIAN_FRONTEND=noninteractive mutex::run pkg_ubuntu std::run std::mute \
+    apt-get ${pkg__ubuntu__aptopts} install "$1"
+}
+
+# private pkg::_destroy::ubuntu <package>
+pkg::_destroy::ubuntu () {
+  DEBIAN_FRONTEND=noninteractive mutex::run pkg_ubuntu std::run std::mute \
+    apt-get ${pkg__ubuntu__aptopts} purge "$1"
+}

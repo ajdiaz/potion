@@ -1,0 +1,62 @@
+#! /bin/bash
+# vim: ft=sh:
+# mod: fstab
+# txt: The ``fstab`` module provides functions to add entries to fstab file.
+
+# fun: fstab::exists [name=]<device>
+# txt: return true if device is set in fstab
+fstab::exists () {
+  eval $(std::parse "$@")
+  std::mute grep -q "^$name" /etc/fstab
+}
+
+# private fstab::_create <device> <mntpoint> <type> [options] [dump] [pass]
+fstab::_create () {
+  eval $(std::parse "$@")
+  [ "$mount" ] || err::trace "fstab require mount parameter"
+  ${PRETEND:-false} || 
+    echo "$name $mount ${fstype:-auto} ${opts:-defaults}" \
+         "${dump:-1} ${pass:-2}" >> /etc/fstab
+
+  ${FSTAB_REMOUNT:-false} && std::run mount -oremount,${opts} "$mount" || true
+  ${FSTAB_MOUNT:-false} && std::run mount "$mount" || true
+}
+
+# private fstab::_destroy <device>
+fstab::_destroy () {
+  local fstab="$(grep -v "^$1" /etc/fstab)"
+  ${PRETEND:-false} || echo "$fstab" > /etc/fstab
+}
+
+# fun: fstab::present [name=]<device> mount=<mountpoint> [options]
+# txt: ensure that fstab entry for device is present
+# opt: name: the device name to ensure
+# opt: mount: the mountpoint for the device
+# opt: fstype: the fstype of the device filesystem (default: auto)
+# opt: opts: mount options (default: defaults)
+# opt: dump: the dump number (default 0)
+# opt: pass: the pass number (default 1)
+# opt: remount: if true remount device when added to fstab
+fstab::present () {
+  if ! fstab::exists "$@"; then
+    FSTAB_REMOUNT="$remount" \
+      fstab::_create "$@" &&
+        res::created fstab "$@" ||
+        err::trace "Unable to create fstab for device: $@"
+  else
+    return 1
+  fi
+}
+
+# fun: fstab::absent [name=]<device>
+# txt: ensure that specified device has not entry in fstab
+fstab::absent () {
+  eval $(std::parse "$@")
+  if fstab::exists "$name"; then
+    fstab::_destroy "$name" &&
+      res::deleted fstab "device=$name" ||
+      err::trace "Unable to destroy fstab for device: $1"
+  else
+    return 1
+  fi
+}

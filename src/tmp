@@ -13,3 +13,7 @@ tmp::create () {
 tmp::destroy () {
   cd / && rm -rf "${POTION_TMPDIR}"
 }
+
+tmp::exists () {
+  [ -e "${POTION_TMPDIR}/$1" ]
+}
