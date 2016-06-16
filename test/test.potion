@@ -118,8 +118,8 @@ context @test_host
 
 context @test_link
 {
-  link::present /foo target=/
-  link::absent /foo target=/
+  link::present name=/foo target=/
+  link::absent name=/foo target=/
 }
 
 context @test_user

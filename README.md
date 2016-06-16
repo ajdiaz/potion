@@ -3,6 +3,7 @@ potion
 
 What is potion?
 ---------------
+
 Potion is a bash script which provisioned a single node from a basic
 template, like Puppet of Chef, but minimalist.
 
@@ -11,14 +12,20 @@ How to install?
 
 Clone the repo and run:
 
-  make
+```
+make
+```
 
 This will generate the potion script.
 
 Then you can run your template in any machine with:
 
-  potion run <template>
+```
+potion run <template>
+```
 
 Or even create a self contained template with:
 
-  potion compile template > outputfile.
+```
+potion compile template > outputfile.
+```

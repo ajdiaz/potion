@@ -20,7 +20,8 @@ all:
 	@ls -l $(OUTBIN)
 
 test: all
-	$(OUTBIN) run -a test/artifacts -s test/test.secrets ./test/test.potion
+	ONETHREAD=true $(OUTBIN) run -a test/artifacts -s test/test.secrets ./test/test.potion && \
+ 		$(OUTBIN) run -a test/artifacts -s test/test.secrets ./test/test.potion
 
 clean:
 	rm -f $(OUTBIN)

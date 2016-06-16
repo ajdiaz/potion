@@ -900,7 +900,7 @@ link::exists () {
 
 # private link::_create <link> <source>
 link::_create () {
-  std::run ln -sf "$2" "$1" && [ -L "$1" ]
+  std::run ln -sf "$2" "$1"
 }
 
 # private link::_destroy <link> [source]
