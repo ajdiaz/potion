@@ -1,9 +1,12 @@
 #! /bin/bash
 # mod: host
-# txt: The ``host`` module provides functions to configure hostname of the
+# api: potion
+# txt: The `host` module provides functions to configure hostname of the
 #      machine.
+# use: host::present myhost.mydomain.com
 
 # fun: host::exists [name=]<hostname>
+# api: potion
 # txt: return true if the FQDN of the node is equal to specified one.
 host::exists () {
   eval $(std::parse "$@")
@@ -31,6 +34,7 @@ host::_destroy () {
 }
 
 # fun: host::present [name=]<hostname>
+# api: potion
 # txt: ensure than the node has the specified hostname.
 host::present () {
   eval $(std::parse "$@")
@@ -44,6 +48,7 @@ host::present () {
 }
 
 # fun: host::absent [name=]<hostname>
+# api: potion
 # txt: ensure than the node has not the specified hostname.
 host::absent () {
   eval $(std::parse "$@")

@@ -1,7 +1,9 @@
 #! /bin/bash
 # mod: format
-# txt: The ``format`` module provides a way to format and mount specified
+# api: potion
+# txt: The `format` module provides a way to format and mount specified
 #      block devices.
+# use: format::present /dev/sda1 fstype=xfs
 
 # private format::_exists::format <device>
 format::_exists::format () {
@@ -9,6 +11,7 @@ format::_exists::format () {
 }
 
 # fun: format::exists [name=]<device> [options]
+# api: potion
 # txt: return true if device exists and it's mounted on mountpoint
 # opt: name: the device name
 format::exists () {
@@ -30,6 +33,7 @@ format::_create::mount () {
 }
 
 # fun: format::present [name=]<device> [options]
+# api: potion
 # txt: ensure that specified device has format
 # opt: name: the device to be initialized
 # opt: fstype: the filesystem type to format the device
@@ -46,6 +50,7 @@ format::present () {
 }
 
 # fun: format::absent [name=]<device>
+# api: potion
 # txt: ensure that specific device is not formatted.
 format::absent () {
   out::warn "To avoid data loss format::absent do nothing for device $@"

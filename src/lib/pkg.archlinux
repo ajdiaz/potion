@@ -9,8 +9,7 @@ pkg::_update::archlinux () {
     out::user "updated package database" ||
     err::trace "Unable to update package database"
   if ! ${NOCACHE:-false}; then
-    tmp::create
-    : > pkg_update_archlinux
+    tmp::touch pkg_update_archlinux
   fi
 }
 

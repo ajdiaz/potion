@@ -6,6 +6,7 @@
 SRCDIR=src
 LIBDIR=src/lib
 OUTBIN=./potion
+BASHDOC=bashdoc
 REQUIREMENTS=./requirements.txt
 
 
@@ -23,6 +24,8 @@ test: all
 	ONETHREAD=true $(OUTBIN) run -a test/artifacts -s test/test.secrets ./test/test.potion && \
  		$(OUTBIN) run -a test/artifacts -s test/test.secrets ./test/test.potion
 
+doc: all
+	$(BASHDOC) -a potion -f README.md -o doc/potion.html $(OUTBIN)
 clean:
 	rm -f $(OUTBIN)
 # vim:ft=make

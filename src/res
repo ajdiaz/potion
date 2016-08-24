@@ -2,6 +2,17 @@
 # mod: res
 # txt: The ``res`` module provides a way to work with potion resources.
 
+res::variables () {
+  for word in $@; do
+    case "$word" in
+      *=*) echo -n "${COLOR_BOLD}${word%%=*}${COLOR_NONE}"
+           echo -n "${C}=${word#*=}${COLOR_NONE} ";;
+      *) echo -n "$word "
+    esac
+  done
+  echo
+}
+
 res::created () {
   if ${VERBOSE:-false}; then
     local mod="$1"; shift
@@ -12,7 +23,7 @@ res::created () {
       "$*"
     out::user "${_m}"
   fi
-  out::info "created $1: $2"
+  out::info "created $1: $(C="$COLOR_INFO" res::variables $2)"
 }
 
 res::deleted () {
@@ -25,7 +36,7 @@ res::deleted () {
       "$*"
     out::user "${_m}"
   fi
-  out::warn "deleted $1: $2"
+  out::warn "deleted $1: $(C="$COLOR_WARN" res::variables $2)"
 }
 
 res::refreshed () {
@@ -38,5 +49,5 @@ res::refreshed () {
       "$*"
     out::user "${_m}"
   fi
-  out::info "refreshed $1: $2"
+  out::info "refreshed $1: $(C="$COLOR_INFO" res::variables $2)"
 }

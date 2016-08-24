@@ -29,7 +29,7 @@ context::task::apply () {
 
 # fun: context::execute <name>
 # txt: Execute a context named as name.
-# var: CONTEXT contains the context name, and this variable will be
+# env: CONTEXT: contains the context name, and this variable will be
 #      propagated to other functions in the same context.
 context::execute () {
   export CONTEXT="$1" && $1 && context::task::apply "$1"

@@ -1,9 +1,15 @@
 #! /bin/bash
 # vim: ft=sh:
 # mod: fstab
-# txt: The ``fstab`` module provides functions to add entries to fstab file.
+# txt: The `fstab` module provides functions to add entries to fstab file.
+# use: fstab::present /dev/sda1 \\
+#        mount=/ \\
+#        fstype=xfs \\
+#        opts=default,noauto \\
+#        remount=true
 
 # fun: fstab::exists [name=]<device>
+# api: potion
 # txt: return true if device is set in fstab
 fstab::exists () {
   eval $(std::parse "$@")
@@ -29,6 +35,7 @@ fstab::_destroy () {
 }
 
 # fun: fstab::present [name=]<device> mount=<mountpoint> [options]
+# api: potion
 # txt: ensure that fstab entry for device is present
 # opt: name: the device name to ensure
 # opt: mount: the mountpoint for the device
@@ -49,6 +56,7 @@ fstab::present () {
 }
 
 # fun: fstab::absent [name=]<device>
+# api: potion
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
   eval $(std::parse "$@")

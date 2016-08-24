@@ -1,7 +1,9 @@
 #! /bin/bash
 # mod: srv
-# txt: The ``srv`` module provides high-level functions to manage package
+# api: potion
+# txt: The `srv` module provides high-level functions to manage package
 #      installations.
+# use: srv::present sshd
 
 # private srv::sysinit
 srv::_sysinit () {
@@ -23,6 +25,7 @@ srv::_sysinit () {
 }
 
 # fun: srv::exists [name=]<service>
+# api: potion
 # txt: return true if the specific service is present in the system.
 srv::exists () {
   eval $(std::parse "$@")
@@ -36,6 +39,7 @@ srv::exists () {
 }
 
 # fun: srv::present [name=]<service>
+# api: potion
 # txt: ensure that specified service is installed on the system.
 srv::present () {
   eval $(std::parse "$@")
@@ -49,6 +53,7 @@ srv::present () {
 }
 
 # fun: srv::absent [name=]<service>
+# api: potion
 # txt: ensure that specified service is not present on the system.
 srv::absent () {
   eval $(std::parse "$@")
@@ -61,6 +66,7 @@ srv::absent () {
   fi
 }
 
+# internal srv::refresh
 srv::refresh () {
   eval $(std::parse "$@")
   local si="$(srv::_sysinit)"

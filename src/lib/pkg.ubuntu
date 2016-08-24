@@ -13,8 +13,9 @@ pkg::_update::ubuntu () {
         err::trace "Unable to update package database"
   local ret=$?
   if ! ${NOCACHE:-false}; then
-    tmp::create
+    tmp::create _pkg_cache
     : > pkg_update_ubuntu
+    tmp::exit
   fi
   return $ret
 }

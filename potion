@@ -2,6 +2,17 @@
 # mod: res
 # txt: The ``res`` module provides a way to work with potion resources.
 
+res::variables () {
+  for word in $@; do
+    case "$word" in
+      *=*) echo -n "${COLOR_BOLD}${word%%=*}${COLOR_NONE}"
+           echo -n "${C}=${word#*=}${COLOR_NONE} ";;
+      *) echo -n "$word "
+    esac
+  done
+  echo
+}
+
 res::created () {
   if ${VERBOSE:-false}; then
     local mod="$1"; shift
@@ -12,7 +23,7 @@ res::created () {
       "$*"
     out::user "${_m}"
   fi
-  out::info "created $1: $2"
+  out::info "created $1: $(C="$COLOR_INFO" res::variables $2)"
 }
 
 res::deleted () {
@@ -25,7 +36,7 @@ res::deleted () {
       "$*"
     out::user "${_m}"
   fi
-  out::warn "deleted $1: $2"
+  out::warn "deleted $1: $(C="$COLOR_WARN" res::variables $2)"
 }
 
 res::refreshed () {
@@ -38,7 +49,7 @@ res::refreshed () {
       "$*"
     out::user "${_m}"
   fi
-  out::info "refreshed $1: $2"
+  out::info "refreshed $1: $(C="$COLOR_INFO" res::variables $2)"
 }
 #! /bin/bash
 # mod: context
@@ -71,7 +82,7 @@ context::task::apply () {
 
 # fun: context::execute <name>
 # txt: Execute a context named as name.
-# var: CONTEXT contains the context name, and this variable will be
+# env: CONTEXT: contains the context name, and this variable will be
 #      propagated to other functions in the same context.
 context::execute () {
   export CONTEXT="$1" && $1 && context::task::apply "$1"
@@ -101,16 +112,14 @@ context::run () {
   out::info "Finished potion exection in ${tim} seconds."
 }
 #! /bin/bash
-# mod: debug
-# txt: The debug module enable or disable debug featuring.
-
-${DEBUG:+set -x}
-#! /bin/bash
 # mod: host
-# txt: The ``host`` module provides functions to configure hostname of the
+# api: potion
+# txt: The `host` module provides functions to configure hostname of the
 #      machine.
+# use: host::present myhost.mydomain.com
 
 # fun: host::exists [name=]<hostname>
+# api: potion
 # txt: return true if the FQDN of the node is equal to specified one.
 host::exists () {
   eval $(std::parse "$@")
@@ -138,6 +147,7 @@ host::_destroy () {
 }
 
 # fun: host::present [name=]<hostname>
+# api: potion
 # txt: ensure than the node has the specified hostname.
 host::present () {
   eval $(std::parse "$@")
@@ -151,6 +161,7 @@ host::present () {
 }
 
 # fun: host::absent [name=]<hostname>
+# api: potion
 # txt: ensure than the node has not the specified hostname.
 host::absent () {
   eval $(std::parse "$@")
@@ -164,10 +175,13 @@ host::absent () {
 }
 #! /bin/bash
 # mod: group
-# txt: The ``group`` module offers a way to ensure that specified group of
+# api: potion
+# txt: The `group` module offers a way to ensure that specified group of
 #      uses is created or not in the system.
+# use: group::present mygroup
 
 # fun: group::exists [name=]<groupname>
+# api: potion
 # txt: return true or false if the specific groupname exists or not,
 #      respectively.
 group::exists () {
@@ -194,6 +208,7 @@ group::_destroy () {
 
 
 # fun: group::present [name=]<groupname> system=<true|false> [gid=gid]
+# api: potion
 # txt: create group if not exists
 # opt: name: the name of the group to create.
 # opt: system: if true create a system group.
@@ -212,6 +227,7 @@ group::present () {
 }
 
 # fun: group::absent [name=]<groupname>
+# api: potion
 # txt: destroy groupname if exists
 group::absent () {
   eval $(std::parse "$@")
@@ -225,12 +241,16 @@ group::absent () {
 }
 #! /bin/bash
 # mod: tz
-# txt: The ``tz`` module provides functions to configure timezone in the
+# api: potion
+# txt: The `tz` module provides functions to configure timezone in the
 #      system.
+# env: TZ_DIR: path where zoneinfo live. By default `/usr/share/zoneinfo`.
+# use: tz::present Europe/Madrid
 
 TZ_DIR="/usr/share/zoneinfo"
 
 # fun: tz::exists [name=]<zonename>
+# api: potion
 # txt: if timezone especified in argument is set return true, otherwise
 #      return false.
 tz::exists () {
@@ -244,6 +264,7 @@ tz::exists () {
 }
 
 # fun: tz::present [name=]<zonename>
+# api: potion
 # txt: ensure that specified timezone is set.
 tz::present () {
   eval $(std::parse "$@")
@@ -258,6 +279,7 @@ tz::present () {
 }
 
 # fun: tz::absent [name=]<zonename>
+# api: potion
 # txt: ensure that the specified timezone is not set.
 tz::absent () {
   eval $(std::parse "$@")
@@ -272,8 +294,10 @@ tz::absent () {
 }
 #! /bin/bash
 # mod: srv
-# txt: The ``srv`` module provides high-level functions to manage package
+# api: potion
+# txt: The `srv` module provides high-level functions to manage package
 #      installations.
+# use: srv::present sshd
 
 # private srv::sysinit
 srv::_sysinit () {
@@ -295,6 +319,7 @@ srv::_sysinit () {
 }
 
 # fun: srv::exists [name=]<service>
+# api: potion
 # txt: return true if the specific service is present in the system.
 srv::exists () {
   eval $(std::parse "$@")
@@ -308,6 +333,7 @@ srv::exists () {
 }
 
 # fun: srv::present [name=]<service>
+# api: potion
 # txt: ensure that specified service is installed on the system.
 srv::present () {
   eval $(std::parse "$@")
@@ -321,6 +347,7 @@ srv::present () {
 }
 
 # fun: srv::absent [name=]<service>
+# api: potion
 # txt: ensure that specified service is not present on the system.
 srv::absent () {
   eval $(std::parse "$@")
@@ -333,6 +360,7 @@ srv::absent () {
   fi
 }
 
+# internal srv::refresh
 srv::refresh () {
   eval $(std::parse "$@")
   local si="$(srv::_sysinit)"
@@ -439,10 +467,16 @@ srv::refresh::_upstart () {
 }
 #! /bin/bash
 # mod: swap
-# txt: The ``swap`` module contains functions to create and configure swap
+# api: potion
+# txt: The `swap` module contains functions to create and configure swap
 #      space.
+# use: swap::present \\
+#        /tmp/swapfile \\
+#        size=1G \\
+#        format=true
 
 # fun: swap::exists
+# api: potion
 # txt: return true if swap is enabled
 swap::exists () {
   read _ swap _ < <(free | grep '^Swap:')
@@ -475,6 +509,7 @@ swap::_destroy () {
 }
 
 # fun: swap::present [name=<device|file>] [size=<size>] [format=<true|false>]
+# api: potion
 # txt: ensure that swap is enable in specified device or file and specified
 #      size.
 # opt: name: the device use as swap space.
@@ -492,6 +527,7 @@ swap::present () {
 }
 
 # fun: swap::absent [name=]<device|file>
+# api: potion
 # txt: ensure that specified device is not enabled for swap
 # opt: name: the device use as swap space.
 swap::absent () {
@@ -519,8 +555,9 @@ pkg::_update::ubuntu () {
         err::trace "Unable to update package database"
   local ret=$?
   if ! ${NOCACHE:-false}; then
-    tmp::create
+    tmp::create _pkg_cache
     : > pkg_update_ubuntu
+    tmp::exit
   fi
   return $ret
 }
@@ -567,9 +604,15 @@ pkg::_destroy::ubuntu () {
 #! /bin/bash
 # vim: ft=sh:
 # mod: fstab
-# txt: The ``fstab`` module provides functions to add entries to fstab file.
+# txt: The `fstab` module provides functions to add entries to fstab file.
+# use: fstab::present /dev/sda1 \\
+#        mount=/ \\
+#        fstype=xfs \\
+#        opts=default,noauto \\
+#        remount=true
 
 # fun: fstab::exists [name=]<device>
+# api: potion
 # txt: return true if device is set in fstab
 fstab::exists () {
   eval $(std::parse "$@")
@@ -595,6 +638,7 @@ fstab::_destroy () {
 }
 
 # fun: fstab::present [name=]<device> mount=<mountpoint> [options]
+# api: potion
 # txt: ensure that fstab entry for device is present
 # opt: name: the device name to ensure
 # opt: mount: the mountpoint for the device
@@ -615,6 +659,7 @@ fstab::present () {
 }
 
 # fun: fstab::absent [name=]<device>
+# api: potion
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
   eval $(std::parse "$@")
@@ -628,8 +673,10 @@ fstab::absent () {
 }
 #! /bin/bash
 # mod: dir
-# txt: The ``dir`` module provides functions to ensure that specified
+# api: potion
+# txt: The `dir` module provides functions to ensure that specified
 #      directory is created or destroyed.
+# use: dir::present "/mnt" mode=755
 
 # private dir::_create <dname> [owner] [mode]
 dir::_create () {
@@ -644,6 +691,7 @@ dir::_destroy () {
 }
 
 # fun: dir::present [name=]<name> [options]
+# api: potion
 # txt: ensure that specified directory name passed as argument exists, and
 #      create it if not.
 # opt: name: the name of the directory to be created.
@@ -663,6 +711,7 @@ dir::present () {
 }
 
 # fun: dir::absent [name=]<name>
+# api: potion
 # txt: ensure that directory named as arguement, does not exist, removing it
 #      if necessary.
 # opt: name: the name of the directory to be removed
@@ -678,6 +727,7 @@ dir::absent () {
 }
 
 # fun: dir::exists [name=<fname>]
+# api: potion
 # txt: return true if directory name passed as argument exists, or false
 #      otherwise.
 dir::exists () {
@@ -743,8 +793,7 @@ pkg::_update::archlinux () {
     out::user "updated package database" ||
     err::trace "Unable to update package database"
   if ! ${NOCACHE:-false}; then
-    tmp::create
-    : > pkg_update_archlinux
+    tmp::touch pkg_update_archlinux
   fi
 }
 
@@ -787,8 +836,10 @@ pkg::_destroy::archlinux () {
 }
 #! /bin/bash
 # mod: format
-# txt: The ``format`` module provides a way to format and mount specified
+# api: potion
+# txt: The `format` module provides a way to format and mount specified
 #      block devices.
+# use: format::present /dev/sda1 fstype=xfs
 
 # private format::_exists::format <device>
 format::_exists::format () {
@@ -796,6 +847,7 @@ format::_exists::format () {
 }
 
 # fun: format::exists [name=]<device> [options]
+# api: potion
 # txt: return true if device exists and it's mounted on mountpoint
 # opt: name: the device name
 format::exists () {
@@ -817,6 +869,7 @@ format::_create::mount () {
 }
 
 # fun: format::present [name=]<device> [options]
+# api: potion
 # txt: ensure that specified device has format
 # opt: name: the device to be initialized
 # opt: fstype: the filesystem type to format the device
@@ -833,6 +886,7 @@ format::present () {
 }
 
 # fun: format::absent [name=]<device>
+# api: potion
 # txt: ensure that specific device is not formatted.
 format::absent () {
   out::warn "To avoid data loss format::absent do nothing for device $@"
@@ -840,10 +894,13 @@ format::absent () {
 
 #! /bin/bash
 # mod: pkg
-# txt: The ``pkg`` module provides functions to ensure package installation
+# api: potion
+# txt: The `pkg` module provides functions to ensure package installation
 #      on the system.
+# use: pkg::present vim
 
 # fun: pkg::exists [name=]<package>
+# api: potion
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
   eval $(std::parse "$@")
@@ -858,6 +915,7 @@ pkg::exists () {
 }
 
 # fun: pkg::present [name=]<package>
+# api: potion
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
   eval $(std::parse "$@")
@@ -872,6 +930,7 @@ pkg::present () {
 }
 
 # fun: pkg::absent [name=]<package>
+# api: potion
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
   eval $(std::parse "$@")
@@ -886,10 +945,13 @@ pkg::absent () {
 }
 #! /bin/bash
 # mod: link
-# txt: The ``link`` module provides functions to ensure that specified
+# api: potion
+# txt: The `link` module provides functions to ensure that specified
 #      symlink exists in the system and points to specified file.
+# use: link::present /mylink target=/etc/motd
 
 # fun: link::exists [name=]<link> target=<source>
+# api: potion
 # txt: returnt true if the specified link exists and point to source.
 # opt: target: the target where link points to
 link::exists () {
@@ -909,6 +971,7 @@ link::_destroy () {
 }
 
 # fun: link::present [name=]<link> target=<source>
+# api: potion
 # txt: ensure that the link exists and point to source.
 # opt: target: the target where link points to
 link::present () {
@@ -923,6 +986,7 @@ link::present () {
 }
 
 # fun: link::absent [name=]<link> target=<source>
+# api: potion
 # txt: ensure that the specified link does not exists or not point to
 #      specified source.
 # opt: target: the target where link points to
@@ -939,15 +1003,23 @@ link::absent () {
 
 #! /bin/bash
 # mod: file
-# txt: The ``file`` module provides functions to ensure that specified file
+# api: potion
+# txt: The `file` module provides functions to ensure that specified file
 #      exists or not in the system and also has specified content.
 #      To creat content, use the ``data`` parameter, usually this parameter
 #      accepts a URL in the form:
-#      - file://x, where x is a file in the host where potion is executed.
-#      - artifact://x, an artifact provided in the potion file.
-#      - artifact+eval://x, an evaluate artifact.
-#      - http://x or https://x, a remote web site.
-#      - ftp://x, a FTP remote site.
+#      
+#
+#        * `file://x`: where x is a file in the host where potion is executed.
+#        * `artifact://x`: an artifact provided in the potion file.
+#        * `artifact+eval://x`: an evaluate artifact.
+#        * `http://x` or `https://x`: a remote web site.
+#        * `ftp://x`: a FTP remote site.
+#        
+# use: file::present /etc/somefile \\
+#        data="artifact://someartifact"
+# use: file::present /etc/otherfile \\
+#        data="some string content"
 
 # private file::hmac <url>
 file::_hmac () {
@@ -992,6 +1064,7 @@ file::_data () {
 }
 
 # fun: file::exists [name=]<fname> [options]
+# api: potion
 # txt: return true if file exists, or none otherwise
 # opt: name: the filename to check for.
 # opt: data: the content URL
@@ -1024,6 +1097,7 @@ file::_destroy () {
 }
 
 # fun: file::present [name=]<name> [options]
+# api: potion
 # txt: ensure that file passed as argument exists.
 # opt: name: then file name to ensure
 # opt: user: the user owner the file
@@ -1046,6 +1120,7 @@ file::present () {
 }
 
 # fun: file::absent [name=]<name> [options]
+# api: potion
 # txt: ensure that file passed as argument does not exist.
 # opt: data: the content url (only removes the file if data is the same).
 file::absent () {
@@ -1060,8 +1135,14 @@ file::absent () {
 }
 #! /bin/bash
 # mod: sudo
-# txt: The ``sudo`` module provides functions to grant or deny permissions
+# txt: The `sudo` module provides functions to grant or deny permissions
 #      to specific users.
+# env: SUDOERS_DIR: the path where sudoers file exists, usually
+#      `/etc/sudoers.d`.
+# use: # ensure taht user someuser has ALL permissions
+#      sudo::user::present someuser grant=ALL
+# use: # ensure that group somegroup does not have ALL permissiones
+#      sudo::group::absent somegroup grant=ALL
 
 SUDOERS_DIR=/etc/sudoers.d
 
@@ -1071,6 +1152,7 @@ sudo::_syntax () {
 }
 
 # fun: sudo::user::exists [name=]<username> grant=<permissions>
+# api: potion
 # txt: return true if user has specific permissions
 # opt: name: the username to check permissions
 # opt: grant: the permissions to granted to the user.
@@ -1103,6 +1185,7 @@ sudo::user::_destroy () {
 }
 
 # fun: sudo::user::present [name=]<username> grant=[permissions]
+# api: potion
 # txt: ensure that specific user has permissions passed as argument, or if
 #      not permissions defined grant root permissions.
 # opt: name: the username to give permissions
@@ -1122,6 +1205,7 @@ sudo::user::present () {
 }
 
 # fun: sudo::user::absent [name=]<username> grant=[permissions]
+# api: potion
 # txt: ensure that the specific permission for the specific username is not
 #      granted.
 # opt: name: the username to give permissions
@@ -1140,6 +1224,7 @@ sudo::user::absent () {
 }
 
 # fun: sudo::group::exists [name=]<username> grant=<sudoline>
+# api: potion
 # txt: return true if group has configured the specific sudoline.
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
@@ -1172,6 +1257,7 @@ sudo::group::_destroy () {
 }
 
 # fun: sudo::group::present [name=]<groupname> [grant=permissions]
+# api: potion
 # txt: ensure that specific group has permissions passed as argument, or if
 #      not permissions defined grant root permissions.
 # opt: name: the username to give permissions
@@ -1191,6 +1277,7 @@ sudo::group::present () {
 }
 
 # fun: sudo::group::absent [name=]<groupname> [grant=permissions]
+# api: potion
 # txt: ensure that the specific permission for the specific groupname is not
 #      granted.
 # opt: name: the username to give permissions
@@ -1210,7 +1297,14 @@ sudo::group::absent () {
 }
 #! /bin/bash
 # mod: user
-# txt: The ``user`` module provides functions to manage users in the system.
+# api: potion
+# txt: The `user` module provides functions to manage users in the system.
+# use: group::present mygroup
+#      user::present someuser \\
+#        groups=adm,mygroup \\
+#        nohome=true \\
+#        system=true \\
+#        shel=/bin/false
 
 # fun: user::exists [name=]<username>
 # txt: return true or false if the specific username exists or not,
@@ -1259,6 +1353,7 @@ user::_destroy () {
 
 
 # fun: user::present [name=<username>] [options]
+# api: potion
 # txt: create user if not exists
 # opt: basedir: set the base director to create home directories.
 # opt: gecos: set the GECOS field in user record.
@@ -1289,6 +1384,7 @@ user::present () {
 }
 
 # fun: user::absent [name=]<username> [keepdata=true]
+# api: potion
 # txt: destroy username if exists
 # opt: keepdata: if true do not remove user data.
 user::absent () {
@@ -1304,10 +1400,13 @@ user::absent () {
 }
 #! /bin/bash
 # mod: mount
-# txt: The ``mount`` module provides functions to ensure that specific
+# api: potion
+# txt: The `mount` module provides functions to ensure that specific
 #      mountpoint is mounted.
+# use: mount::present /mnt device=/dev/sda1 fstype=xfs
 
 # fun: mount::exists [name=]<name> [opts]
+# api: potion
 # txt: return true if specific device is mounted with passed options
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
@@ -1331,6 +1430,7 @@ mount::_destroy () {
 }
 
 # fun: mount::present [name=]<name> [opts]
+# api: potion
 # txt: ensure that specific device is mounted according with passed options.
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
@@ -1345,6 +1445,7 @@ mount::present () {
 }
 
 # fun: mount::absent [name=]<name>
+# api: potion
 # txt: ensure that specific mount point is not mounted.
 mount::absent () {
   if mount::exists "$@"; then
@@ -1356,18 +1457,94 @@ mount::absent () {
   fi
 }
 #! /bin/bash
+# mod: debug
+# api: blib
+# txt: The debug module enable or disable debug featuring.
+# env: DEBUG: if true enable debug mode
+
+${DEBUG:+set -x}
+#! /bin/bash
+# mod: config
+# api: blib
+# txt: The `config` module allows you to read configuration file in
+#      properties format
+# use: config::load configname ./config.properties
+#      echo $(config::get configname key)
+
+declare -A __config
+
+# fun: config::load <table> <file>
+# api: blib
+# txt: read a configuration file passed as argument and save in the memory
+#      with specific table name.
+# opt: table: a name to identify the config table where file will be load.
+# opt: file: path to a properties file to load.
+config::load ()
+{
+  local line= key= val=
+  while read line; do
+    case "$line" in
+      \#*|'') continue;;
+    esac
+    IFS=':' read key val <<< "$line"
+    __config["$1.$key"]="$val"
+  done < "$2"
+}
+
+# fun: config::get <table> <key> [default]
+# api: blib
+# txt: outputs the specified configuration key in the table passed as
+#      argument. If key does not exists raise an error, unless default
+#      is passed as argument, in that case return default values.
+# opt: table: the table name where to search key.
+# opt: key: the key to search in config table
+# opt: default: default value to output if value is not found. By default
+#      an error is raised.
+config::get ()
+{
+  local val="${__config["$1.$2"]}"
+
+  if [ "$3" ]; then
+    [ "$val" ] && echo "$val" || echo "$3"
+  else
+    [ "$val" ] && echo "$val" || err::trace "Configuration key " \
+                                            "$2 in table $1 not found"
+  fi
+}
+
+# fun: config::iter <table> <pattern>
+# api: blib
+# txt: iterate over a specific configuration using pattern passed as
+#      argument and outputs keys with match.
+# opt: table: the table name to iterate
+# opt: pattern: a glob pattern to match in config keys.
+config::iter ()
+{
+  for key in "${!__config[@]}"; do
+    case "$key" in
+      ${1}.${2})
+
+        echo "${key#${1}.}";;
+    esac
+  done
+}
+#! /bin/bash
 # mod: cache
-# txt: The ``cache`` module provides a simple in-memory cache.
+# api: blib
+# txt: The `cache` module provides a simple in-memory cache.
+# use: cache::put "key" "val"
+#      cache::get "key"
 
 # fun: cache::get <key>
+# api: blib
 # txt: get the value of the key from the potion in-memory cache.
 cache::get () {
   echo "${cache__contents["$1"]}"
 }
 
 # fun: cache::put <key> <value>
-# txt: save the content of the specified key to the in-memory potion's
-# cache.
+# api: blib
+# txt: save the content of the specified key to the in-memory cache.
 cache::put () {
   cache__contents["$1"]="$2"
 }
@@ -1375,14 +1552,18 @@ cache::put () {
 declare -A cache__contents
 #! /bin/bash
 # mod: term
-# txt: The ``term`` module provides functions related with terminal
-#      configuration.
+# api: blib
+# txt: The `term` module provides functions related with terminal
+#      configuration. This module also define some useful color variables to
+#      be used in `out` module.
 
 # fun: term::attached
+# api: blib
 # txt: return true if output is a terminal, false otherwise
 term::attached () { [ -t 1 ]; }
 
 # fun: term::tcap <capability>
+# api: blib
 # txt: check if some capabilty is enabled in terminal
 term::tcap () { tput "$1" 2>/dev/null; }
 
@@ -1399,102 +1580,51 @@ if term::attached; then
       ;;
   esac
 fi
-#!/bin/bash
-# mod: artifact
-# txt: The ``artifact`` module contains function to access to artifacts. An
-#      artifact is a file embedded in potion compiled object, usually you
-#      want to set some configuration files as artifacts.
-
-# fun: artifact::hmac <artifact_name>
-# txt: print to stdout the HMAC of the artifact passed as argument.
-# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
-#      sha1, md5, sha256, sha512. The proper helper tool must be installed
-#      on the system.
-artifact::hmac () {
-  if artifact::exists "$1"; then
-    file::hmac "${POTION_TMPDIR}/_artifacts/$1"
-  else
-    err::trace "Missing artifact while calculating HMAC: $1"
-  fi
-}
-
-# fun: artifact::extract
-# txt: extract artifacts if artifact support is enabled.
-artifact::extract () {
-  [ "$POTION_ARTIFACTS" ] || return 0
-  [ -e "${POTION_TMPDIR}/.artifacts" ] && return 0
-
-  tmp::create
-  mkdir -p _artifacts
-  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C ./_artifacts ||
-    err::trace "Unable to extract artifacts"
-  touch ${POTION_TMPDIR}/.artifacts
-}
-
-# fun: artifact::exists <artifact_name>
-# txt: return true if the artifact exists, false otherwise.
-artifact::exists () {
-  artifact::extract
-  [ -r "${POTION_TMPDIR}/_artifacts/$1" ]
-}
-
-# fun: artifact::read <artifact_name>
-# txt: read a specific artifact from potion.
-artifact::read () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  cat "${POTION_TMPDIR}/_artifacts/$1"
-}
-
-
-# fun: artifact::read <artifact_name>
-# txt: read a specific artifact from potion.
-artifact::eval () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  local content="$(< ${POTION_TMPDIR}/_artifacts/$1)"
-  eval echo -n \""${content//\"/\\\"}"\"
-}
-
-# fun: artifacts::build <directory>
-# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
-#      variable to stdout with the encoded version of the artifacts.
-artifact::build () {
-  local artifacts="$(cd "$1" && tar -c . | base64 -w0)"
-  echo "POTION_ARTIFACTS='${artifacts}'"
-  echo
-}
 #! /bin/bash
-# The ``mutex`` module provides a way to ensure critical region access
-# across different processes. NOTE this module does not work fine on some
-# filesystems, like NFS, AFS and others.
+# mod: mutex
+# api: blib
+# txt: The `mutex` module provides a way to ensure critical region access
+#      across different processes. NOTE this module does not work fine on some
+#      filesystems, like NFS, AFS and others.
+# use: mutex::run mymutex sleep 10 # run a sleep in a critical region
+#      mutex::adquire mymutex
+#      # do some critical changes
+#      mutex::release mymutex
 
 # fun: mutex::adquire <name>
+# api: blib
 # txt: create a mutex or wait until mutex removed
+# opt: name: the name to identify this mutex
 mutex::adquire () {
   local i=0
-  tmp::create
+  tmp::create _mutex
   while ! std::mute mkdir "_mutex_$1"; do
     [ $i -eq ${MUTEX_TIMEOUT:-3600} ] && err::trace "Mutex timeout: $1"
     ${VERBOSE:-false} && out::user "waiting for mutex: $1 ($_run)"
     std::sleep 1
     ((i++))
   done
+  tmp::exit
   ${VERBOSE:-false} && out::user "adquired mutex: $1 ($_run)"
 }
 
 # fun: mutex::release <name>
+# api: blib
 # txt: release mutex by name
+# opt: name: the name to identify this mutex
 mutex::release () {
-  tmp::create
+  tmp::create _mutex
   ${VERBOSE:-false} && out::user "releasing mutex: $1 ($_run)"
   rmdir "_mutex_${1}"
+  tmp::exit
 }
 
 # fun: mutex::run <name> <command> [args]
+# api: blib
 # txt: run a command protected by mutex named as argument name.
+# opt: name: the name to identify this mutex
+# opt: command: the command to run
+# opt: args: optional arguments to the command.
 mutex::run () {
   local name="$1"; shift
   _run="$@"
@@ -1506,18 +1636,20 @@ mutex::run () {
 }
 #! /bin/bash
 # mod: out
-# txt: The ``out`` module provides functions to output messages in stderr or
+# api: blib
+# txt: The `out` module provides functions to output messages in stderr or
 #      stdout.
 
 # fun: out::log <message> [message_type]
+# api: blib
 # txt: print to stdout a log line with specified message and prefixed by
 #      date and message_type.
-# env: DATE_FORMAT defines the format for the datetime, in regular date(1)
+# env: DATE_FORMAT: defines the format for the datetime, in regular date(1)
 #      format.
-#      COLOR_DATE defines the color to use (if available) to print the date.
-#      COLOR_MESSAGE defines the color to use to print the message.
-#      COLOR_NONE defines the sequence to reset defined color.
-#      QUIET if true do not show any messages
+# env: COLOR_DATE: defines the color to use (if available) to print the date.
+# env: COLOR_MESSAGE: defines the color to use to print the message.
+# env: COLOR_NONE: defines the sequence to reset defined color.
+# env: QUIET: if true do not show any messages
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"
 out::log () {
   ${QUIET:-false} ||
@@ -1528,13 +1660,15 @@ out::log () {
 }
 
 # fun: out::info <message>
+# api: blib
 # txt: print an informational message in stdout.
-# env: COLOR_INFO defines the color to be used in informational messages.
+# env: COLOR_INFO: defines the color to be used in informational messages.
 out::info () { out::log "$1" "${COLOR_INFO}info${COLOR_NONE}"; }
 
 # fun: out::fail <message>
+# txt: print an informational message in stdout.
 # txt: print an error message in stderr.
-# env: COLOR_FAIL defines the color to be used in this kind of messages.
+# env: COLOR_FAIL: defines the color to be used in this kind of messages.
 #      E: if set exit program with error code defined in the variable
 out::fail () {
   out::log "$1" "${COLOR_FAIL}fail${COLOR_NONE}" >&2;
@@ -1542,20 +1676,28 @@ out::fail () {
 }
 
 # fun: out::warn <message>
+# txt: print an informational message in stdout.
 # txt: print a warning message in stderr.
-# env: COLOR_WARN defines the color to be used in this kind of messages.
+# env: COLOR_WARN: defines the color to be used in this kind of messages.
 out::warn () { out::log "$1" "${COLOR_WARN}warn${COLOR_NONE}" >&2; }
 
 # fun: out::user <message>
+# txt: print an informational message in stdout.
 # txt: print a user defined message in stdout
-# env: COLOR_USER defines the color to be used in this kind of messages.
+# env: COLOR_USER: defines the color to be used in this kind of messages.
 out::user () { out::log "$1" "${COLOR_USER}user${COLOR_NONE}"; }
 #! /bin/bash
 # mod: std
-# txt: The ``std`` module contains standard functions to work with potion.
+# api: blib
+# txt: The `std` module contains a numer of standard functions usefull to
+#      progamming in bash.
+# env: BLIB_VERSION: Contains the current blib version.
+
+BLIB_VERSION="1.0.1"
 
 # fun: std::quit
-# txt: perform an exit clean of potion.
+# api: blib
+# txt: perform an exit clean of the running program.
 std::quit () {
   for handler in ${std__quit_handler[@]}; do
     $handler
@@ -1563,7 +1705,14 @@ std::quit () {
 }
 
 # fun: std::add_quit_handler <func_name>
-# txt: add func_name as handler to execute before quit potion.
+# api: blib
+# txt: Add func_name as handler to execute before quit the application.
+#      When the application finished, then the functions registered as quit
+#      handlers will be executed in the same order than they were
+#      registered.
+# opt: func_name: the name of the function to be registered.
+# use: somefunc () { echo "exiting"; }
+#      std::add_quit_handler somefunc
 declare -A std__quit_handler
 std__quit_handler["tmp"]="tmp::destroy"
 std::add_quit_handler () {
@@ -1573,10 +1722,15 @@ trap std::quit EXIT
 trap std::quit CHLD
 
 # fun: std::hmac <text>
-# txt: calculate HMAC using SHA1 by default
+# api: blib
+# txt: outputs the calculated HMAC using SHA1 for the text passed as
+#      argument.
+# opt: text: a plain text to be hashed.
 # env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
 #      sha1, md5, sha256, sha512. The proper helper tool must be installed
 #      on the system.
+# use: std::hmac "hello world"
+#      ALGO=md5 std::hmac "hello world"
 std::hmac () {
   ALGO="${ALGO:=sha1}"
   local sum=
@@ -1590,20 +1744,27 @@ std::hmac () {
   fi
 }
 
-# fun: std::mute <command/alias/function>
-# txt: mute outputs when running a command, alias or function, including
-#      mute stderr.
+# fun: std::mute <command>
+# api: blib
+# txt: mute outputs, including `stderr` when running a command, alias or
+#      function
+# opt: command: the command to run muted.
 std::mute () {
   "$@" >/dev/null 2>/dev/null
 }
 
 # fun: std::strin <str1> <str2>
-# txt: return true if str1 is into str2, or false otherwise.
+# api: blib
+# txt: return true if `str1` is into `str2`, or false otherwise.
+# opt: str1: the string which could be contain `str2` and wants to evaluate
+# opt: str2: the string to find into `str1`
+# use: std::strin "somelargestring" "some"
 std::strin () {
   [ "${1//$2/}" != "${1}" ]
 }
 
 # fun: std::sleep <seconds>
+# api: blib
 # txt: sleep for specified number of seconds. This function is pure-bash, so
 #      not need sleep(1) command.
 std::sleep () {
@@ -1611,6 +1772,7 @@ std::sleep () {
 }
 
 # fun: std::func <func_name>
+# api: blib
 # txt: return true if function name passed as argument is defined, or false
 #      otherwise.
 std::func () {
@@ -1618,46 +1780,28 @@ std::func () {
 }
 
 # fun: std::arch
-# txt: print to stout the hardware architecture of the current host.
+# api: blib
+# txt: outputs the hardware architecture of the current host.
 std::arch () {
   uname -m
 }
 
-# fun: std::os::family
-# txt: print to stdout the operating system family
-std::os::family () {
-  uname -o
-}
-
-# fun: std::os::provider
-# txt: return the operating system provider (formerly distribution).
-std::os::provider () {
-  for f in ${std__os__provider[@]}; do
-    if [ -r "$f" ]; then
-      echo "${std__os__provider["$f"]}"
-      return 0
-    fi
-  done
-
-  if [ -r /etc/lsb-release ]; then
-    std::mute grep 'DISTRIB_ID=Ubuntu' /etc/lsb-release &&
-      echo ubuntu && return 0
-  fi
-  return 1
-}
-
-declare -A std__os__provider
-std__os__provider["/etc/arch-release"]="archlinux"
-
 # fun: std::timestamp
-# txt: return the UNIX timestamp
+# api: blib
+# txt: outputs the UNIX timestamp
+# env: TZ: the timezone to use to print the timestamp, by default get the
+#      timezone from the system.
 std::timestamp () {
   date +%s
 }
 
-# fun: std::parse <arg string>
+# fun: std::parse <arg_string>
+# api: blib
 # txt: parse an argument string in the form key=value and promote this
-#      variables to environment.
+#      variables to environment. The key `name` is mandatory. If the
+#      first parameter has no key, key `name` is using by default.
+# use: std::parse "name=Jhon age=90"
+#      echo "$name has $age years old"
 std::parse () {
   local hasname=false
   local fst="$1"; shift
@@ -1675,6 +1819,7 @@ std::parse () {
 }
 
 # fun: std::run <command>
+# api: blib
 # txt: Run command passed as argument if $PRETEND is not set to true
 # env: PRETEND: if true do nothing.
 std::run () {
@@ -1682,12 +1827,14 @@ std::run () {
 }
 
 # fun: std::installed <command>
+# api: blib
 # txt: return true if command is installed in path
 std::installed () {
   std::mute type -p "$1"
 }
 
 # fun: std::is_dir_empty <dir>
+# api: blib
 # txt: return true if dir is empty
 std::is_dir_empty () {
   for f in $1/*; do
@@ -1695,19 +1842,97 @@ std::is_dir_empty () {
     return 1
   done
 }
+
+# fun: std::sort <array>
+# api: blib
+# txt: sort an array using qsort in pure bash (not very efficient) and
+#      return the output to an special variable called `sort_ret`.
+# env: sort_ret: will contain the sorted array
+std::sort () {
+   local pivot i smaller=() larger=()
+   sort_ret=()
+   (($#==0)) && return 0
+   local pivot="$1"
+   shift
+   for i; do
+      if [[ "$i" < "$pivot" ]]; then
+         smaller+=( "$i" )
+      else
+         larger+=( "$i" )
+      fi
+   done
+   std::sort "${smaller[@]}"
+   smaller=( "${sort_ret[@]}" )
+   std::sort "${larger[@]}"
+   larger=( "${sort_ret[@]}" )
+   sort_ret=( "${smaller[@]}" "$pivot" "${larger[@]}" )
+}
+
+# fun: str2array <string> [separator]
+# api: blib
+# txt: create a new array with the contents of the string, using separator
+#      passed as argument.
+# opt: string: the string to covert to array
+# opt: separator: the character to use as separator, by default use comma.
+# use: str2array "one,two,three"
+#      echo "${str2array_ret[@]}"
+std::str2array () {
+  local str="$1"
+  local sep="${2:-,}"
+  # remove [] if present
+  str="${str#[}"
+  str="${str%]}"
+
+  eval set -- "${str//,/ }"
+  str2array_ret=( "$@" )
+}
+declare -a str2array_ret
 #! /bin/bash
 # mod: curl
+# api: blib
 # txt: The curl module offers a way to access to HTTP resources easily.
 
 # fun: curl::get <url>
+# api: blib
 # txt: get an object from url and output it to stdout
+# opt: url: any URL valid for curl.
+# use: curl::get http://example.com
 curl::get () {
   command curl -qsSL "$1"
 }
+
+# fun: curl::source <url>
+# api: blib
+# txt: sources a file from url
+# use: curl::source http://mydomain.com/file.bash
+curl::source () {
+  case "$1" in
+    *://*) source <(curl::get "$1");;
+    *) source "$1" ;;
+  esac
+}
 #! /bin/bash
 # mod: arg
-# txt: The ``arg`` module provides a number of functions to parse arguments
-#      from commandline.
+# api: blib
+# txt: The `arg` module provides a number of functions to parse arguments
+#      from command line.
+#
+#      To use `arg` module you need to create handler functions which will
+#      be call during the parser process. The handler functions sould return
+#      the number of parameters comsumed from the parameter list. See
+#      example below for more information.
+# use: opt_quiet () {
+#          QUIET=true; return 1; # we consum only the -q param
+#      }
+#      create () { echo "$arguments" }
+#
+#      arg::opt MAIN -q --quiet   opt_quiet   'do not output messages'
+#
+#      arg::action create create 'create new things'
+#      arg::param create "arguments+"  'argument to create subcommand'
+#
+#      arg::parse "$@"
+
 
 declare -A arg__opt_arg
 declare -A arg__opt_long
@@ -1718,7 +1943,12 @@ declare -A arg__actions_help
 declare -A arg__param
 
 # fun: arg::opt <action> <short> <long> <handler> [help]
+# api: blib
 # txt: set an option for a specific action argument.
+# opt: action: the action for which the option will be added
+# opt: short: the short form of the option (usually prefixed by ``-``)
+# opt: long: the long form of the option (usually prefixed by ``--``)
+# opt: handler: function to handler when option is present.
 arg::opt () {
   arg__opt_short["$1,${2#-}"]="$4"
   arg__opt_long["$1,${3#--}"]="$4"
@@ -1728,6 +1958,7 @@ arg::opt () {
 # fun: arg::parse::opt::fail <cmdline>
 # txt: exit program with error 2 (cmdline error) interpreting cmdline passed
 #      as argument.
+# opt: cmdline: the cmdline which fails.
 arg::parse::opt::fail () {
   echo "unrecognized command line option '${1}'" >&2
   E=2 arg::usage >&2
@@ -1766,8 +1997,12 @@ arg::parse::opt::short () {
   fi
 }
 
-# fun: arg::action <action> <handler> [help message]
+# fun: arg::action <action> <handler> [help_message]
+# api: blib
 # txt: set a new action in argument parser.
+# opt: action: the action name to add to the parser
+# opt: handler: the function name to use as handler for this action.
+# opt: help_message: a message to print on usage.
 arg::action () {
   arg::opt "$1" -h --help "arg::usage::action::explain $1" \
     "print help message about $1 action"
@@ -1821,6 +2056,7 @@ arg::usage::action::explain () {
   if [ "$1" == "MAIN" ]; then
     local sact=''
     for action in "${!arg__actions[@]}"; do
+      [ "$action" == "MAIN" ] && continue
       sact+="${sact:+, }$action"
       actions+="$(printf "  %-20s %s" \
                   "${action}" \
@@ -1831,6 +2067,9 @@ arg::usage::action::explain () {
   echo "$summ${sact:+" {$sact}"}${spam:+ $spam}"
   echo
 
+  [ "$1" == "MAIN" ] && [ "${arg__actions_help["MAIN"]}" ] &&
+    echo "${arg__actions_help["MAIN"]}" && echo
+
   if [ "$actions" ]; then
     echo "command line actions:"
     echo "$actions"
@@ -1838,7 +2077,6 @@ arg::usage::action::explain () {
   if [ "$param" ]; then
     echo "positional parameters:"
     echo "$param"
-    echo
   fi
   if [ "$text" ]; then
     echo "optional arguments:"
@@ -1848,7 +2086,25 @@ arg::usage::action::explain () {
   exit ${E:-0}
 }
 
+# fun: arg:::main::help <text>
+# api: blib
+# txt: Set the main help for the program
+# opt: text: the main help string for the program
+arg::main::help () {
+  arg__actions_help["MAIN"]="$1"
+}
+
+# fun: arg:::main::action <fun>
+# api: blib
+# txt: Set the function handler for main action, used when no action
+#      defined.
+# opt: fun: the handler for the MAIN action.
+arg::main::action () {
+  arg__actions["MAIN"]="$1"
+}
+
 # fun: arg::usage
+# api: blib
 # txt: print main usage information
 # env: E: the error code to return to OS on exit.
 arg::usage () {
@@ -1869,7 +2125,11 @@ arg::parse::action () {
     esac
   done
   if [ "$action" == "MAIN" ]; then
-    arg::parse::action "$@";
+    if [ "${arg__actions["MAIN"]}" ]; then
+      arg::parse::arg MAIN "$@"; shift $?
+    else
+      arg::parse::action "$@";
+    fi
     return
   else
     arg::parse::arg "$action" "$@"; shift $?
@@ -1911,16 +2171,238 @@ arg::parse::arg () {
 }
 
 # fun: arg::parse [arguments]
-# txt: parse arguments according with previous specifications.
+# api: blib
+# txt: parse arguments according with previous configured parser.
 arg::parse () {
   arg::opt MAIN -h --help 'arg::usage' 'print help message'
   arg::parse::action MAIN "$@"
 }
 
 # fun: arg::param <action> <parameter_name> [help_str]
+# api: blib
 # txt: add position parameter to parser.
+# opt: action: action where add the parameter
+# opt: parameter_name: the name of the paramenter
+# opt: help_str: a help string for the parameter to show in usage
 arg::param () {
   arg__param["$1,$2"]="$3"
+}
+#! /bin/bash
+# mod: os
+# api: blib
+# txt: The `os` module provides specified functions to guess the operating
+#      system related variables.
+
+# fun: os::family
+# api: blib
+# txt: print to stdout the operating system family
+os::family () {
+  uname -o
+}
+
+# fun: os::provider
+# api: blib
+# txt: print the operating system provider (formerly distribution).
+os::provider () {
+  for f in ${!os__provider[@]}; do
+    if [ -r "$f" ]; then
+      echo "${os__provider["$f"]}"
+      return 0
+    fi
+  done
+
+  if [ -r /etc/lsb-release ]; then
+    std::mute grep 'DISTRIB_ID=Ubuntu' /etc/lsb-release &&
+      echo ubuntu && return 0
+  fi
+  return 1
+}
+declare -A os__provider
+os__provider["/etc/arch-release"]="archlinux"
+
+# fun: os::release
+# api: blib
+# txt: print to stdout the properly release of operating system provider.
+os::release () {
+  local provider="$(os::provider)"
+  if std::func os::release::${provider}; then
+    std::func::os::release::${provider}
+  fi
+  true
+}
+
+# fun: os::path <file>
+# api: blib
+# txt: return the path of a file in PATH
+# opt: file: the file name to find the full path.
+# env: PATH: contains the path to search file
+os::path () { type -P "$1" 2>/dev/null; }
+#! /bin/bash
+# mod: err
+# api: blib
+# txt: The `err` module offers a way to stop potion execution with
+#      a traceback.
+
+# fun: err::trace
+# api: blib
+# txt: print to stderr a traceback of an error.
+# use: false || err::trace "Error because of false"
+err::trace () {
+  echo "${COLOR_FAIL}Traceback (most recent call last):${COLOR_NONE}" >&2
+  for ((i=0;; i++)); do
+    read line fun file < <(caller $i)
+    if [ "$line" ]; then
+      echo "${COLOR_FAIL} File '$file', line $line, in $fun${COLOR_NONE}" >&2
+    else
+      break
+    fi
+  done
+  out::fail "$1"
+  exit 127
+}
+#! /bin/bash
+# mod: os.ubuntu
+# txt: The ``os.ubuntu`` module extends ``os`` module adding specific
+#      functions for Ubuntu based systems.
+
+# fun: os::relase::ubuntu
+# txt: return specific relese for ubuntu operating systems.
+os::release::ubuntu () {
+  IFS='=' read _ release < <(grep "^DISTRIB_RELEASE=" /etc/lsb-release)
+  echo "$release"
+}
+#! /bin/bash
+# mod: tmp
+# api: blib
+# txt: The `tmp` module provides functions to create and destroy temporary
+#      directories. Even if you don't remove the temporary file or directoy
+#      explicitely, the directory or file will be deleted when program
+#      exits.
+# env: TMPDIR: a subdirectory into /tmp to use to create temporary files or
+#      directories.
+# env: BLIB_TMPDIR: a full path to temporary directory to use to store files
+#      or other directories.
+# use: tmp::create
+#      # do some actions in current directory, which is temporary one
+#      tmp::destroy
+# use: echo $(tmp::file)
+
+BLIB_TMPDIR="/tmp/${TMPDIR:-blib}"
+
+__current_tmp=
+# fun: tmp::create <dirname>
+# api: blib
+# txt: create temporary directory and move working directory into it
+tmp::create () {
+  __current_tmp="$PWD"
+  mkdir -p "${BLIB_TMPDIR}/$1" && cd "${BLIB_TMPDIR}/$1"
+  std::add_quit_handler tmp tmp::destroy
+}
+
+# fun: tmp::exit
+# api: blib
+# txt: exit the temporary directory, but not remove it.
+tmp::exit () {
+  cd "${__current_tmp:-/}"
+}
+
+# fun: tmp::destroy
+# api: blib
+# txt: move to root directoy and remove temporary directory
+tmp::destroy () {
+  tmp::exit && rm -rf "${BLIB_TMPDIR}/$1" && unset __current_tmp
+}
+
+# fun: tmp::exists <name>
+# api: blib
+# txt: return true if the specified file name or directory name is
+#      a temporary file or directory.
+tmp::exists () {
+  [ -e "${BLIB_TMPDIR}/$1" ]
+}
+
+# fun: tmp::file
+# api: blib
+# txt: print to stdout the name of unique temporary file.
+tmp::file () {
+  mkdir -p "${BLIB_TMPDIR}" && echo ${BLIB_TMPDIR}/$$-${RANDOM}
+  std::add_quit_handler tmp tmp::destroy
+}
+
+# fun: tmp::touch <name>
+# api: blib
+# txt: create a temporary file with specified name in temporary directory.
+tmp::touch () {
+  mkdir -p "${BLIB_TMPDIR}" && : > "${BLIB_TMPDIR}/$1"
+}
+#!/bin/bash
+# mod: artifact
+# txt: The `artifact` module contains function to access to artifacts. An
+#      artifact is a file embedded in potion compiled object, usually you
+#      want to set some configuration files as artifacts.
+
+# fun: artifact::hmac <artifact_name>
+# txt: print to stdout the HMAC of the artifact passed as argument.
+# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
+#      sha1, md5, sha256, sha512. The proper helper tool must be installed
+#      on the system.
+artifact::hmac () {
+  if artifact::exists "$1"; then
+    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
+  else
+    err::trace "Missing artifact while calculating HMAC: $1"
+  fi
+}
+
+# fun: artifact::extract
+# txt: extract artifacts if artifact support is enabled.
+artifact::extract () {
+  [ "$POTION_ARTIFACTS" ] || return 0
+  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
+
+  mutex::adquire _artifacts
+  tmp::create _artifacts
+  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
+    err::trace "Unable to extract artifacts"
+  touch ${BLIB_TMPDIR}/.artifacts
+  tmp::exit
+  mutex::release _artifacts
+}
+
+# fun: artifact::exists <artifact_name>
+# txt: return true if the artifact exists, false otherwise.
+artifact::exists () {
+  artifact::extract
+  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
+}
+
+# fun: artifact::read <artifact_name>
+# txt: read a specific artifact from potion.
+artifact::read () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  cat "${BLIB_TMPDIR}/_artifacts/$1"
+}
+
+
+# fun: artifact::eval <artifact_name>
+# txt: read and eval specific artifact from potion.
+artifact::eval () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  local content="$(< ${BLIB_TMPDIR}/_artifacts/$1)"
+  eval echo -n \""${content//\"/\\\"}"\"
+}
+
+# fun: artifacts::build <directory>
+# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
+#      variable to stdout with the encoded version of the artifacts.
+artifact::build () {
+  local artifacts="$(cd "$1" && tar -c . | base64 -w0)"
+  echo "POTION_ARTIFACTS='${artifacts}'"
+  echo
 }
 #! /bin/bash
 # mod: main
@@ -2029,7 +2511,9 @@ main::run () {
     secret::load "${main__run__secrets}"
     out::user "loaded secrets from: ${main__run__secrets}"
   fi
-  source "$@" || err::trace "Unable to load potion file(s): $@"
+  for src in "$@"; do
+    curl::source "$src" || err::trace "Unable to load potion file(s): $src"
+  done
   context::run
 }
 
@@ -2047,7 +2531,7 @@ main () {
 
   arg::action create main::create 'create new potion from templates'
   arg::param create "infredients+" \
-    'path to the ingredient files to make the potion'
+    'URL to the ingredient files to make the potion'
   arg::opt create -o: --output: main::create::opt_output \
     'set path to output potion filename'
   arg::opt create -a: --artifacts: main::create::opt_artifacts \
@@ -2069,52 +2553,8 @@ main () {
 }
 shopt -s expand_aliases
 #! /bin/bash
-# mod: os
-# txt: The ``os`` module provides specified functions to guess the operating
-#      system related variables.
-
-# fun: os::family
-# txt: print to stdout the operating system family
-os::family () {
-  uname -o
-}
-
-# fun: os::provider
-# txt: return the operating system provider (formerly distribution).
-os::provider () {
-  for f in ${!os__provider[@]}; do
-    if [ -r "$f" ]; then
-      echo "${os__provider["$f"]}"
-      return 0
-    fi
-  done
-
-  if [ -r /etc/lsb-release ]; then
-    std::mute grep 'DISTRIB_ID=Ubuntu' /etc/lsb-release &&
-      echo ubuntu && return 0
-  fi
-  return 1
-}
-declare -A os__provider
-os__provider["/etc/arch-release"]="archlinux"
-
-# fun: os::release
-# txt: print to stdout the properly release of operating system provider.
-os::release () {
-  local provider="$(os::provider)"
-  if std::func os::release::${provider}; then
-    std::func::os::release::${provider}
-  fi
-  true
-}
-
-# fun: os::path <file>
-# txt: return the path of a file in PATH
-# env: PATH: contains the path to search file
-os::path () { type -P "$1" 2>/dev/null; }
-#! /bin/bash
 # mod: secret
-# txt: The ``secret` module allows you to get/set passwords or secret config
+# txt: The `secret` module allows you to get/set passwords or secret config
 #      keys from diferent sources instead of save them in plain text in the
 #      potion file.
 
@@ -2146,39 +2586,8 @@ secret () {
   echo "${_secrets["$1"]}"
 }
 #! /bin/bash
-# mod: err
-# txt: The ``err`` module offers a way to stop potion execution with
-#      a traceback.
-
-# fun: err::trace
-# txt: print to stderr a traceback of an error.
-err::trace () {
-  echo "${COLOR_FAIL}Traceback (most recent call last):${COLOR_NONE}" >&2
-  for ((i=0;; i++)); do
-    read line fun file < <(caller $i)
-    if [ "$line" ]; then
-      echo "${COLOR_FAIL} File '$file', line $line, in $fun${COLOR_NONE}" >&2
-    else
-      break
-    fi
-  done
-  out::fail "$1"
-  exit 127
-}
-#! /bin/bash
-# mod: os.ubuntu
-# txt: The ``os.ubuntu`` module extends ``os`` module adding specific
-#      functions for Ubuntu based systems.
-
-# fun: os::relase::ubuntu
-# txt: return specific relese for ubuntu operating systems.
-os::release::ubuntu () {
-  IFS='=' read _ release < <(grep "^DISTRIB_RELEASE=" /etc/lsb-release)
-  echo "$release"
-}
-#! /bin/bash
 # mod: refresh
-# txt: The ``refresh`` add functionality to refresh services or other
+# txt: The `refresh` add functionality to refresh services or other
 #      resources.
 
 refresh () {
@@ -2190,25 +2599,6 @@ refresh () {
   else
     out::warn "unable to refresh ${res}: cannot found refresh handler"
   fi
-}
-#! /bin/bash
-# mod: tmp
-# txt: The ``tmp`` module provides functions to create and destroy temporar
-#      directories.
-
-POTION_TMPDIR="/tmp/_potion"
-
-tmp::create () {
-  mkdir -p "${POTION_TMPDIR}" && cd "${POTION_TMPDIR}"
-  std::add_quit_handler tmp tmp::destroy
-}
-
-tmp::destroy () {
-  cd / && rm -rf "${POTION_TMPDIR}"
-}
-
-tmp::exists () {
-  [ -e "${POTION_TMPDIR}/$1" ]
 }
 std::installed 'grep' ||  err::trace 'grep is required but not found'
 std::installed 'egrep' ||  err::trace 'egrep is required but not found'

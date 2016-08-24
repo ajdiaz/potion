@@ -1,6 +1,6 @@
 #! /bin/bash
 # mod: refresh
-# txt: The ``refresh`` add functionality to refresh services or other
+# txt: The `refresh` add functionality to refresh services or other
 #      resources.
 
 refresh () {

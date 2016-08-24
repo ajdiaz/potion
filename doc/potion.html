@@ -1,0 +1,778 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="generator" content="bashdoc" />
+  <link href="https://fonts.googleapis.com/css?family=Lora:400,400italic|Work+Sans:300,400,500,600" rel="stylesheet" type="text/css"/>
+
+  <title></title>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #0000ff; } /* Keyword */
+code > span.ch { color: #008080; } /* Char */
+code > span.st { color: #008080; } /* String */
+code > span.co { color: #008000; } /* Comment */
+code > span.ot { color: #ff4000; } /* Other */
+code > span.al { color: #ff0000; } /* Alert */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #008000; font-weight: bold; } /* Warning */
+code > span.cn { } /* Constant */
+code > span.sc { color: #008080; } /* SpecialChar */
+code > span.vs { color: #008080; } /* VerbatimString */
+code > span.ss { color: #008080; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { } /* Variable */
+code > span.cf { color: #0000ff; } /* ControlFlow */
+code > span.op { } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #ff4000; } /* Preprocessor */
+code > span.do { color: #008000; } /* Documentation */
+code > span.an { color: #008000; } /* Annotation */
+code > span.cv { color: #008000; } /* CommentVar */
+code > span.at { } /* Attribute */
+code > span.in { color: #008000; } /* Information */
+  </style>
+  <style>
+  * {
+      -webkit-box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+      margin-top: 0;
+  }
+      html, div, body { margin:0; padding:0; }
+      #toc {
+        width: 25%;
+        margin:50px 0 0 0;
+        padding:0 2%;
+        float: left;
+        background: #3E4042;
+        color: #dadada;
+      }
+      body {
+      font-family: "Work sans", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      background: #3E4042;
+      }
+  
+      h1,h2,h3,h4,h5,h6 {
+        font-family: "Work sans","Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-weight: 500;
+      }
+  
+      #toc ul { padding:0; margin:0; }
+      #toc > ul > li { margin-bottom: 2em; }
+      #toc li { list-style: none; padding-left:0; }
+      #toc ul ul { padding-left: 1.25em; }
+      #toc code { display:none; }
+      #toc a {
+        color: #dadada;
+        text-decoration: none;
+      }
+      #toc a:hover {
+        color: #fff;
+      }
+      #content {
+        padding: 50px 5% 50px 5%;
+        margin:0 0 0 25%;
+        background: #fff;
+      }
+  
+      .section pre {
+        border-radius: 10px;
+        border:1px solid #dadada;
+        background: #ededed;
+        width:100%;
+        padding:5px;
+        font-family: monospace;
+        font-size:120%
+      }
+  
+      pre.sourceCode {
+        border-radius: 0;
+        border: 0;
+        background: none;
+        padding-top:10px;
+        width: 100%;
+        font-size: 90%;
+      }
+  
+      .module .section {
+        padding-left: 2em;
+      }
+  
+      .module .section p::first-letter {
+        text-transform: capitalize;
+      }
+  
+      .module h4 { margin-bottom:0 !important; }
+  
+      p { 
+        width: 80%;
+        text-align: justify;
+      }
+  
+      .module p {
+        padding-left: 1em;
+        color: #555;
+        font-style: italic;
+      }
+  
+    .module h2 { margin-bottom:0.2em; margin-top: 2.5em;}
+    .module h2:before {
+       content: "module";
+       color: #888;
+       font-family: monospace;
+       font-size: 90%;
+       padding-right:0.4em;
+    }
+  
+    .module h3:before {
+       content: "function";
+       color: #888;
+       font-family: monospace;
+       font-size: 90%;
+       padding-right:0.4em;
+    }
+  
+    .module dl {
+      padding: 0.5em;
+    }
+    .module dt {
+      display: inline-block;
+      min-width: 125px;
+      font-weight: bold;
+      color: #333;
+    }
+    .module dd:after {
+      display: block;
+      content: "";
+    }
+    .module dt:after {
+      content: ":";
+    }
+    .module dd {
+      display: inline;
+      margin: 0;
+    }
+    .module h3 code {
+      font-size: 80%;
+      color: #555;
+    }
+  
+    hr { margin-top:2em; margin-bottom: 2em; border:1px solid #555;
+    background: none; }
+    div.sourceCode { width: 100% !important; }
+    td.lineNumbers { padding-left:0 !important; }
+    .sourceCode pre { margin-bottom:0 !important; }
+    .sourceCode { margin-bottom: 0.5em !important; }
+  
+  
+  h1 code,h2 code,h3 code,h4 code,.section p code, dl code {
+    background: none !important;
+    color: #555 !important;
+  }
+  </style>
+<body class="book toc2 toc-left">
+<div id="toc" class="toc2">
+<ul>
+<li><a href="#potion">potion</a><ul>
+<li><a href="#usage">Usage</a><ul>
+<li><a href="#using-potion-to-run-a-recipe">Using potion to run a recipe</a></li>
+<li><a href="#using-potion-to-create-a-self-executable-recipe">Using potion to create a self-executable recipe</a></li>
+</ul></li>
+<li><a href="#writing-recipes">Writing recipes</a><ul>
+<li><a href="#contexts">Contexts</a></li>
+<li><a href="#artifacts">Artifacts</a></li>
+</ul></li>
+<li><a href="#testing-changes">Testing changes</a></li>
+</ul></li>
+<li><a href="#api-reference-potion">API Reference (potion)</a><ul>
+<li><a href="#dir">dir</a><ul>
+<li><a href="#dirpresent-namename-options">dir::present <code>[name=]&lt;name&gt;</code> <code class="function">[options]</code></a></li>
+<li><a href="#dirabsent-namename">dir::absent <code class="function">[name=]&lt;name&gt;</code></a></li>
+<li><a href="#direxists-namefname">dir::exists <code class="function">[name=&lt;fname&gt;]</code></a></li>
+</ul></li>
+<li><a href="#file">file</a><ul>
+<li><a href="#fileexists-namefname-options">file::exists <code>[name=]&lt;fname&gt;</code> <code class="function">[options]</code></a></li>
+<li><a href="#filepresent-namename-options">file::present <code>[name=]&lt;name&gt;</code> <code class="function">[options]</code></a></li>
+<li><a href="#fileabsent-namename-options">file::absent <code>[name=]&lt;name&gt;</code> <code class="function">[options]</code></a></li>
+</ul></li>
+<li><a href="#format">format</a><ul>
+<li><a href="#formatexists-namedevice-options">format::exists <code>[name=]&lt;device&gt;</code> <code class="function">[options]</code></a></li>
+<li><a href="#formatpresent-namedevice-options">format::present <code>[name=]&lt;device&gt;</code> <code class="function">[options]</code></a></li>
+<li><a href="#formatabsent-namedevice">format::absent <code class="function">[name=]&lt;device&gt;</code></a></li>
+</ul></li>
+<li><a href="#group">group</a><ul>
+<li><a href="#groupexists-namegroupname">group::exists <code class="function">[name=]&lt;groupname&gt;</code></a></li>
+<li><a href="#grouppresent-namegroupname-systemtruefalse-gidgid">group::present <code>[name=]&lt;groupname&gt;</code> <code>system=&lt;true|false&gt;</code> <code class="function">[gid=gid]</code></a></li>
+<li><a href="#groupabsent-namegroupname">group::absent <code class="function">[name=]&lt;groupname&gt;</code></a></li>
+</ul></li>
+<li><a href="#host">host</a><ul>
+<li><a href="#hostexists-namehostname">host::exists <code class="function">[name=]&lt;hostname&gt;</code></a></li>
+<li><a href="#hostpresent-namehostname">host::present <code class="function">[name=]&lt;hostname&gt;</code></a></li>
+<li><a href="#hostabsent-namehostname">host::absent <code class="function">[name=]&lt;hostname&gt;</code></a></li>
+</ul></li>
+<li><a href="#link">link</a><ul>
+<li><a href="#linkexists-namelink-targetsource">link::exists <code>[name=]&lt;link&gt;</code> <code class="function">target=&lt;source&gt;</code></a></li>
+<li><a href="#linkpresent-namelink-targetsource">link::present <code>[name=]&lt;link&gt;</code> <code class="function">target=&lt;source&gt;</code></a></li>
+<li><a href="#linkabsent-namelink-targetsource">link::absent <code>[name=]&lt;link&gt;</code> <code class="function">target=&lt;source&gt;</code></a></li>
+</ul></li>
+<li><a href="#mount">mount</a><ul>
+<li><a href="#mountexists-namename-opts">mount::exists <code>[name=]&lt;name&gt;</code> <code class="function">[opts]</code></a></li>
+<li><a href="#mountpresent-namename-opts">mount::present <code>[name=]&lt;name&gt;</code> <code class="function">[opts]</code></a></li>
+<li><a href="#mountabsent-namename">mount::absent <code class="function">[name=]&lt;name&gt;</code></a></li>
+</ul></li>
+<li><a href="#pkg">pkg</a><ul>
+<li><a href="#pkgexists-namepackage">pkg::exists <code class="function">[name=]&lt;package&gt;</code></a></li>
+<li><a href="#pkgpresent-namepackage">pkg::present <code class="function">[name=]&lt;package&gt;</code></a></li>
+<li><a href="#pkgabsent-namepackage">pkg::absent <code class="function">[name=]&lt;package&gt;</code></a></li>
+</ul></li>
+<li><a href="#srv">srv</a><ul>
+<li><a href="#srvexists-nameservice">srv::exists <code class="function">[name=]&lt;service&gt;</code></a></li>
+<li><a href="#srvpresent-nameservice">srv::present <code class="function">[name=]&lt;service&gt;</code></a></li>
+<li><a href="#srvabsent-nameservice">srv::absent <code class="function">[name=]&lt;service&gt;</code></a></li>
+</ul></li>
+<li><a href="#swap">swap</a><ul>
+<li><a href="#swapexists">swap::exists</a></li>
+<li><a href="#swappresent-namedevicefile-sizesize-formattruefalse">swap::present <code>[name=&lt;device|file&gt;]</code> <code>[size=&lt;size&gt;]</code> <code class="function">[format=&lt;true|false&gt;]</code></a></li>
+<li><a href="#swapabsent-namedevicefile">swap::absent <code class="function">[name=]&lt;device|file&gt;</code></a></li>
+</ul></li>
+<li><a href="#tz">tz</a><ul>
+<li><a href="#tzexists-namezonename">tz::exists <code class="function">[name=]&lt;zonename&gt;</code></a></li>
+<li><a href="#tzpresent-namezonename">tz::present <code class="function">[name=]&lt;zonename&gt;</code></a></li>
+<li><a href="#tzabsent-namezonename">tz::absent <code class="function">[name=]&lt;zonename&gt;</code></a></li>
+</ul></li>
+<li><a href="#user">user</a><ul>
+<li><a href="#userpresent-nameusername-options">user::present <code>[name=&lt;username&gt;]</code> <code class="function">[options]</code></a></li>
+<li><a href="#userabsent-nameusername-keepdatatrue">user::absent <code>[name=]&lt;username&gt;</code> <code class="function">[keepdata=true]</code></a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+<div id="content">
+<div id="potion" class="section level1">
+<h1>potion</h1>
+<p>Potion is a single application to configure a system, like Puppet or Chef, but minimalist.</p>
+<div id="usage" class="section level2">
+<h2>Usage</h2>
+<p>There are two ways to use potion:</p>
+<ol style="list-style-type: decimal">
+<li>You can use <code>potion</code> to run a recipe. A recipe is a script which contains the description of the configuration that you want to apply.</li>
+<li>You can use potion to create a standalone autoexecutable recipe, so you don’t need potion to run a potion file.</li>
+</ol>
+<div id="using-potion-to-run-a-recipe" class="section level3">
+<h3>Using potion to run a recipe</h3>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">potion</span> run Potionfile</code></pre></div>
+<p>The recipe is any bash script which can contain a number of specific funtions, listed below in API Reference.</p>
+</div>
+<div id="using-potion-to-create-a-self-executable-recipe" class="section level3">
+<h3>Using potion to create a self-executable recipe</h3>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">potion</span> create Potionfile <span class="kw">&gt;</span> recipe.sh</code></pre></div>
+</div>
+</div>
+<div id="writing-recipes" class="section level2">
+<h2>Writing recipes</h2>
+<p>Potion recipes are, in fact, bash scripts, so any thing that you can create with a bash script could be used in recipe, nevertheless we recommend you to use potion API to more common situations, and create new modules over them. Recipes are evaluated in order, but you parallelize actions using context (read more below).</p>
+<div id="contexts" class="section level3">
+<h3>Contexts</h3>
+<p>A context is a new process running by potion to perform some task in parallel. You can configure context with the following syntax in the Potion file:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">@context1</span>
+<span class="kw">{</span>
+  <span class="co"># do some actions</span>
+<span class="kw">}</span>
+
+<span class="kw">@context2</span>
+<span class="kw">{</span>
+  <span class="co"># do other actions</span>
+<span class="kw">}</span></code></pre></div>
+<p>In this example we create two context which will be running in parallel in the host.</p>
+</div>
+<div id="artifacts" class="section level3">
+<h3>Artifacts</h3>
+<p>An artifact is a set of files which should be included in the potion file and deployed by Potion application. You can think an artifact like a template for file. You can use artifacts like any other file, in the form:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">file</span>::present /etc/config.json <span class="dt">\\</span>
+  <span class="ot">data=</span><span class="st">&quot;artifact://config.json&quot;</span></code></pre></div>
+<p>This code will create (if doesn’t exist yet) a fil in <code>/etc/config.json</code>, which content is generated from artifact called <code>config.json</code>. The artifacts directory must be specified by command like when called potion, like the following example:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">potion</span> run -a ./artifacts_dir Potionfile</code></pre></div>
+<p>If you generate a self-executable potion file, the artifacts will be included in the script.</p>
+<p>Instead of <code>artifact://</code> url, you can use <code>artifact+eval://</code> url, which allows you to expand variables inside the artifact file. You can use normal <code>$variable</code> form, or even run more complex like <code>$(if $var; then echo value; fi)</code>.</p>
+</div>
+</div>
+<div id="testing-changes" class="section level2">
+<h2>Testing changes</h2>
+<p>Before to apply changes, you probably want to test the changes, to do that you can run potion with <code>--pretend</code> flag. If you are running and self-executable potion, you can use the environment variable <code>$PRETEND=true</code> to ensure that the potion just pretending instead on real running.</p>
+<hr />
+</div>
+</div>
+<div id="api-reference-potion" class="section level1">
+<h1>API Reference (potion)</h1>
+<div id="dir" class="section level2 module">
+<h2>dir</h2>
+<p>The <code>dir</code> module provides functions to ensure that specified directory is created or destroyed.</p>
+<div id="usage-example" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">dir</span>::present <span class="st">&quot;/mnt&quot;</span> mode=755</code></pre></div>
+</div>
+<div id="dirpresent-namename-options" class="section level3">
+<h3>dir::present <code>[name=]&lt;name&gt;</code> <code class="function">[options]</code></h3>
+<p>ensure that specified directory name passed as argument exists, and create it if not.</p>
+<div id="parameters" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the name of the directory to be created.
+</dd>
+<dt><code>mode</code></dt>
+<dd>the octal mode of the new directory (755) by default.
+</dd>
+<dt><code>user</code></dt>
+<dd>the user owner the directory (root by default).
+</dd>
+<dt><code>group</code></dt>
+<dd>the group owner the directory (root by default)
+</dd>
+</dl>
+</div>
+</div>
+<div id="dirabsent-namename" class="section level3">
+<h3>dir::absent <code class="function">[name=]&lt;name&gt;</code></h3>
+<p>ensure that directory named as arguement, does not exist, removing it if necessary.</p>
+<div id="parameters-1" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the name of the directory to be removed
+</dd>
+</dl>
+</div>
+</div>
+<div id="direxists-namefname" class="section level3">
+<h3>dir::exists <code class="function">[name=&lt;fname&gt;]</code></h3>
+<p>return true if directory name passed as argument exists, or false otherwise.</p>
+</div>
+</div>
+<div id="file" class="section level2 module">
+<h2>file</h2>
+<p>The <code>file</code> module provides functions to ensure that specified file exists or not in the system and also has specified content. To creat content, use the <code>data</code> parameter, usually this parameter accepts a URL in the form: * <code>file://x</code>: where x is a file in the host where potion is executed. * <code>artifact://x</code>: an artifact provided in the potion file. * <code>artifact+eval://x</code>: an evaluate artifact. * <code>http://x</code> or <code>https://x</code>: a remote web site. * <code>ftp://x</code>: a FTP remote site.</p>
+<div id="usage-example-1" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">file</span>::present /etc/somefile \
+  data=<span class="st">&quot;artifact://someartifact&quot;</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">file</span>::present /etc/otherfile \
+  data=<span class="st">&quot;some string content&quot;</span></code></pre></div>
+</div>
+<div id="fileexists-namefname-options" class="section level3">
+<h3>file::exists <code>[name=]&lt;fname&gt;</code> <code class="function">[options]</code></h3>
+<p>return true if file exists, or none otherwise</p>
+<div id="parameters-2" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the filename to check for.
+</dd>
+<dt><code>data</code></dt>
+<dd>the content URL
+</dd>
+</dl>
+</div>
+</div>
+<div id="filepresent-namename-options" class="section level3">
+<h3>file::present <code>[name=]&lt;name&gt;</code> <code class="function">[options]</code></h3>
+<p>ensure that file passed as argument exists.</p>
+<div id="parameters-3" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>then file name to ensure
+</dd>
+<dt><code>user</code></dt>
+<dd>the user owner the file
+</dd>
+<dt><code>group</code></dt>
+<dd>the group owner the file
+</dd>
+<dt><code>mode</code></dt>
+<dd>the octal mode of the file
+</dd>
+<dt><code>data</code></dt>
+<dd>the content url
+</dd>
+</dl>
+</div>
+</div>
+<div id="fileabsent-namename-options" class="section level3">
+<h3>file::absent <code>[name=]&lt;name&gt;</code> <code class="function">[options]</code></h3>
+<p>ensure that file passed as argument does not exist.</p>
+<div id="parameters-4" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>data</code></dt>
+<dd>the content url (only removes the file if data is the same).
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div id="format" class="section level2 module">
+<h2>format</h2>
+<p>The <code>format</code> module provides a way to format and mount specified block devices.</p>
+<div id="usage-example-2" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">format</span>::present /dev/sda1 fstype=xfs</code></pre></div>
+</div>
+<div id="formatexists-namedevice-options" class="section level3">
+<h3>format::exists <code>[name=]&lt;device&gt;</code> <code class="function">[options]</code></h3>
+<p>return true if device exists and it’s mounted on mountpoint</p>
+<div id="parameters-5" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the device name
+</dd>
+</dl>
+</div>
+</div>
+<div id="formatpresent-namedevice-options" class="section level3">
+<h3>format::present <code>[name=]&lt;device&gt;</code> <code class="function">[options]</code></h3>
+<p>ensure that specified device has format</p>
+<div id="parameters-6" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the device to be initialized
+</dd>
+<dt><code>fstype</code></dt>
+<dd>the filesystem type to format the device
+</dd>
+</dl>
+</div>
+</div>
+<div id="formatabsent-namedevice" class="section level3">
+<h3>format::absent <code class="function">[name=]&lt;device&gt;</code></h3>
+<p>ensure that specific device is not formatted.</p>
+</div>
+</div>
+<div id="group" class="section level2 module">
+<h2>group</h2>
+<p>The <code>group</code> module offers a way to ensure that specified group of uses is created or not in the system.</p>
+<div id="usage-example-3" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">group</span>::present mygroup</code></pre></div>
+</div>
+<div id="groupexists-namegroupname" class="section level3">
+<h3>group::exists <code class="function">[name=]&lt;groupname&gt;</code></h3>
+<p>return true or false if the specific groupname exists or not, respectively.</p>
+</div>
+<div id="grouppresent-namegroupname-systemtruefalse-gidgid" class="section level3">
+<h3>group::present <code>[name=]&lt;groupname&gt;</code> <code>system=&lt;true|false&gt;</code> <code class="function">[gid=gid]</code></h3>
+<p>create group if not exists</p>
+<div id="parameters-7" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the name of the group to create.
+</dd>
+<dt><code>system</code></dt>
+<dd>if true create a system group.
+</dd>
+<dt><code>gid</code></dt>
+<dd>the GID of the new group
+</dd>
+</dl>
+</div>
+</div>
+<div id="groupabsent-namegroupname" class="section level3">
+<h3>group::absent <code class="function">[name=]&lt;groupname&gt;</code></h3>
+<p>destroy groupname if exists</p>
+</div>
+</div>
+<div id="host" class="section level2 module">
+<h2>host</h2>
+<p>The <code>host</code> module provides functions to configure hostname of the machine.</p>
+<div id="usage-example-4" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">host</span>::present myhost.mydomain.com</code></pre></div>
+</div>
+<div id="hostexists-namehostname" class="section level3">
+<h3>host::exists <code class="function">[name=]&lt;hostname&gt;</code></h3>
+<p>return true if the FQDN of the node is equal to specified one.</p>
+</div>
+<div id="hostpresent-namehostname" class="section level3">
+<h3>host::present <code class="function">[name=]&lt;hostname&gt;</code></h3>
+<p>ensure than the node has the specified hostname.</p>
+</div>
+<div id="hostabsent-namehostname" class="section level3">
+<h3>host::absent <code class="function">[name=]&lt;hostname&gt;</code></h3>
+<p>ensure than the node has not the specified hostname.</p>
+</div>
+</div>
+<div id="link" class="section level2 module">
+<h2>link</h2>
+<p>The <code>link</code> module provides functions to ensure that specified symlink exists in the system and points to specified file.</p>
+<div id="usage-example-5" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">link</span>::present /mylink target=/etc/motd</code></pre></div>
+</div>
+<div id="linkexists-namelink-targetsource" class="section level3">
+<h3>link::exists <code>[name=]&lt;link&gt;</code> <code class="function">target=&lt;source&gt;</code></h3>
+<p>returnt true if the specified link exists and point to source.</p>
+<div id="parameters-8" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>target</code></dt>
+<dd>the target where link points to
+</dd>
+</dl>
+</div>
+</div>
+<div id="linkpresent-namelink-targetsource" class="section level3">
+<h3>link::present <code>[name=]&lt;link&gt;</code> <code class="function">target=&lt;source&gt;</code></h3>
+<p>ensure that the link exists and point to source.</p>
+<div id="parameters-9" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>target</code></dt>
+<dd>the target where link points to
+</dd>
+</dl>
+</div>
+</div>
+<div id="linkabsent-namelink-targetsource" class="section level3">
+<h3>link::absent <code>[name=]&lt;link&gt;</code> <code class="function">target=&lt;source&gt;</code></h3>
+<p>ensure that the specified link does not exists or not point to specified source.</p>
+<div id="parameters-10" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>target</code></dt>
+<dd>the target where link points to
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div id="mount" class="section level2 module">
+<h2>mount</h2>
+<p>The <code>mount</code> module provides functions to ensure that specific mountpoint is mounted.</p>
+<div id="usage-example-6" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">mount</span>::present /mnt device=/dev/sda1 fstype=xfs</code></pre></div>
+</div>
+<div id="mountexists-namename-opts" class="section level3">
+<h3>mount::exists <code>[name=]&lt;name&gt;</code> <code class="function">[opts]</code></h3>
+<p>return true if specific device is mounted with passed options</p>
+<div id="parameters-11" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>device</code></dt>
+<dd>the device to mount
+</dd>
+<dt><code>fstype</code></dt>
+<dd>the fstype of the device filesystem (default: auto)
+</dd>
+</dl>
+</div>
+</div>
+<div id="mountpresent-namename-opts" class="section level3">
+<h3>mount::present <code>[name=]&lt;name&gt;</code> <code class="function">[opts]</code></h3>
+<p>ensure that specific device is mounted according with passed options.</p>
+<div id="parameters-12" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>device</code></dt>
+<dd>the device to mount
+</dd>
+<dt><code>fstype</code></dt>
+<dd>the fstype of the device filesystem (default: auto)
+</dd>
+</dl>
+</div>
+</div>
+<div id="mountabsent-namename" class="section level3">
+<h3>mount::absent <code class="function">[name=]&lt;name&gt;</code></h3>
+<p>ensure that specific mount point is not mounted.</p>
+</div>
+</div>
+<div id="pkg" class="section level2 module">
+<h2>pkg</h2>
+<p>The <code>pkg</code> module provides functions to ensure package installation on the system.</p>
+<div id="usage-example-7" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">pkg</span>::present vim</code></pre></div>
+</div>
+<div id="pkgexists-namepackage" class="section level3">
+<h3>pkg::exists <code class="function">[name=]&lt;package&gt;</code></h3>
+<p>return true if the specific package is present in the system.</p>
+</div>
+<div id="pkgpresent-namepackage" class="section level3">
+<h3>pkg::present <code class="function">[name=]&lt;package&gt;</code></h3>
+<p>ensure that specified package is installed on the system.</p>
+</div>
+<div id="pkgabsent-namepackage" class="section level3">
+<h3>pkg::absent <code class="function">[name=]&lt;package&gt;</code></h3>
+<p>ensure that specified package is not present on the system.</p>
+</div>
+</div>
+<div id="srv" class="section level2 module">
+<h2>srv</h2>
+<p>The <code>srv</code> module provides high-level functions to manage package installations.</p>
+<div id="usage-example-8" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">srv</span>::present sshd</code></pre></div>
+</div>
+<div id="srvexists-nameservice" class="section level3">
+<h3>srv::exists <code class="function">[name=]&lt;service&gt;</code></h3>
+<p>return true if the specific service is present in the system.</p>
+</div>
+<div id="srvpresent-nameservice" class="section level3">
+<h3>srv::present <code class="function">[name=]&lt;service&gt;</code></h3>
+<p>ensure that specified service is installed on the system.</p>
+</div>
+<div id="srvabsent-nameservice" class="section level3">
+<h3>srv::absent <code class="function">[name=]&lt;service&gt;</code></h3>
+<p>ensure that specified service is not present on the system.</p>
+</div>
+</div>
+<div id="swap" class="section level2 module">
+<h2>swap</h2>
+<p>The <code>swap</code> module contains functions to create and configure swap space.</p>
+<div id="usage-example-9" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">swap</span>::present \
+  /tmp/swapfile \
+  size=1G \
+  format=true</code></pre></div>
+</div>
+<div id="swapexists" class="section level3 function">
+<h3>swap::exists</h3>
+<p>return true if swap is enabled</p>
+</div>
+<div id="swappresent-namedevicefile-sizesize-formattruefalse" class="section level3">
+<h3>swap::present <code>[name=&lt;device|file&gt;]</code> <code>[size=&lt;size&gt;]</code> <code class="function">[format=&lt;true|false&gt;]</code></h3>
+<p>ensure that swap is enable in specified device or file and specified size.</p>
+<div id="parameters-13" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the device use as swap space.
+</dd>
+<dt><code>size</code></dt>
+<dd>the size required if swap file is created
+</dd>
+<dt><code>format</code></dt>
+<dd>if true, format swap space.
+</dd>
+</dl>
+</div>
+</div>
+<div id="swapabsent-namedevicefile" class="section level3">
+<h3>swap::absent <code class="function">[name=]&lt;device|file&gt;</code></h3>
+<p>ensure that specified device is not enabled for swap</p>
+<div id="parameters-14" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>name</code></dt>
+<dd>the device use as swap space.
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div id="tz" class="section level2 module">
+<h2>tz</h2>
+<p>The <code>tz</code> module provides functions to configure timezone in the system.</p>
+<div id="environment-variables" class="section level4">
+<h4>Environment variables</h4>
+<dl>
+<dt><code>TZ_DIR</code></dt>
+<dd>path where zoneinfo live. By default <code>/usr/share/zoneinfo</code>.
+</dd>
+</dl>
+</div>
+<div id="usage-example-10" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">tz</span>::present Europe/Madrid</code></pre></div>
+</div>
+<div id="tzexists-namezonename" class="section level3">
+<h3>tz::exists <code class="function">[name=]&lt;zonename&gt;</code></h3>
+<p>if timezone especified in argument is set return true, otherwise return false.</p>
+</div>
+<div id="tzpresent-namezonename" class="section level3">
+<h3>tz::present <code class="function">[name=]&lt;zonename&gt;</code></h3>
+<p>ensure that specified timezone is set.</p>
+</div>
+<div id="tzabsent-namezonename" class="section level3">
+<h3>tz::absent <code class="function">[name=]&lt;zonename&gt;</code></h3>
+<p>ensure that the specified timezone is not set.</p>
+</div>
+</div>
+<div id="user" class="section level2 module">
+<h2>user</h2>
+<p>The <code>user</code> module provides functions to manage users in the system.</p>
+<div id="usage-example-11" class="section level4">
+<h4>Usage example</h4>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">group</span>::present mygroup
+<span class="kw">user</span>::present someuser \
+  groups=adm,mygroup \
+  nohome=true \
+  system=true \
+  shel=/bin/false</code></pre></div>
+</div>
+<div id="userpresent-nameusername-options" class="section level3">
+<h3>user::present <code>[name=&lt;username&gt;]</code> <code class="function">[options]</code></h3>
+<p>create user if not exists</p>
+<div id="parameters-15" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>basedir</code></dt>
+<dd>set the base director to create home directories.
+</dd>
+<dt><code>gecos</code></dt>
+<dd>set the GECOS field in user record.
+</dd>
+<dt><code>groups</code></dt>
+<dd>a comma separated list of groups for the user.
+</dd>
+<dt><code>nohome</code></dt>
+<dd>if true do not create home directory (false by default).
+</dd>
+<dt><code>system</code></dt>
+<dd>if true create system user (false by default).
+</dd>
+<dt><code>uid</code></dt>
+<dd>if set, try to force that UID as user id for the new user.
+</dd>
+<dt><code>shell</code></dt>
+<dd>set the shell of the username.
+</dd>
+<dt><code>password</code></dt>
+<dd>the password for the user
+</dd>
+</dl>
+</div>
+</div>
+<div id="userabsent-nameusername-keepdatatrue" class="section level3">
+<h3>user::absent <code>[name=]&lt;username&gt;</code> <code class="function">[keepdata=true]</code></h3>
+<p>destroy username if exists</p>
+<div id="parameters-16" class="section level4">
+<h4>Parameters</h4>
+<dl>
+<dt><code>keepdata</code></dt>
+<dd>if true do not remove user data.
+</dd>
+</dl>
+<hr />
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+

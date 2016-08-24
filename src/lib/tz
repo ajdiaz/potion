@@ -1,11 +1,15 @@
 #! /bin/bash
 # mod: tz
-# txt: The ``tz`` module provides functions to configure timezone in the
+# api: potion
+# txt: The `tz` module provides functions to configure timezone in the
 #      system.
+# env: TZ_DIR: path where zoneinfo live. By default `/usr/share/zoneinfo`.
+# use: tz::present Europe/Madrid
 
 TZ_DIR="/usr/share/zoneinfo"
 
 # fun: tz::exists [name=]<zonename>
+# api: potion
 # txt: if timezone especified in argument is set return true, otherwise
 #      return false.
 tz::exists () {
@@ -19,6 +23,7 @@ tz::exists () {
 }
 
 # fun: tz::present [name=]<zonename>
+# api: potion
 # txt: ensure that specified timezone is set.
 tz::present () {
   eval $(std::parse "$@")
@@ -33,6 +38,7 @@ tz::present () {
 }
 
 # fun: tz::absent [name=]<zonename>
+# api: potion
 # txt: ensure that the specified timezone is not set.
 tz::absent () {
   eval $(std::parse "$@")

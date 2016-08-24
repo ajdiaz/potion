@@ -105,7 +105,9 @@ main::run () {
     secret::load "${main__run__secrets}"
     out::user "loaded secrets from: ${main__run__secrets}"
   fi
-  source "$@" || err::trace "Unable to load potion file(s): $@"
+  for src in "$@"; do
+    curl::source "$src" || err::trace "Unable to load potion file(s): $src"
+  done
   context::run
 }
 
@@ -123,7 +125,7 @@ main () {
 
   arg::action create main::create 'create new potion from templates'
   arg::param create "infredients+" \
-    'path to the ingredient files to make the potion'
+    'URL to the ingredient files to make the potion'
   arg::opt create -o: --output: main::create::opt_output \
     'set path to output potion filename'
   arg::opt create -a: --artifacts: main::create::opt_artifacts \

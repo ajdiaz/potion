@@ -1,6 +1,6 @@
 #!/bin/bash
 # mod: artifact
-# txt: The ``artifact`` module contains function to access to artifacts. An
+# txt: The `artifact` module contains function to access to artifacts. An
 #      artifact is a file embedded in potion compiled object, usually you
 #      want to set some configuration files as artifacts.
 
@@ -11,7 +11,7 @@
 #      on the system.
 artifact::hmac () {
   if artifact::exists "$1"; then
-    file::hmac "${POTION_TMPDIR}/_artifacts/$1"
+    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
   else
     err::trace "Missing artifact while calculating HMAC: $1"
   fi
@@ -21,20 +21,22 @@ artifact::hmac () {
 # txt: extract artifacts if artifact support is enabled.
 artifact::extract () {
   [ "$POTION_ARTIFACTS" ] || return 0
-  [ -e "${POTION_TMPDIR}/.artifacts" ] && return 0
+  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
 
-  tmp::create
-  mkdir -p _artifacts
-  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C ./_artifacts ||
+  mutex::adquire _artifacts
+  tmp::create _artifacts
+  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
     err::trace "Unable to extract artifacts"
-  touch ${POTION_TMPDIR}/.artifacts
+  touch ${BLIB_TMPDIR}/.artifacts
+  tmp::exit
+  mutex::release _artifacts
 }
 
 # fun: artifact::exists <artifact_name>
 # txt: return true if the artifact exists, false otherwise.
 artifact::exists () {
   artifact::extract
-  [ -r "${POTION_TMPDIR}/_artifacts/$1" ]
+  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
 }
 
 # fun: artifact::read <artifact_name>
@@ -43,17 +45,17 @@ artifact::read () {
   artifact::exists "$1" ||
     err::trace "Missing artifact: '$1'"
 
-  cat "${POTION_TMPDIR}/_artifacts/$1"
+  cat "${BLIB_TMPDIR}/_artifacts/$1"
 }
 
 
-# fun: artifact::read <artifact_name>
-# txt: read a specific artifact from potion.
+# fun: artifact::eval <artifact_name>
+# txt: read and eval specific artifact from potion.
 artifact::eval () {
   artifact::exists "$1" ||
     err::trace "Missing artifact: '$1'"
 
-  local content="$(< ${POTION_TMPDIR}/_artifacts/$1)"
+  local content="$(< ${BLIB_TMPDIR}/_artifacts/$1)"
   eval echo -n \""${content//\"/\\\"}"\"
 }
 
