@@ -2456,7 +2456,7 @@ main::create () {
   local output=$'#! /bin/bash\nPOTION_COMPILED=true\n'
   ${QUIET:-false} || main::init
   out::info "output file: ${main__create__output:=./a.potion}"
-  output+="$(<$0)"$'\n'
+  output+="$(<"$0")"$'\n'
   if [ "${main__create__artifacts}" ]; then
     [ -d "${main__create__artifacts}" ] ||
       err::trace "Artifacts directory does not exists or isn't a directory"
@@ -2464,7 +2464,7 @@ main::create () {
     [ -r "${main__create__artifacts}" ] ||
       err::trace "Unable to read artifacts directory"
 
-    artifacts="$(cd ${main__create__artifacts} &&
+    artifacts="$(cd "${main__create__artifacts}" &&
                  tar -c . | base64)"
     output+=$'\n'"$(artifact::build "${main__create__artifacts}")"$'\n'
 
@@ -2478,7 +2478,7 @@ main::create () {
   for template in "$@"; do
     [ -r "$template" ] ||
       err::trace "Unable to find template: $template"
-    output+="$(<$template)"$'\n'
+    output+="$(<"$template")"$'\n'
     out::info "dumping template: $template"
   done
   output+=$'\ncontext::run\n'
@@ -2504,7 +2504,7 @@ main::run () {
     [ -r "${main__run__artifacts}" ] ||
       err::trace "Unable to read artifacts directory"
 
-    eval $(artifact::build "${main__run__artifacts}")
+    eval "$(artifact::build "${main__run__artifacts}")"
     out::user "dumped artifacts from: ${main__run__artifacts}"
   fi
   if [ "${main__run__secrets}" ]; then
