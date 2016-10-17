@@ -1341,14 +1341,18 @@ user::_create () {
   local ua_opts+="${USER_SYSTEM:+-r }"
   local ua_opts+="${USER_UID:+-u ${USER_UID} }"
   local ua_opts+="${USER_SHELL:+-s ${USER_SHELL} }"
+
+  [ "$2" ] && local ua_opts+="-U"
+
   std::run useradd $ua_opts "$1"
+  [ "$2" ] && std::run passwd "$1" <<< "$2"
 }
 
 # private user::_destroy <username>
 # destroy the username passed as argument.
 # USER_KEEPDATA: if set do not remove home directory and other user files.
 user::_destroy () {
-  std::run userdel -f ${USER_KEEPDATA:--r} "$1"
+  std::run userdel -f "${USER_KEEPDATA:--r}" "$1"
 }
 
 
@@ -2408,7 +2412,7 @@ artifact::build () {
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.3"
+VERSION="0.2.5"
 CONTEXT="main"
 
 # fun: main::init
