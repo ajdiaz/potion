@@ -1310,7 +1310,8 @@ sudo::group::absent () {
 # txt: return true or false if the specific username exists or not,
 #      respectively.
 user::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
+  # shellcheck disable=SC2154
   std::mute id "$name"
 }
 
@@ -1345,7 +1346,10 @@ user::_create () {
   [ "$2" ] && local ua_opts+="-U"
 
   std::run useradd $ua_opts "$1"
-  [ "$2" ] && std::run passwd "$1" <<< "$2"
+
+  if [ "$2" ]; then 
+    std::run passwd "$1" <<< "$2"
+  fi
 }
 
 # private user::_destroy <username>
@@ -1368,7 +1372,8 @@ user::_destroy () {
 # opt: shell: set the shell of the username.
 # opt: password: the password for the user
 user::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
+  # shellcheck disable=SC2154
   if ! user::exists "$name"; then
     USER_BASE_DIR="${basedir}" \
     USER_COMMENT="${gecos}" \
@@ -2412,7 +2417,7 @@ artifact::build () {
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.5"
+VERSION="0.2.6"
 CONTEXT="main"
 
 # fun: main::init

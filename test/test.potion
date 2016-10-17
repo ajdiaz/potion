@@ -129,6 +129,7 @@ context @test_user
     uid=1000 \
     shell=/bin/sh \
     gecos="one,two,,"
+    password="$(secret test)"
 
   user::absent root
 }
