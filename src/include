@@ -1,0 +1,9 @@
+#!/bin/bash
+# mod: include
+# txt: The `include` module allows you to include other potions from remote
+#      sites.
+
+include ()
+{
+  curl::source "$1"
+}

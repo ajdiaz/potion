@@ -6,9 +6,9 @@
 refresh () {
   local res="$1"; shift
 
-  if std::func ${res}::refresh; then
-    ${res}::refresh "$@" &&
-      res::refreshed ${res} "$1"
+  if std::func "${res}::refresh"; then
+    "${res}::refresh" "$@" &&
+      res::refreshed "${res}" "$1"
   else
     out::warn "unable to refresh ${res}: cannot found refresh handler"
   fi

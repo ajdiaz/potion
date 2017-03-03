@@ -1,7 +1,10 @@
 #! /bin/bash
 # This is a test potion file
 
-PRETEND=true # force pretend always
+export PRETEND=true # force pretend always
+
+include "./test/include.potion"
+include "file://$PWD/test/include.potion"
 
 context @test_dir
 {
@@ -113,7 +116,7 @@ context @test_srv
 context @test_host
 {
   host::present "foobar"
-  host::absent $(hostname)
+  host::absent "$(hostname)"
 }
 
 context @test_link

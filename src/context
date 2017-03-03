@@ -38,23 +38,27 @@ context::execute () {
 # fun: context::run
 # txt: run all context in paralell.
 context::run () {
-  local tim="$(std::timestamp)"
-  local count=0
-  local cctx=0
+  local tim cctx=0
+
+  tim="$(std::timestamp)"
+  # shellcheck disable=SC2015
   [ "$POTION_COMPILED" ] && local kind="compiled" || local kind="in-line"
-  while read d f context; do
+  while read -r _ _ context; do
     ((cctx++))
   done < <(declare -F | grep '^declare -f @')
+
   out::user "found ${cctx} contexts"
+  # shellcheck disable=SC2015
   ${PRETEND:-false} &&
     out::info "Starting $kind potion execution (pretending)" ||
     out::info "Starting $kind potion execution"
-  while read d f context; do
-    context::execute $context &
+
+  while read -r _ _ context; do
+    context::execute "$context" &
     ${ONETHREAD:-false} && wait
   done < <(declare -F | grep '^declare -f @')
   wait
   context::task::apply "main"
-  tim="$(( $(std::timestamp) - $tim ))"
+  tim="$(( $(std::timestamp) - tim ))"
   out::info "Finished potion exection in ${tim} seconds."
 }

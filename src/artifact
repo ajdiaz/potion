@@ -27,7 +27,7 @@ artifact::extract () {
   tmp::create _artifacts
   echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
     err::trace "Unable to extract artifacts"
-  touch ${BLIB_TMPDIR}/.artifacts
+  touch "${BLIB_TMPDIR}/.artifacts"
   tmp::exit
   mutex::release _artifacts
 }
@@ -55,7 +55,9 @@ artifact::eval () {
   artifact::exists "$1" ||
     err::trace "Missing artifact: '$1'"
 
-  local content="$(< ${BLIB_TMPDIR}/_artifacts/$1)"
+  local content
+
+  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
   eval echo -n \""${content//\"/\\\"}"\"
 }
 
@@ -63,7 +65,8 @@ artifact::eval () {
 # txt: scan the directory passed as argument and return a POTION_ARTIFACTS
 #      variable to stdout with the encoded version of the artifacts.
 artifact::build () {
-  local artifacts="$(cd "$1" && tar -c . | base64 -w0)"
+  local artifacts
+  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
   echo "POTION_ARTIFACTS='${artifacts}'"
   echo
 }

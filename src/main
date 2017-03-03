@@ -3,7 +3,7 @@
 # txt: The ``main`` module contain the specified potion body.
 
 VERSION="0.2.6"
-CONTEXT="main"
+export CONTEXT="main"
 
 # fun: main::init
 # txt: print nice potion logo and some custom messages at the beginning.
@@ -37,8 +37,8 @@ main::init () {
 main::opt_debug () { set -x; return 1;}
 main::opt_version () { out::info "Potion $VERSION"; exit 0;}
 main::opt_quiet () { QUIET=true; return 1;}
-main::opt_pretend () { PRETEND=true; return 1;}
-main::opt_verbose () { VERBOSE=true; return 1;}
+main::opt_pretend () { export PRETEND=true; return 1;}
+main::opt_verbose () { export VERBOSE=true; return 1;}
 
 # create action
 main::create::opt_artifacts () { main__create__artifacts="$1"; return 2;}
@@ -46,6 +46,7 @@ main::create::opt_compress () { main__create__compress=true; return 1;}
 main::create::opt_output () { main__create__output="$1"; return 2;}
 main::create::opt_secrets () { main__create__secrets="$1"; return 2;}
 
+export artifacts
 main::create () {
   local output=$'#! /bin/bash\nPOTION_COMPILED=true\n'
   ${QUIET:-false} || main::init
@@ -79,6 +80,7 @@ main::create () {
   if ${main__create__compress:-false}; then
     local launcher="#!/bin/bash"$'\n'
     launcher+="POTION_PAYLOAD='$(echo "${output}" | gzip -9 | base64)'"$'\n'
+    # shellcheck disable=SC2016
     launcher+='exec bash < <(echo "$POTION_PAYLOAD" | base64 -d | gzip -d)'
     launcher+=$'\n'
     output="$launcher"
