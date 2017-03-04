@@ -1478,6 +1478,78 @@ mount::absent () {
     return 1
   fi
 }
+#!/bin/bash
+# mod: artifact
+# txt: The `artifact` module contains function to access to artifacts. An
+#      artifact is a file embedded in potion compiled object, usually you
+#      want to set some configuration files as artifacts.
+
+# fun: artifact::hmac <artifact_name>
+# txt: print to stdout the HMAC of the artifact passed as argument.
+# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
+#      sha1, md5, sha256, sha512. The proper helper tool must be installed
+#      on the system.
+artifact::hmac () {
+  if artifact::exists "$1"; then
+    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
+  else
+    err::trace "Missing artifact while calculating HMAC: $1"
+  fi
+}
+
+# fun: artifact::extract
+# txt: extract artifacts if artifact support is enabled.
+artifact::extract () {
+  [ "$POTION_ARTIFACTS" ] || return 0
+  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
+
+  mutex::adquire _artifacts
+  tmp::create _artifacts
+  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
+    err::trace "Unable to extract artifacts"
+  touch "${BLIB_TMPDIR}/.artifacts"
+  tmp::exit
+  mutex::release _artifacts
+}
+
+# fun: artifact::exists <artifact_name>
+# txt: return true if the artifact exists, false otherwise.
+artifact::exists () {
+  artifact::extract
+  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
+}
+
+# fun: artifact::read <artifact_name>
+# txt: read a specific artifact from potion.
+artifact::read () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  cat "${BLIB_TMPDIR}/_artifacts/$1"
+}
+
+
+# fun: artifact::eval <artifact_name>
+# txt: read and eval specific artifact from potion.
+artifact::eval () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  local content
+
+  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
+  eval echo -n \""${content//\"/\\\"}"\"
+}
+
+# fun: artifacts::build <directory>
+# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
+#      variable to stdout with the encoded version of the artifacts.
+artifact::build () {
+  local artifacts
+  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
+  echo "POTION_ARTIFACTS='${artifacts}'"
+  echo
+}
 #! /bin/bash
 # mod: debug
 # api: blib
@@ -1713,9 +1785,6 @@ out::user () { out::log "$1" "${COLOR_USER}user${COLOR_NONE}"; }
 # api: blib
 # txt: The `std` module contains a numer of standard functions usefull to
 #      progamming in bash.
-# env: BLIB_VERSION: Contains the current blib version.
-
-BLIB_VERSION="1.0.1"
 
 # fun: std::quit
 # api: blib
@@ -1814,7 +1883,7 @@ std::arch () {
 # env: TZ: the timezone to use to print the timestamp, by default get the
 #      timezone from the system.
 std::timestamp () {
-  date +%s
+  printf "%(%s)T\n"
 }
 
 # fun: std::parse <arg_string>
@@ -2357,78 +2426,7 @@ tmp::file () {
 tmp::touch () {
   mkdir -p "${BLIB_TMPDIR}" && : > "${BLIB_TMPDIR}/$1"
 }
-#!/bin/bash
-# mod: artifact
-# txt: The `artifact` module contains function to access to artifacts. An
-#      artifact is a file embedded in potion compiled object, usually you
-#      want to set some configuration files as artifacts.
-
-# fun: artifact::hmac <artifact_name>
-# txt: print to stdout the HMAC of the artifact passed as argument.
-# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
-#      sha1, md5, sha256, sha512. The proper helper tool must be installed
-#      on the system.
-artifact::hmac () {
-  if artifact::exists "$1"; then
-    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
-  else
-    err::trace "Missing artifact while calculating HMAC: $1"
-  fi
-}
-
-# fun: artifact::extract
-# txt: extract artifacts if artifact support is enabled.
-artifact::extract () {
-  [ "$POTION_ARTIFACTS" ] || return 0
-  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
-
-  mutex::adquire _artifacts
-  tmp::create _artifacts
-  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
-    err::trace "Unable to extract artifacts"
-  touch "${BLIB_TMPDIR}/.artifacts"
-  tmp::exit
-  mutex::release _artifacts
-}
-
-# fun: artifact::exists <artifact_name>
-# txt: return true if the artifact exists, false otherwise.
-artifact::exists () {
-  artifact::extract
-  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
-}
-
-# fun: artifact::read <artifact_name>
-# txt: read a specific artifact from potion.
-artifact::read () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  cat "${BLIB_TMPDIR}/_artifacts/$1"
-}
-
-
-# fun: artifact::eval <artifact_name>
-# txt: read and eval specific artifact from potion.
-artifact::eval () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  local content
-
-  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
-  eval echo -n \""${content//\"/\\\"}"\"
-}
-
-# fun: artifacts::build <directory>
-# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
-#      variable to stdout with the encoded version of the artifacts.
-artifact::build () {
-  local artifacts
-  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
-  echo "POTION_ARTIFACTS='${artifacts}'"
-  echo
-}
+BLIB_VERSION='1.0.1'
 #! /bin/bash
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
