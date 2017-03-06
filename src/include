@@ -3,7 +3,27 @@
 # txt: The `include` module allows you to include other potions from remote
 #      sites.
 
+# fun: include <url>
+# api: potion
+# txt: include a potion from URL, git repo or file.
 include ()
 {
-  curl::source "$1"
+  local url=
+  case "$1" in
+    git://*|ssh+git://*)
+      url="${1/ssh+git:/ssh:}"
+      tmp::create origin
+      out::info $"Cloning remote potion spells from: ${url}..."
+      std::mute git clone --depth 1 "$url" . ||
+        err::trace $"Unable to clone repository: $url"
+      [[ -r ./init.potion ]] ||
+        err::trace $"Cloned repository does not provide init.potion file"
+      curl::source ./init.potion ||
+        err::trace $"Unable to load init.potion file"
+      tmp::exit
+      ;;
+    *)
+      curl::source "$1"
+      ;;
+  esac
 }

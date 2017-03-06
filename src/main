@@ -108,7 +108,7 @@ main::run () {
     out::user "loaded secrets from: ${main__run__secrets}"
   fi
   for src in "$@"; do
-    curl::source "$src" || err::trace "Unable to load potion file(s): $src"
+    include "$src" || err::trace "Unable to load potion file(s): $src"
   done
   context::run
 }
