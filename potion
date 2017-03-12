@@ -1129,6 +1129,12 @@ file::_destroy () {
   std::run rm -f "$1"
 }
 
+# private file::_mode <fname>
+file::_mode ()
+{
+  stat -c '%#a' "$1"
+}
+
 # fun: file::present [name=]<name> [options]
 # api: potion
 # txt: ensure that file passed as argument exists.
@@ -1143,12 +1149,17 @@ file::present () {
   local user="${user:-$LOGNAME}"
 
   if ! file::exists "$name" "data=$data"; then
-    file::_create "$name" "${user}:${group}" "${mode:-644}" "$data" &&
+    file::_create "$name" "${user}:${group}" "${mode:-0644}" "$data" &&
       res::created file \
         "name=$name user=${user} group=${group} mode=${mode:-0644}" ||
       err::trace "Unable to create file: $name"
-  else
-    return 1
+  elif [[ "$(file::_mode "$name")" -ne "${mode:-0644}" ]]; then
+    if std::run chmod "${mode:-0644}" "$name"; then
+      res::created file \
+        "name=$name user=${user} group=${group} mode=${mode:-0644}"
+    else
+      err::trace "Unable to re-set permissions to file: $name"
+    fi
   fi
 }
 
