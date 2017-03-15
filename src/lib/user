@@ -100,7 +100,7 @@ user::present () {
 # txt: destroy username if exists
 # opt: keepdata: if true do not remove user data.
 user::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if user::exists "$name"; then
     USER_KEEPDATA="${data}" \
     user::_destroy "$name" &&

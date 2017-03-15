@@ -7,7 +7,8 @@
 
 # private srv::sysinit
 srv::_sysinit () {
-  local si="$(cache::get _sysinit)"
+  local si
+  si="$(cache::get _sysinit)"
   [ "$si" ] && echo "$si" && return 0
 
   if std::mute os::path systemctl; then
@@ -28,11 +29,12 @@ srv::_sysinit () {
 # api: potion
 # txt: return true if the specific service is present in the system.
 srv::exists () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::exists::_${si}; then
-    srv::exists::_${si} "$name"
+  if std::func "srv::exists::_${si}"; then
+    "srv::exists::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -42,11 +44,12 @@ srv::exists () {
 # api: potion
 # txt: ensure that specified service is installed on the system.
 srv::present () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::present::_${si}; then
-    srv::present::_${si} "$name"
+  if std::func "srv::present::_${si}"; then
+    "srv::present::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -56,11 +59,12 @@ srv::present () {
 # api: potion
 # txt: ensure that specified service is not present on the system.
 srv::absent () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::absent::_${si}; then
-    srv::absent::_${si} "$name"
+  if std::func "srv::absent::_${si}"; then
+    "srv::absent::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -68,11 +72,12 @@ srv::absent () {
 
 # internal srv::refresh
 srv::refresh () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::refresh::_${si}; then
-    srv::refresh::_${si} "$name"
+  if std::func "srv::refresh::_${si}"; then
+    "srv::refresh::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi

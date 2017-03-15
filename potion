@@ -155,8 +155,9 @@ include ()
 # api: potion
 # txt: return true if the FQDN of the node is equal to specified one.
 host::exists () {
-  eval $(std::parse "$@")
-  local host="$(hostname -f 2>/dev/null)"
+  local host name
+  eval "$(std::parse "$@")"
+  host="$(hostname -f 2>/dev/null)"
   [ "$host" == "$name" ]
 }
 
@@ -171,8 +172,9 @@ host::_create () {
 
 # private host::_destroy <hostname>
 host::_destroy () {
+  local host
   if ! ${PRETEND:-false}; then
-    local hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
+    hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
     echo > /etc/hostname
     echo "$hosts" > /etc/hosts
     hostname ''
@@ -183,11 +185,13 @@ host::_destroy () {
 # api: potion
 # txt: ensure than the node has the specified hostname.
 host::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if ! host::exists "$name"; then
-    host::_create "$name" &&
-      res::created host "$name" ||
+    if host::_create "$name"; then
+      res::created host "$name"
+    else
       err::trace "Unable to create host to: $1"
+    fi
   else
     return 1
   fi
@@ -197,11 +201,13 @@ host::present () {
 # api: potion
 # txt: ensure than the node has not the specified hostname.
 host::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if host::exists "$name"; then
-    host::_destroy "$name" &&
-      res::deleted host "$name" ||
+    if host::_destroy "$name"; then
+      res::deleted host "$name"
+    else
       err::trace "Unable to destroy host: $1"
+    fi
   else
     return 1
   fi
@@ -218,7 +224,8 @@ host::absent () {
 # txt: return true or false if the specific groupname exists or not,
 #      respectively.
 group::exists () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   std::mute grep "^$name" /etc/group
 }
 
@@ -227,10 +234,10 @@ group::exists () {
 # GROUP_SYSTEM: if true create system group (false by default).
 # GROUP_GID: if set, try to use as GID for the group.
 group::_create () {
-  local ua_opts=""
-  local ua_opts+="${GROUP_SYSTEM:+-r }"
-  local ua_opts+="${GROUP_GID:+-g ${GROUP_GID} }"
-  std::run groupadd $ua_opts "$1"
+  local -a ua_opts=()
+  ua_opts+=( "${GROUP_SYSTEM:+-r }" )
+  ua_opts+=( "${GROUP_GID:+-g ${GROUP_GID} }" )
+  std::run groupadd "${ua_opts[@]}" "$1"
 }
 
 # private group::_destroy <groupname>
@@ -247,8 +254,10 @@ group::_destroy () {
 # opt: system: if true create a system group.
 # opt: gid: the GID of the new group
 group::present () {
-  eval $(std::parse "$@")
+  local system gid
+  eval "$(std::parse "$@")"
   if ! group::exists "$name"; then
+    # shellcheck disable=SC2015
     GROUP_SYSTEM="${system}" \
     GROUP_GID="${gid}" \
     group::_create "$name" &&
@@ -263,11 +272,13 @@ group::present () {
 # api: potion
 # txt: destroy groupname if exists
 group::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if group::exists "$name"; then
-    group::_destroy "$name" &&
-      res::deleted group "$name" ||
+    if group::_destroy "$name"; then
+      res::deleted group "$name"
+    else
       err:trace "Unable to destroy group: $name"
+    fi
   else
     return 1
   fi
@@ -287,11 +298,12 @@ TZ_DIR="/usr/share/zoneinfo"
 # txt: if timezone especified in argument is set return true, otherwise
 #      return false.
 tz::exists () {
+  local current decided name
   [ -r /etc/localtime ] || return 1
 
-  eval $(std::parse "$@")
-  local current="$(file::_hmac file:///etc/localtime)"
-  local decided="$(file::_hmac file:///usr/share/zoneinfo/$name)"
+  eval "$(std::parse "$@")"
+  current="$(file::_hmac file:///etc/localtime)"
+  decided="$(file::_hmac "file:///usr/share/zoneinfo/$name")"
 
   [ "$current" == "$decided" ]  
 }
@@ -300,12 +312,14 @@ tz::exists () {
 # api: potion
 # txt: ensure that specified timezone is set.
 tz::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
 
   if ! tz::exists "$name"; then
-    std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime &&
-      res::created tz "$name" ||
+    if std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime; then
+      res::created tz "$name"
+    else
       err::trace "Unable to create tz: $name"
+    fi
   else
     return 1
   fi
@@ -315,12 +329,14 @@ tz::present () {
 # api: potion
 # txt: ensure that the specified timezone is not set.
 tz::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
 
   if tz::exists "$name"; then
-    std::mute std::run rm -f /etc/localtime &&
-      res::deleted tz "$name" ||
+    if std::mute std::run rm -f /etc/localtime; then
+      res::deleted tz "$name"
+    else
       err::trace "Unable to destroy tz: $name"
+    fi
   else
     return 1
   fi
@@ -334,7 +350,8 @@ tz::absent () {
 
 # private srv::sysinit
 srv::_sysinit () {
-  local si="$(cache::get _sysinit)"
+  local si
+  si="$(cache::get _sysinit)"
   [ "$si" ] && echo "$si" && return 0
 
   if std::mute os::path systemctl; then
@@ -355,11 +372,12 @@ srv::_sysinit () {
 # api: potion
 # txt: return true if the specific service is present in the system.
 srv::exists () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::exists::_${si}; then
-    srv::exists::_${si} "$name"
+  if std::func "srv::exists::_${si}"; then
+    "srv::exists::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -369,11 +387,12 @@ srv::exists () {
 # api: potion
 # txt: ensure that specified service is installed on the system.
 srv::present () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::present::_${si}; then
-    srv::present::_${si} "$name"
+  if std::func "srv::present::_${si}"; then
+    "srv::present::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -383,11 +402,12 @@ srv::present () {
 # api: potion
 # txt: ensure that specified service is not present on the system.
 srv::absent () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::absent::_${si}; then
-    srv::absent::_${si} "$name"
+  if std::func "srv::absent::_${si}"; then
+    "srv::absent::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -395,11 +415,12 @@ srv::absent () {
 
 # internal srv::refresh
 srv::refresh () {
-  eval $(std::parse "$@")
-  local si="$(srv::_sysinit)"
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
 
-  if std::func srv::refresh::_${si}; then
-    srv::refresh::_${si} "$name"
+  if std::func "srv::refresh::_${si}"; then
+    "srv::refresh::_${si}" "$name"
   else
     err::trace "Potion does not support '$si' service control... yet"
   fi
@@ -448,6 +469,8 @@ srv::destroy::_systemd () {
 
 # private srv::refresh::_systemd
 srv::refresh::_systemd () {
+  std::mute std::run systemctl daemon-reload ||
+    err::trace "Unable to reload system"
   std::mute std::run systemctl restart "$1" ||
     err::trace "Unable to refresh service: $1"
 }
@@ -512,14 +535,18 @@ srv::refresh::_upstart () {
 # api: potion
 # txt: return true if swap is enabled
 swap::exists () {
-  read _ swap _ < <(free | grep '^Swap:')
+  read -r _ swap _ < <(free | grep '^Swap:')
   [ "$swap" != "0" ]
 }
 
 
 # private swap::_create <device|file> <size>
 swap::_create () {
-  [ -b "$1" ] && local isdevice=true || local isdevice=false
+  if [ -b "$1" ]; then
+    local isdevice=true
+  else
+    local isdevice=false
+  fi
 
   if ${SWAP_FORMAT:-false}; then
     if ${isdevice:-false}; then
@@ -527,8 +554,9 @@ swap::_create () {
         std::mute mkswap "$1" ||
         err::trace "Unable to make swap for device: $1"
     else
+      # shellcheck disable=SC2015
       [ -r "$1" ] ||
-        std::mute std::run dd if=/dev/zero of=$1 count=$2 bs=1M &&
+        std::mute std::run dd if=/dev/zero "of=$1" "count=$2" bs=1M &&
           std::mute std::run mkswap "$1" && std::run chmod 0660 "$1" ||
           err::trace "Unable to make swap for file: $1"
     fi
@@ -549,9 +577,11 @@ swap::_destroy () {
 # opt: size: the size required if swap file is created
 # opt: format: if true, format swap space.
 swap::present () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   if ! swap::exists; then
-    SWAP_FORMAT=${format:-false} swap::_create "$name" ${size:-0} &&
+    # shellcheck disable=SC2015
+    SWAP_FORMAT=${format:-false} swap::_create "$name" "${size:-0}" &&
       res::created swap "$name" "size=$size" ||
       err::trace "Unable to create swap: $name"
   else
@@ -564,11 +594,13 @@ swap::present () {
 # txt: ensure that specified device is not enabled for swap
 # opt: name: the device use as swap space.
 swap::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if swap::exists; then
-    swap::_destroy "$name" &&
-      res::deleted "$name" ||
+    if swap::_destroy "$name"; then
+      res::deleted "$name"
+    else
       err::trace "Unable to destroy swap: $1"
+    fi
   else
     return 1
   fi
@@ -648,25 +680,33 @@ pkg::_destroy::ubuntu () {
 # api: potion
 # txt: return true if device is set in fstab
 fstab::exists () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   std::mute grep -q "^$name" /etc/fstab
 }
 
 # private fstab::_create <device> <mntpoint> <type> [options] [dump] [pass]
 fstab::_create () {
-  eval $(std::parse "$@")
+  local mount
+  eval "$(std::parse "$@")"
   [ "$mount" ] || err::trace "fstab require mount parameter"
   ${PRETEND:-false} || 
     echo "$name $mount ${fstype:-auto} ${opts:-defaults}" \
          "${dump:-1} ${pass:-2}" >> /etc/fstab
 
-  ${FSTAB_REMOUNT:-false} && std::run mount -oremount,${opts} "$mount" || true
-  ${FSTAB_MOUNT:-false} && std::run mount "$mount" || true
+  if ${FSTAB_REMOUNT:-false}; then
+    std::run mount "-oremount,${opts}" "$mount"
+  fi
+
+  if ${FSTAB_MOUNT:-false}; then
+    std::run mount "$mount"
+  fi
 }
 
 # private fstab::_destroy <device>
 fstab::_destroy () {
-  local fstab="$(grep -v "^$1" /etc/fstab)"
+  local fstab
+  fstab="$(grep -v "^$1" /etc/fstab)"
   ${PRETEND:-false} || echo "$fstab" > /etc/fstab
 }
 
@@ -681,11 +721,13 @@ fstab::_destroy () {
 # opt: pass: the pass number (default 1)
 # opt: remount: if true remount device when added to fstab
 fstab::present () {
+  local remount
   if ! fstab::exists "$@"; then
+    # shellcheck disable=SC2015
     FSTAB_REMOUNT="$remount" \
       fstab::_create "$@" &&
         res::created fstab "$@" ||
-        err::trace "Unable to create fstab for device: $@"
+        err::trace "Unable to create fstab for device: $*"
   else
     return 1
   fi
@@ -695,11 +737,13 @@ fstab::present () {
 # api: potion
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if fstab::exists "$name"; then
-    fstab::_destroy "$name" &&
-      res::deleted fstab "device=$name" ||
+    if fstab::_destroy "$name"; then
+      res::deleted fstab "device=$name"
+    else
       err::trace "Unable to destroy fstab for device: $1"
+    fi
   else
     return 1
   fi
@@ -732,12 +776,15 @@ dir::_destroy () {
 # opt: user: the user owner the directory (root by default).
 # opt: group: the group owner the directory (root by default)
 dir::present () {
-  eval $(std::parse "$@")
+  local name user group mode
+  eval "$(std::parse "$@")"
   if ! dir::exists "$name"; then
-    dir::_create "$name" "${user:-0}:${group:-0}" "${mode:-755}" &&
+    if dir::_create "$name" "${user:-0}:${group:-0}" "${mode:-755}"; then
       res::created dir "name=$name user=${user:-0} " \
-        "group=${group:-0} mode=${mode:-755}" ||
+        "group=${group:-0} mode=${mode:-755}"
+    else
       err::trace "Unable to create dir: $name"
+    fi
   else
     return 1
   fi
@@ -749,11 +796,13 @@ dir::present () {
 #      if necessary.
 # opt: name: the name of the directory to be removed
 dir::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if dir::exists "$name"; then
-    dir::_destroy "$name" &&
-      res::deleted dir "name=$name" ||
+    if dir::_destroy "$name"; then
+      res::deleted dir "name=$name"
+    else
       err::trace "Unable to destroy dir: $name"
+    fi
   else
     return 1
   fi
@@ -764,7 +813,7 @@ dir::absent () {
 # txt: return true if directory name passed as argument exists, or false
 #      otherwise.
 dir::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   [ -d "$name" ]
 }
 #! /bin/bash
@@ -884,13 +933,14 @@ format::_exists::format () {
 # txt: return true if device exists and it's mounted on mountpoint
 # opt: name: the device name
 format::exists () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   format::_exists::format "$name"
 }
 
 # private format::_create::format <device> [fstype]
 format::_create::format () {
-  std::run mkfs.${2:-ext4} "$1" ||
+  std::run "mkfs.${2:-ext4}" "$1" ||
     err::trace "Unable to format format: $1"
 
 }
@@ -907,12 +957,15 @@ format::_create::mount () {
 # opt: name: the device to be initialized
 # opt: fstype: the filesystem type to format the device
 format::present () {
-  eval $(std::parse "$@")
+  local name fstype
+  eval "$(std::parse "$@")"
 
   if ! format::_exists::format "$name"; then
-    format::_create::format "$name" ${fstype} &&
-      res::created format "name=$name fstype=$fstype" ||
+    if format::_create::format "$name" "${fstype}"; then
+      res::created format "name=$name fstype=$fstype"
+    else
       err::trace "Unable to format format: $name"
+    fi
   else
     return 1
   fi
@@ -922,7 +975,7 @@ format::present () {
 # api: potion
 # txt: ensure that specific device is not formatted.
 format::absent () {
-  out::warn "To avoid data loss format::absent do nothing for device $@"
+  out::warn "To avoid data loss format::absent do nothing for device $*"
 }
 
 #! /bin/bash
@@ -936,11 +989,12 @@ format::absent () {
 # api: potion
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
-  eval $(std::parse "$@")
-  local os="$(os::provider)"
+  local os name
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
 
-  if std::func pkg::_exists::${os}; then
-    pkg::_exists::${os} "$name"
+  if std::func "pkg::_exists::${os}"; then
+    "pkg::_exists::${os}" "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
@@ -951,11 +1005,12 @@ pkg::exists () {
 # api: potion
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
-  eval $(std::parse "$@")
-  local os="$(os::provider)"
+  local os name
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
 
-  if std::func pkg::_present::${os}; then
-    pkg::_present::${os} "$name"
+  if std::func "pkg::_present::${os}"; then
+    "pkg::_present::${os}" "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
@@ -966,11 +1021,12 @@ pkg::present () {
 # api: potion
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
-  eval $(std::parse "$@")
-  local os="$(os::provider)"
+  local os
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
 
-  if std::func pkg::_absent::${os}; then
-    pkg::_absent::${os} "$name"
+  if std::func "pkg::_absent::${os}"; then
+    "pkg::_absent::${os}" "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
@@ -988,8 +1044,10 @@ pkg::absent () {
 # txt: returnt true if the specified link exists and point to source.
 # opt: target: the target where link points to
 link::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
+  # shellcheck disable=2154
   [ "$target" ] || err::trace "Link::exists require parameter target"
+  # shellcheck disable=2154
   [ -L "$name" ] && [ "$(readlink "$name")" == "$target" ]
 }
 
@@ -1009,10 +1067,12 @@ link::_destroy () {
 # opt: target: the target where link points to
 link::present () {
   if ! link::exists "$@"; then
-    eval $(std::parse "$@")
-    link::_create "$name" "$target" &&
-      res::created link "$name" "target=$target" ||
+    eval "$(std::parse "$@")"
+    if link::_create "$name" "$target"; then
+      res::created link "$name" "target=$target"
+    else
       err::trace "Unable to create link: $name ($target)"
+    fi
   else
     return 1
   fi
@@ -1024,11 +1084,13 @@ link::present () {
 #      specified source.
 # opt: target: the target where link points to
 link::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if link::exists "$@"; then
-    link::_destroy "$name" "$target" &&
-      res::deleted link "$name" "target=$target" ||
+    if link::_destroy "$name" "$target"; then
+      res::deleted link "$name" "target=$target"
+    else
       err::trace "Unable to destroy link: $name ($target)"
+    fi
   else
     return 1
   fi
@@ -1102,7 +1164,7 @@ file::_data () {
 # opt: name: the filename to check for.
 # opt: data: the content URL
 file::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
 
   [ -r "$name" ] || return 1
 
@@ -1135,6 +1197,18 @@ file::_mode ()
   stat -c '%#a' "$1"
 }
 
+# private file::_owner <fname>
+file::_owner ()
+{
+  stat -c '%U' "$1"
+}
+
+# private file::_group <fname>
+file::_group ()
+{
+  stat -c '%G' "$1"
+}
+
 # fun: file::present [name=]<name> [options]
 # api: potion
 # txt: ensure that file passed as argument exists.
@@ -1144,22 +1218,48 @@ file::_mode ()
 # opt: mode: the octal mode of the file
 # opt: data: the content url
 file::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local group="${group:-$LOGNAME}"
   local user="${user:-$LOGNAME}"
 
   if ! file::exists "$name" "data=$data"; then
-    file::_create "$name" "${user}:${group}" "${mode:-0644}" "$data" &&
-      res::created file \
-        "name=$name user=${user} group=${group} mode=${mode:-0644}" ||
-      err::trace "Unable to create file: $name"
-  elif [[ "$(file::_mode "$name")" -ne "${mode:-0644}" ]]; then
-    if std::run chmod "${mode:-0644}" "$name"; then
+    if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$data"
+    then
       res::created file \
         "name=$name user=${user} group=${group} mode=${mode:-0644}"
     else
-      err::trace "Unable to re-set permissions to file: $name"
+      err::trace "Unable to create file: $name"
     fi
+  else
+    local ret=1
+    if [[ "$(file::_mode "$name")" -ne "${mode:-0644}" ]]; then
+      if std::run chmod "${mode:-0644}" "$name"; then
+        res::created file "name=$name mode=${mode:-0644}"
+        ret=0
+      else
+        err::trace "Unable to re-set permissions to file: $name"
+      fi
+    fi
+
+    if [[ "$(file::_owner "$name")" != "${user}" ]]; then
+      if std::run chown "${user}" "$name"; then
+        res::created file "name=$name user=${user}"
+        ret=0
+      else
+        err::trace "Unable to re-set owner to file: $name"
+      fi
+    fi
+
+    if [[ "$(file::_group "$name")" != "${group}" ]]; then
+      if std::run chown "${group}" "$name"; then
+        res::created file "name=$name group=${group}"
+        ret=0
+      else
+        err::trace "Unable to re-set group to file: $name"
+      fi
+    fi
+
+    return "$ret"
   fi
 }
 
@@ -1168,7 +1268,7 @@ file::present () {
 # txt: ensure that file passed as argument does not exist.
 # opt: data: the content url (only removes the file if data is the same).
 file::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if file::exists "$name" "data=$data"; then
     file::_destroy "$name" &&
       res::deleted file "name=$name" ||
@@ -1201,7 +1301,7 @@ sudo::_syntax () {
 # opt: name: the username to check permissions
 # opt: grant: the permissions to granted to the user.
 sudo::user::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   std::mute grep "^$name $grant$" "${SUDOERS_DIR}/20_user_$name"
 }
 
@@ -1236,7 +1336,7 @@ sudo::user::_destroy () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::user::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if ! sudo::user::exists "$name" "grant=$grant"; then
@@ -1255,7 +1355,7 @@ sudo::user::present () {
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
 sudo::user::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if sudo::user::exists "$1" "grant=$grant"; then
@@ -1273,7 +1373,7 @@ sudo::user::absent () {
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
 sudo::group::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   std::mute grep "^%$name $grant$" "${SUDOERS_DIR}/20_group_$name"
 }
 
@@ -1308,7 +1408,7 @@ sudo::group::_destroy () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::group::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if ! sudo::group::exists "$name" "$grant"; then
@@ -1328,7 +1428,7 @@ sudo::group::present () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::group::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if sudo::group::exists "$name" "$grant"; then
@@ -1441,7 +1541,7 @@ user::present () {
 # txt: destroy username if exists
 # opt: keepdata: if true do not remove user data.
 user::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if user::exists "$name"; then
     USER_KEEPDATA="${data}" \
     user::_destroy "$name" &&
@@ -1464,7 +1564,7 @@ user::absent () {
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
 mount::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   while read _dev _ _mnt _ _fstype _; do
     [ "$_mnt" == "${name}" ] && return 0
   done < <(mount)
@@ -1472,13 +1572,13 @@ mount::exists () {
 }
 
 mount::_create () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   mount_opt="${fstype:+-t $fstype}"
   std::run mount ${mount_opt} ${device} "${name}"
 }
 
 mount::_destroy () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   std::run umount "$name"
 }
 
@@ -2544,6 +2644,7 @@ main::create () {
     output+="$(<"$template")"$'\n'
     out::info "dumping template: $template"
   done
+  output+=$'\nmeta::polulate\n'
   output+=$'\ncontext::run\n'
   if ${main__create__compress:-false}; then
     local launcher="#!/bin/bash"$'\n'
@@ -2578,6 +2679,7 @@ main::run () {
   for src in "$@"; do
     include "$src" || err::trace "Unable to load potion file(s): $src"
   done
+  meta::populate
   context::run
 }
 
@@ -2641,8 +2743,7 @@ secret::load () {
 # txt: add new secret with specified content associated with key passed as
 #      argument.
 secret::add () {
-  # shellcheck disable=SC2046
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   # shellcheck disable=2154
   _secrets["$name"]="$content"
 }
@@ -2651,6 +2752,36 @@ secret::add () {
 # txt: return the secret text associated with specified name
 secret () {
   echo "${_secrets["$1"]}"
+}
+#! /bin/bash
+# mod: meta
+# txt: This internal module provides information about metadata
+
+declare -A POTION_METADATA=()
+
+# fun: meta::get <key>
+# txt: get the current value of key
+meta::get ()
+{
+  echo "${POTION_METADATA["$1"]}"
+}
+
+# fun: meta::set <key> <value>
+# txt: add new value to the metadata
+meta::set ()
+{
+  POTION_METADATA["$1"]="$2"
+}
+
+# fun: meta::polulate
+# txt: poplulate metadata values from the system
+meta::populate ()
+{
+  meta::set "core.processors" "$(getconf _NPROCESSORS_ONLN)"
+  meta::set "core.hostname" "$(hostname)"
+  meta::set "core.fqdn" "$(hostname -f)"
+
+  out::user "loaded metadata: ${#POTION_METADATA[@]} variables loaded"
 }
 #! /bin/bash
 # mod: refresh

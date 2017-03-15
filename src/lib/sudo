@@ -22,7 +22,7 @@ sudo::_syntax () {
 # opt: name: the username to check permissions
 # opt: grant: the permissions to granted to the user.
 sudo::user::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   std::mute grep "^$name $grant$" "${SUDOERS_DIR}/20_user_$name"
 }
 
@@ -57,7 +57,7 @@ sudo::user::_destroy () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::user::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if ! sudo::user::exists "$name" "grant=$grant"; then
@@ -76,7 +76,7 @@ sudo::user::present () {
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
 sudo::user::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if sudo::user::exists "$1" "grant=$grant"; then
@@ -94,7 +94,7 @@ sudo::user::absent () {
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
 sudo::group::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   std::mute grep "^%$name $grant$" "${SUDOERS_DIR}/20_group_$name"
 }
 
@@ -129,7 +129,7 @@ sudo::group::_destroy () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::group::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if ! sudo::group::exists "$name" "$grant"; then
@@ -149,7 +149,7 @@ sudo::group::present () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::group::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if sudo::group::exists "$name" "$grant"; then

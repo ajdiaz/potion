@@ -9,11 +9,12 @@
 # api: potion
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
-  eval $(std::parse "$@")
-  local os="$(os::provider)"
+  local os name
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
 
-  if std::func pkg::_exists::${os}; then
-    pkg::_exists::${os} "$name"
+  if std::func "pkg::_exists::${os}"; then
+    "pkg::_exists::${os}" "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
@@ -24,11 +25,12 @@ pkg::exists () {
 # api: potion
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
-  eval $(std::parse "$@")
-  local os="$(os::provider)"
+  local os name
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
 
-  if std::func pkg::_present::${os}; then
-    pkg::_present::${os} "$name"
+  if std::func "pkg::_present::${os}"; then
+    "pkg::_present::${os}" "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"
@@ -39,11 +41,12 @@ pkg::present () {
 # api: potion
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
-  eval $(std::parse "$@")
-  local os="$(os::provider)"
+  local os
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
 
-  if std::func pkg::_absent::${os}; then
-    pkg::_absent::${os} "$name"
+  if std::func "pkg::_absent::${os}"; then
+    "pkg::_absent::${os}" "$name"
     return $?
   else
     err::trace "Potion does not support '$os' operating system... yet"

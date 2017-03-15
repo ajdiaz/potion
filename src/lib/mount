@@ -11,7 +11,7 @@
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
 mount::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   while read _dev _ _mnt _ _fstype _; do
     [ "$_mnt" == "${name}" ] && return 0
   done < <(mount)
@@ -19,13 +19,13 @@ mount::exists () {
 }
 
 mount::_create () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   mount_opt="${fstype:+-t $fstype}"
   std::run mount ${mount_opt} ${device} "${name}"
 }
 
 mount::_destroy () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   std::run umount "$name"
 }
 

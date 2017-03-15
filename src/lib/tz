@@ -13,11 +13,12 @@ TZ_DIR="/usr/share/zoneinfo"
 # txt: if timezone especified in argument is set return true, otherwise
 #      return false.
 tz::exists () {
+  local current decided name
   [ -r /etc/localtime ] || return 1
 
-  eval $(std::parse "$@")
-  local current="$(file::_hmac file:///etc/localtime)"
-  local decided="$(file::_hmac file:///usr/share/zoneinfo/$name)"
+  eval "$(std::parse "$@")"
+  current="$(file::_hmac file:///etc/localtime)"
+  decided="$(file::_hmac "file:///usr/share/zoneinfo/$name")"
 
   [ "$current" == "$decided" ]  
 }
@@ -26,12 +27,14 @@ tz::exists () {
 # api: potion
 # txt: ensure that specified timezone is set.
 tz::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
 
   if ! tz::exists "$name"; then
-    std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime &&
-      res::created tz "$name" ||
+    if std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime; then
+      res::created tz "$name"
+    else
       err::trace "Unable to create tz: $name"
+    fi
   else
     return 1
   fi
@@ -41,12 +44,14 @@ tz::present () {
 # api: potion
 # txt: ensure that the specified timezone is not set.
 tz::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
 
   if tz::exists "$name"; then
-    std::mute std::run rm -f /etc/localtime &&
-      res::deleted tz "$name" ||
+    if std::mute std::run rm -f /etc/localtime; then
+      res::deleted tz "$name"
+    else
       err::trace "Unable to destroy tz: $name"
+    fi
   else
     return 1
   fi

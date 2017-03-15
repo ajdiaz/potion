@@ -42,6 +42,8 @@ srv::destroy::_systemd () {
 
 # private srv::refresh::_systemd
 srv::refresh::_systemd () {
+  std::mute std::run systemctl daemon-reload ||
+    err::trace "Unable to reload system"
   std::mute std::run systemctl restart "$1" ||
     err::trace "Unable to refresh service: $1"
 }

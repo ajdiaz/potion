@@ -76,6 +76,7 @@ main::create () {
     output+="$(<"$template")"$'\n'
     out::info "dumping template: $template"
   done
+  output+=$'\nmeta::polulate\n'
   output+=$'\ncontext::run\n'
   if ${main__create__compress:-false}; then
     local launcher="#!/bin/bash"$'\n'
@@ -110,6 +111,7 @@ main::run () {
   for src in "$@"; do
     include "$src" || err::trace "Unable to load potion file(s): $src"
   done
+  meta::populate
   context::run
 }
 

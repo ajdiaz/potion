@@ -12,14 +12,18 @@
 # api: potion
 # txt: return true if swap is enabled
 swap::exists () {
-  read _ swap _ < <(free | grep '^Swap:')
+  read -r _ swap _ < <(free | grep '^Swap:')
   [ "$swap" != "0" ]
 }
 
 
 # private swap::_create <device|file> <size>
 swap::_create () {
-  [ -b "$1" ] && local isdevice=true || local isdevice=false
+  if [ -b "$1" ]; then
+    local isdevice=true
+  else
+    local isdevice=false
+  fi
 
   if ${SWAP_FORMAT:-false}; then
     if ${isdevice:-false}; then
@@ -27,8 +31,9 @@ swap::_create () {
         std::mute mkswap "$1" ||
         err::trace "Unable to make swap for device: $1"
     else
+      # shellcheck disable=SC2015
       [ -r "$1" ] ||
-        std::mute std::run dd if=/dev/zero of=$1 count=$2 bs=1M &&
+        std::mute std::run dd if=/dev/zero "of=$1" "count=$2" bs=1M &&
           std::mute std::run mkswap "$1" && std::run chmod 0660 "$1" ||
           err::trace "Unable to make swap for file: $1"
     fi
@@ -49,9 +54,11 @@ swap::_destroy () {
 # opt: size: the size required if swap file is created
 # opt: format: if true, format swap space.
 swap::present () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   if ! swap::exists; then
-    SWAP_FORMAT=${format:-false} swap::_create "$name" ${size:-0} &&
+    # shellcheck disable=SC2015
+    SWAP_FORMAT=${format:-false} swap::_create "$name" "${size:-0}" &&
       res::created swap "$name" "size=$size" ||
       err::trace "Unable to create swap: $name"
   else
@@ -64,11 +71,13 @@ swap::present () {
 # txt: ensure that specified device is not enabled for swap
 # opt: name: the device use as swap space.
 swap::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if swap::exists; then
-    swap::_destroy "$name" &&
-      res::deleted "$name" ||
+    if swap::_destroy "$name"; then
+      res::deleted "$name"
+    else
       err::trace "Unable to destroy swap: $1"
+    fi
   else
     return 1
   fi

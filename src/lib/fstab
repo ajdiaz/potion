@@ -12,25 +12,33 @@
 # api: potion
 # txt: return true if device is set in fstab
 fstab::exists () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   std::mute grep -q "^$name" /etc/fstab
 }
 
 # private fstab::_create <device> <mntpoint> <type> [options] [dump] [pass]
 fstab::_create () {
-  eval $(std::parse "$@")
+  local mount
+  eval "$(std::parse "$@")"
   [ "$mount" ] || err::trace "fstab require mount parameter"
   ${PRETEND:-false} || 
     echo "$name $mount ${fstype:-auto} ${opts:-defaults}" \
          "${dump:-1} ${pass:-2}" >> /etc/fstab
 
-  ${FSTAB_REMOUNT:-false} && std::run mount -oremount,${opts} "$mount" || true
-  ${FSTAB_MOUNT:-false} && std::run mount "$mount" || true
+  if ${FSTAB_REMOUNT:-false}; then
+    std::run mount "-oremount,${opts}" "$mount"
+  fi
+
+  if ${FSTAB_MOUNT:-false}; then
+    std::run mount "$mount"
+  fi
 }
 
 # private fstab::_destroy <device>
 fstab::_destroy () {
-  local fstab="$(grep -v "^$1" /etc/fstab)"
+  local fstab
+  fstab="$(grep -v "^$1" /etc/fstab)"
   ${PRETEND:-false} || echo "$fstab" > /etc/fstab
 }
 
@@ -45,11 +53,13 @@ fstab::_destroy () {
 # opt: pass: the pass number (default 1)
 # opt: remount: if true remount device when added to fstab
 fstab::present () {
+  local remount
   if ! fstab::exists "$@"; then
+    # shellcheck disable=SC2015
     FSTAB_REMOUNT="$remount" \
       fstab::_create "$@" &&
         res::created fstab "$@" ||
-        err::trace "Unable to create fstab for device: $@"
+        err::trace "Unable to create fstab for device: $*"
   else
     return 1
   fi
@@ -59,11 +69,13 @@ fstab::present () {
 # api: potion
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if fstab::exists "$name"; then
-    fstab::_destroy "$name" &&
-      res::deleted fstab "device=$name" ||
+    if fstab::_destroy "$name"; then
+      res::deleted fstab "device=$name"
+    else
       err::trace "Unable to destroy fstab for device: $1"
+    fi
   else
     return 1
   fi

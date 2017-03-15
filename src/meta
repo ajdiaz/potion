@@ -1,0 +1,30 @@
+#! /bin/bash
+# mod: meta
+# txt: This internal module provides information about metadata
+
+declare -A POTION_METADATA=()
+
+# fun: meta::get <key>
+# txt: get the current value of key
+meta::get ()
+{
+  echo "${POTION_METADATA["$1"]}"
+}
+
+# fun: meta::set <key> <value>
+# txt: add new value to the metadata
+meta::set ()
+{
+  POTION_METADATA["$1"]="$2"
+}
+
+# fun: meta::polulate
+# txt: poplulate metadata values from the system
+meta::populate ()
+{
+  meta::set "core.processors" "$(getconf _NPROCESSORS_ONLN)"
+  meta::set "core.hostname" "$(hostname)"
+  meta::set "core.fqdn" "$(hostname -f)"
+
+  out::user "loaded metadata: ${#POTION_METADATA[@]} variables loaded"
+}

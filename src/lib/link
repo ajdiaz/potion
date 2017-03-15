@@ -10,8 +10,10 @@
 # txt: returnt true if the specified link exists and point to source.
 # opt: target: the target where link points to
 link::exists () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
+  # shellcheck disable=2154
   [ "$target" ] || err::trace "Link::exists require parameter target"
+  # shellcheck disable=2154
   [ -L "$name" ] && [ "$(readlink "$name")" == "$target" ]
 }
 
@@ -31,10 +33,12 @@ link::_destroy () {
 # opt: target: the target where link points to
 link::present () {
   if ! link::exists "$@"; then
-    eval $(std::parse "$@")
-    link::_create "$name" "$target" &&
-      res::created link "$name" "target=$target" ||
+    eval "$(std::parse "$@")"
+    if link::_create "$name" "$target"; then
+      res::created link "$name" "target=$target"
+    else
       err::trace "Unable to create link: $name ($target)"
+    fi
   else
     return 1
   fi
@@ -46,11 +50,13 @@ link::present () {
 #      specified source.
 # opt: target: the target where link points to
 link::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if link::exists "$@"; then
-    link::_destroy "$name" "$target" &&
-      res::deleted link "$name" "target=$target" ||
+    if link::_destroy "$name" "$target"; then
+      res::deleted link "$name" "target=$target"
+    else
       err::trace "Unable to destroy link: $name ($target)"
+    fi
   else
     return 1
   fi

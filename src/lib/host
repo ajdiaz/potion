@@ -9,8 +9,9 @@
 # api: potion
 # txt: return true if the FQDN of the node is equal to specified one.
 host::exists () {
-  eval $(std::parse "$@")
-  local host="$(hostname -f 2>/dev/null)"
+  local host name
+  eval "$(std::parse "$@")"
+  host="$(hostname -f 2>/dev/null)"
   [ "$host" == "$name" ]
 }
 
@@ -25,8 +26,9 @@ host::_create () {
 
 # private host::_destroy <hostname>
 host::_destroy () {
+  local host
   if ! ${PRETEND:-false}; then
-    local hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
+    hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
     echo > /etc/hostname
     echo "$hosts" > /etc/hosts
     hostname ''
@@ -37,11 +39,13 @@ host::_destroy () {
 # api: potion
 # txt: ensure than the node has the specified hostname.
 host::present () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if ! host::exists "$name"; then
-    host::_create "$name" &&
-      res::created host "$name" ||
+    if host::_create "$name"; then
+      res::created host "$name"
+    else
       err::trace "Unable to create host to: $1"
+    fi
   else
     return 1
   fi
@@ -51,11 +55,13 @@ host::present () {
 # api: potion
 # txt: ensure than the node has not the specified hostname.
 host::absent () {
-  eval $(std::parse "$@")
+  eval "$(std::parse "$@")"
   if host::exists "$name"; then
-    host::_destroy "$name" &&
-      res::deleted host "$name" ||
+    if host::_destroy "$name"; then
+      res::deleted host "$name"
+    else
       err::trace "Unable to destroy host: $1"
+    fi
   else
     return 1
   fi

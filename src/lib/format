@@ -15,13 +15,14 @@ format::_exists::format () {
 # txt: return true if device exists and it's mounted on mountpoint
 # opt: name: the device name
 format::exists () {
-  eval $(std::parse "$@")
+  local name
+  eval "$(std::parse "$@")"
   format::_exists::format "$name"
 }
 
 # private format::_create::format <device> [fstype]
 format::_create::format () {
-  std::run mkfs.${2:-ext4} "$1" ||
+  std::run "mkfs.${2:-ext4}" "$1" ||
     err::trace "Unable to format format: $1"
 
 }
@@ -38,12 +39,15 @@ format::_create::mount () {
 # opt: name: the device to be initialized
 # opt: fstype: the filesystem type to format the device
 format::present () {
-  eval $(std::parse "$@")
+  local name fstype
+  eval "$(std::parse "$@")"
 
   if ! format::_exists::format "$name"; then
-    format::_create::format "$name" ${fstype} &&
-      res::created format "name=$name fstype=$fstype" ||
+    if format::_create::format "$name" "${fstype}"; then
+      res::created format "name=$name fstype=$fstype"
+    else
       err::trace "Unable to format format: $name"
+    fi
   else
     return 1
   fi
@@ -53,6 +57,6 @@ format::present () {
 # api: potion
 # txt: ensure that specific device is not formatted.
 format::absent () {
-  out::warn "To avoid data loss format::absent do nothing for device $@"
+  out::warn "To avoid data loss format::absent do nothing for device $*"
 }
 
