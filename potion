@@ -1251,7 +1251,7 @@ file::present () {
     fi
 
     if [[ "$(file::_group "$name")" != "${group}" ]]; then
-      if std::run chown "${group}" "$name"; then
+      if std::run chgrp "${group}" "$name"; then
         res::created file "name=$name group=${group}"
         ret=0
       else
