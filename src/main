@@ -2,7 +2,7 @@
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.7"
+VERSION="0.2.8"
 export CONTEXT="main"
 
 # fun: main::init
