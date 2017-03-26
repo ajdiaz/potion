@@ -27,3 +27,13 @@ include ()
       ;;
   esac
 }
+
+# fun: include::path <glob_expr>
+# api: potion
+# txt: include all files matches with glob expression
+include::path ()
+{
+  for f in "$@"; do
+    include "$f" || exit 1
+  done
+}
