@@ -2734,6 +2734,13 @@ shopt -s expand_aliases
 #      keys from diferent sources instead of save them in plain text in the
 #      potion file.
 
+# env: SECRET_MASTERKEY
+# api: potion
+# txt: Path to file where the master key for secrets lives. By default
+#      /etc/potion.key
+
+SECRET_MASTERKEY=/etc/potion.key
+
 declare -A _secrets
 
 # fun: secret::load [name=]<name>
@@ -2747,6 +2754,10 @@ secret::load () {
     gpg+*)
       url="${url#gpg+}"
       eval "$(curl -sqL "$url" | gpg -d)";;
+    crypt+*)
+      url="${url#crypt+}"
+      eval "$(curl -sqL "$url" |
+              openssl enc -d -a -aes256 -kfile "${SECRET_MASTERKEY}")";;
     *) url="${url#file://}"
        # shellcheck disable=SC1090
        source "$url" || err::trace "Invalid secret file format" ;;

@@ -22,11 +22,11 @@
 file::_hmac () {
   ALGO="${ALGO:=sha1}"
   local hmac=
-  local path="$(os::path ${ALGO}sum)"
+  local path; path="$(os::path ${ALGO}sum)"
 
   if [ "$path" ]; then
     hmac="$(file::_data "$1" | ${ALGO}sum)"
-    read hmac _ <<<"${hmac}"
+    read -r hmac _ <<<"${hmac}"
     echo "$hmac"
   else
     err::trace "Required binary '${ALGO}sum' is not installed"
@@ -66,12 +66,13 @@ file::_data () {
 # opt: name: the filename to check for.
 # opt: data: the content URL
 file::exists () {
+  local data
   eval "$(std::parse "$@")"
 
   [ -r "$name" ] || return 1
 
-  local old_hmac="$(file::_hmac "file://$name")"
-  local new_hmac="$(file::_hmac "$data")"
+  local old_hmac; old_hmac="$(file::_hmac "file://$name")"
+  local new_hmac; new_hmac="$(file::_hmac "$data")"
   [ "$new_hmac" == "$old_hmac" ]
 }
 
