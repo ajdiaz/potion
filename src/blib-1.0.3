@@ -143,7 +143,7 @@ mutex::adquire () {
   while ! std::mute mkdir "_mutex_$1"; do
     [ $i -eq ${MUTEX_TIMEOUT:-3600} ] && err::trace "Mutex timeout: $1"
     ${VERBOSE:-false} && out::user "waiting for mutex: $1 ($_run)"
-    sleep 1
+    sleep "1.${RANDOM}"
     ((i++))
   done
   tmp::exit
@@ -874,4 +874,4 @@ tmp::file () {
 tmp::touch () {
   mkdir -p "${BLIB_TMPDIR}" && : > "${BLIB_TMPDIR}/$1"
 }
-BLIB_VERSION='1.0.2'
+BLIB_VERSION='1.0.3'
