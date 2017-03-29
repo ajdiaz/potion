@@ -187,12 +187,19 @@ code > span.in { color: #008000; } /* Information */
 <li><a href="#usage">Usage</a><ul>
 <li><a href="#using-potion-to-run-a-recipe">Using potion to run a recipe</a></li>
 <li><a href="#using-potion-to-create-a-self-executable-recipe">Using potion to create a self-executable recipe</a></li>
+<li><a href="#using-potion-to-run-a-local-recipe-in-remote-host">Using potion to run a local recipe in remote host</a></li>
+<li><a href="#using-potion-with-remote-recipes">Using potion with remote recipes</a></li>
+<li><a href="#using-default-recipes">Using default recipes</a></li>
 </ul></li>
+<li><a href="#using-potion-to-run-periodically">Using potion to run periodically</a></li>
 <li><a href="#writing-recipes">Writing recipes</a><ul>
 <li><a href="#contexts">Contexts</a></li>
 <li><a href="#artifacts">Artifacts</a></li>
 </ul></li>
+<li><a href="#secrets">Secrets</a></li>
+<li><a href="#including-other-potion-files">Including other potion files</a></li>
 <li><a href="#testing-changes">Testing changes</a></li>
+<li><a href="#bonus-how-structure-your-recipes">Bonus: How structure your recipes</a></li>
 </ul></li>
 <li><a href="#api-reference-potion">API Reference (potion)</a><ul>
 <li><a href="#dir">dir</a><ul>
@@ -270,13 +277,36 @@ code > span.in { color: #008000; } /* Information */
 </ol>
 <div id="using-potion-to-run-a-recipe" class="section level3">
 <h3>Using potion to run a recipe</h3>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> run Potionfile</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> run Potionfile Otherrecipe.potion</code></pre></div>
 <p>The recipe is any bash script which can contain a number of specific funtions, listed below in API Reference.</p>
 </div>
 <div id="using-potion-to-create-a-self-executable-recipe" class="section level3">
 <h3>Using potion to create a self-executable recipe</h3>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> create Potionfile <span class="op">&gt;</span> recipe.sh</code></pre></div>
 </div>
+<div id="using-potion-to-run-a-local-recipe-in-remote-host" class="section level3">
+<h3>Using potion to run a local recipe in remote host</h3>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> -q create Potionfile <span class="kw">|</span> <span class="fu">ssh</span> -tt hostname</code></pre></div>
+</div>
+<div id="using-potion-with-remote-recipes" class="section level3">
+<h3>Using potion with remote recipes</h3>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> run https://miremotehost/remoterecipe.potion</code></pre></div>
+<p>Or more complex example with ssh and git:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> run ssh+git://myremoterepohost/mirepo.git</code></pre></div>
+<p>When you point to a repo, a file called <code>init.potion</code> in the root dir of the repo is loaded automatically, as potion starting point.</p>
+</div>
+<div id="using-default-recipes" class="section level3">
+<h3>Using default recipes</h3>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="bu">export</span> <span class="va">POTION</span>\_<span class="va">DEFAULT_SOURCE=</span><span class="st">&quot;ssh+git://myremoterepohost/mirepo.git&quot;</span>
+<span class="ex">potion</span> run</code></pre></div>
+</div>
+</div>
+<div id="using-potion-to-run-periodically" class="section level2">
+<h2>Using potion to run periodically</h2>
+<p>Potion does not support daemon mode, but you can use systemd timers or cron jobs to run potion every hour or when you prefer. Please note that potion requires some environment variables like <code>HOME</code>. Is a good practice tu run potion with sudo as unprivileged user, for example:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="fu">id</span>
+<span class="va">uid=</span>1000<span class="va">(</span>user<span class="va">)</span> <span class="va">gid=</span>1000<span class="va">(</span>user<span class="va">)</span> <span class="va">groups=</span>1000<span class="va">(</span>user<span class="va">)</span>
+$ <span class="fu">sudo</span> -i potion run script.potion</code></pre></div>
 </div>
 <div id="writing-recipes" class="section level2">
 <h2>Writing recipes</h2>
@@ -298,17 +328,52 @@ code > span.in { color: #008000; } /* Information */
 <div id="artifacts" class="section level3">
 <h3>Artifacts</h3>
 <p>An artifact is a set of files which should be included in the potion file and deployed by Potion application. You can think an artifact like a template for file. You can use artifacts like any other file, in the form:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">file</span>::present /etc/config.json <span class="dt">\\</span>
-  <span class="va">data=</span><span class="st">&quot;artifact://config.json&quot;</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">file</span>::present /etc/config.json \
+  data=<span class="st">&quot;artifact://config.json&quot;</span></code></pre></div>
 <p>This code will create (if doesn’t exist yet) a fil in <code>/etc/config.json</code>, which content is generated from artifact called <code>config.json</code>. The artifacts directory must be specified by command like when called potion, like the following example:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">potion</span> run -a ./artifacts_dir Potionfile</code></pre></div>
 <p>If you generate a self-executable potion file, the artifacts will be included in the script.</p>
 <p>Instead of <code>artifact://</code> url, you can use <code>artifact+eval://</code> url, which allows you to expand variables inside the artifact file. You can use normal <code>$variable</code> form, or even run more complex like <code>$(if $var; then echo value; fi)</code>.</p>
+<p>You can also load artifacts programatically from the potion recipe, using <code>artifact::load</code>:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">artifact</span>::load ./path/to/artifactsdir</code></pre></div>
 </div>
+</div>
+<div id="secrets" class="section level2">
+<h2>Secrets</h2>
+<p>Secrets are intented to keep some variables of your config in secret. Potion will add secret variables using module <code>secret</code>, documented in the API. The secret file is just another potion file which contains <code>secret::add</code> commands, which define secret values in plain.</p>
+<p>There are three different ways to use secrets:</p>
+<ol style="list-style-type: decimal">
+<li><p>Keep you secret file out of the recipes, and copy on each host individually. The run potion with <code>-s</code> (<code>--secret</code>) flag pointing to the secret file.</p></li>
+<li><p>Use symmetric encryption (recommended method). Potion will read a passphrase from <code>/etc/potion.key</code> (or where <code>SECRET_MASTERKEY</code> environment variable defines) and use that passphrase to decrypt the secret file (using AES256 via openssl).</p></li>
+<li><p>Using asymetric encyption via GnuPG, using different keyfiles for each host. This is the most secure way, but hard to maintain.</p></li>
+</ol>
+<p>Recomended option is to set a plain <code>secret.potion</code> file outside your recipes repository and encrypt it with:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">openssl</span> enc -e -a -aes256 -in secret.potion -out secret.potion.aes</code></pre></div>
+<p>And keep <code>secret.potion.aes</code> (encrypted file) under version control system (The <code>-a</code> flag in openssl indicates to encode the file using base64, which is used by potion too). This methid provide a reasonable security and a goo way to manage the secrets from central repository.</p>
+<p>Of course, you can load secrets programatically, for example:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">secret</span>::load <span class="st">&quot;crypt+file://</span><span class="va">$PWD</span><span class="st">/secrets.potion.aes&quot;</span></code></pre></div>
+<p>This example using openssl encrypt (<code>crypt</code>) method to decrupt secrets file. In API documentation, under module <code>secret</code> you can see different load formats, including plain and gpg ones.</p>
+</div>
+<div id="including-other-potion-files" class="section level2">
+<h2>Including other potion files</h2>
+<p>You can split your config in different modules, and you can load them from the starting potion file (<code>init.potion</code> if you are loading recipes from repository). See the <code>include</code> module to learn in which ways you can include other modules, but in general you will use the following:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">include</span>::path ./modules/<span class="dt">\*</span>.potion</code></pre></div>
 </div>
 <div id="testing-changes" class="section level2">
 <h2>Testing changes</h2>
 <p>Before to apply changes, you probably want to test the changes, to do that you can run potion with <code>--pretend</code> flag. If you are running and self-executable potion, you can use the environment variable <code>$PRETEND=true</code> to ensure that the potion just pretending instead on real running.</p>
+</div>
+<div id="bonus-how-structure-your-recipes" class="section level2">
+<h2>Bonus: How structure your recipes</h2>
+<p>There is no unique way to structure your recipes, depends of how complex your configuration is, but in general, this is a good approach:</p>
+<ol style="list-style-type: decimal">
+<li>Put your artifacts under <code>artifacts/</code> directory</li>
+<li>Create modules under <code>modules/</code> to configure some software (i.e. module <code>nginx</code>). Module should have a <code>::present</code>, <code>::exists</code> and <code>::absent</code> functions.</li>
+<li>Create modules under <code>profiles/</code> to help you to group core actions. For example profile <code>webserver</code> will use module <code>nginx</code> and other to configure a webserver.</li>
+<li>Create modules under <code>roles/</code> to group profiles. For example <code>frontend</code> role will use webserver and others to configure what a frontend server is.</li>
+<li>Finally modules under <code>nodes/</code> and named like FQDN of the node, will include roles that defined those server.</li>
+</ol>
+<p>Of course, you can follow any other approach that be convenient for you, this is just a recommendation.</p>
 <hr />
 </div>
 </div>
@@ -319,7 +384,7 @@ code > span.in { color: #008000; } /* Information */
 <p>The <code>dir</code> module provides functions to ensure that specified directory is created or destroyed.</p>
 <div id="usage-example" class="section level4">
 <h4>Usage example</h4>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">dir</span>::present <span class="st">&quot;/mnt&quot;</span> mode=755</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">dir</span>::present <span class="st">&quot;/mnt&quot;</span> mode=0755</code></pre></div>
 </div>
 <div id="dirpresent-namename-options" class="section level3 function">
 <h3>dir::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
@@ -331,7 +396,7 @@ code > span.in { color: #008000; } /* Information */
 <dd>the name of the directory to be created.
 </dd>
 <dt><code>mode</code></dt>
-<dd>the octal mode of the new directory (755) by default.
+<dd>the four digit octal mode of the new directory (0755) by default.
 </dd>
 <dt><code>user</code></dt>
 <dd>the user owner the directory (root by default).
@@ -361,7 +426,7 @@ code > span.in { color: #008000; } /* Information */
 </div>
 <div id="file" class="section level2 module">
 <h2>file</h2>
-<p>The <code>file</code> module provides functions to ensure that specified file exists or not in the system and also has specified content. To creat content, use the <code>data</code> parameter, usually this parameter accepts a URL in the form: * <code>file://x</code>: where x is a file in the host where potion is executed. * <code>artifact://x</code>: an artifact provided in the potion file. * <code>artifact+eval://x</code>: an evaluate artifact. * <code>http://x</code> or <code>https://x</code>: a remote web site. * <code>ftp://x</code>: a FTP remote site.</p>
+<p>The <code>file</code> module provides functions to ensure that specified file exists or not in the system and also has specified content. To creat content, use the <code>data</code> parameter, usually this parameter accepts a URL (in the usual curl accepted format or <code>artifact://</code> to read from static artifact or <code>artifact+eval://</code> to read from an evaluated artifact.</p>
 <div id="usage-example-1" class="section level4">
 <h4>Usage example</h4>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">file</span>::present /etc/somefile \
@@ -400,7 +465,7 @@ code > span.in { color: #008000; } /* Information */
 <dd>the group owner the file
 </dd>
 <dt><code>mode</code></dt>
-<dd>the octal mode of the file
+<dd>the four digit octal mode of the file (i.e. 0644)
 </dd>
 <dt><code>data</code></dt>
 <dd>the content url

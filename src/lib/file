@@ -4,15 +4,10 @@
 # txt: The `file` module provides functions to ensure that specified file
 #      exists or not in the system and also has specified content.
 #      To creat content, use the ``data`` parameter, usually this parameter
-#      accepts a URL in the form:
-#      
+#      accepts a URL (in the usual curl accepted format or ``artifact://``
+#      to read from static artifact or ``artifact+eval://`` to read from an
+#      evaluated artifact.
 #
-#        * `file://x`: where x is a file in the host where potion is executed.
-#        * `artifact://x`: an artifact provided in the potion file.
-#        * `artifact+eval://x`: an evaluate artifact.
-#        * `http://x` or `https://x`: a remote web site.
-#        * `ftp://x`: a FTP remote site.
-#        
 # use: file::present /etc/somefile \\
 #        data="artifact://someartifact"
 # use: file::present /etc/otherfile \\
@@ -118,7 +113,7 @@ file::_group ()
 # opt: name: then file name to ensure
 # opt: user: the user owner the file
 # opt: group: the group owner the file
-# opt: mode: the octal mode of the file
+# opt: mode: the four digit octal mode of the file (i.e. 0644)
 # opt: data: the content url
 file::present () {
   eval "$(std::parse "$@")"

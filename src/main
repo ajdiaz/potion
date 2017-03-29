@@ -2,8 +2,14 @@
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.8"
+VERSION="0.2.9"
 export CONTEXT="main"
+
+# env: POTION_DEFAULT_SOURCE
+# txt: If set, always try to get potion files from this url. Note that if
+#      other arguments are passed in the command line, potion will load
+#      all of them plus the defined in ``POTION_DEFAULT_SOURCE.``
+export POTION_DEFAULT_SOURCE=
 
 # fun: main::init
 # txt: print nice potion logo and some custom messages at the beginning.
@@ -111,6 +117,10 @@ main::run () {
   for src in "$@"; do
     include "$src" || err::trace "Unable to load potion file(s): $src"
   done
+  if [[ "$POTION_DEFAULT_SOURCE" ]]; then
+    include "$POTION_DEFAULT_SOURCE" ||
+      err::trace "Unable to load potion file(s): $POTION_DEFAULT_SOURCE"
+  fi
   meta::populate
   context::run
 }
@@ -140,8 +150,8 @@ main () {
     'set a secret file or URL to store passwords'
   
   arg::action run main::run 'run potion template'
-  arg::param run "infredients+" \
-    'path to the ingredient files to make the potion'
+  arg::param run "ingredients*" \
+    'path to the scripts files (ingredients) to make the potion'
   arg::opt run -a: --artifacts: main::run::opt_artifacts \
     'set path to artifacts directory'
   arg::opt run -s:  --secrets:   main::run::opt_secrets \

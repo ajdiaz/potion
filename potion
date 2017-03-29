@@ -763,7 +763,7 @@ fstab::absent () {
 # api: potion
 # txt: The `dir` module provides functions to ensure that specified
 #      directory is created or destroyed.
-# use: dir::present "/mnt" mode=755
+# use: dir::present "/mnt" mode=0755
 
 # private dir::_create <dname> [owner] [mode]
 dir::_create () {
@@ -782,7 +782,7 @@ dir::_destroy () {
 # txt: ensure that specified directory name passed as argument exists, and
 #      create it if not.
 # opt: name: the name of the directory to be created.
-# opt: mode: the octal mode of the new directory (755) by default.
+# opt: mode: the four digit octal mode of the new directory (0755) by default.
 # opt: user: the user owner the directory (root by default).
 # opt: group: the group owner the directory (root by default)
 dir::present () {
@@ -1112,15 +1112,10 @@ link::absent () {
 # txt: The `file` module provides functions to ensure that specified file
 #      exists or not in the system and also has specified content.
 #      To creat content, use the ``data`` parameter, usually this parameter
-#      accepts a URL in the form:
-#      
+#      accepts a URL (in the usual curl accepted format or ``artifact://``
+#      to read from static artifact or ``artifact+eval://`` to read from an
+#      evaluated artifact.
 #
-#        * `file://x`: where x is a file in the host where potion is executed.
-#        * `artifact://x`: an artifact provided in the potion file.
-#        * `artifact+eval://x`: an evaluate artifact.
-#        * `http://x` or `https://x`: a remote web site.
-#        * `ftp://x`: a FTP remote site.
-#        
 # use: file::present /etc/somefile \\
 #        data="artifact://someartifact"
 # use: file::present /etc/otherfile \\
@@ -1226,7 +1221,7 @@ file::_group ()
 # opt: name: then file name to ensure
 # opt: user: the user owner the file
 # opt: group: the group owner the file
-# opt: mode: the octal mode of the file
+# opt: mode: the four digit octal mode of the file (i.e. 0644)
 # opt: data: the content url
 file::present () {
   eval "$(std::parse "$@")"
@@ -1704,8 +1699,14 @@ artifact::load ()
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.8"
+VERSION="0.2.9"
 export CONTEXT="main"
+
+# env: POTION_DEFAULT_SOURCE
+# txt: If set, always try to get potion files from this url. Note that if
+#      other arguments are passed in the command line, potion will load
+#      all of them plus the defined in ``POTION_DEFAULT_SOURCE.``
+export POTION_DEFAULT_SOURCE=
 
 # fun: main::init
 # txt: print nice potion logo and some custom messages at the beginning.
@@ -1813,6 +1814,10 @@ main::run () {
   for src in "$@"; do
     include "$src" || err::trace "Unable to load potion file(s): $src"
   done
+  if [[ "$POTION_DEFAULT_SOURCE" ]]; then
+    include "$POTION_DEFAULT_SOURCE" ||
+      err::trace "Unable to load potion file(s): $POTION_DEFAULT_SOURCE"
+  fi
   meta::populate
   context::run
 }
@@ -1842,8 +1847,8 @@ main () {
     'set a secret file or URL to store passwords'
   
   arg::action run main::run 'run potion template'
-  arg::param run "infredients+" \
-    'path to the ingredient files to make the potion'
+  arg::param run "ingredients*" \
+    'path to the scripts files (ingredients) to make the potion'
   arg::opt run -a: --artifacts: main::run::opt_artifacts \
     'set path to artifacts directory'
   arg::opt run -s:  --secrets:   main::run::opt_secrets \
@@ -1852,56 +1857,6 @@ main () {
   arg::parse "$@"
 }
 shopt -s expand_aliases
-#! /bin/bash
-# mod: secret
-# txt: The `secret` module allows you to get/set passwords or secret config
-#      keys from diferent sources instead of save them in plain text in the
-#      potion file.
-
-# env: SECRET_MASTERKEY
-# api: potion
-# txt: Path to file where the master key for secrets lives. By default
-#      /etc/potion.key
-
-SECRET_MASTERKEY=/etc/potion.key
-
-declare -A _secrets
-
-# fun: secret::load [name=]<name>
-# txt: load a secret file
-secret::load () {
-  local url="${1#name=}"
-  case "$url" in
-    gpg://*|gpg+file://*)
-      url="${url#*://}"
-      eval "$(gpg -d "$url")";;
-    gpg+*)
-      url="${url#gpg+}"
-      eval "$(curl -sqL "$url" | gpg -d)";;
-    crypt+*)
-      url="${url#crypt+}"
-      eval "$(curl -sqL "$url" |
-              openssl enc -d -a -aes256 -kfile "${SECRET_MASTERKEY}")";;
-    *) url="${url#file://}"
-       # shellcheck disable=SC1090
-       source "$url" || err::trace "Invalid secret file format" ;;
-  esac
-}
-
-# fun: secret::add [name=]<name> content=<content>
-# txt: add new secret with specified content associated with key passed as
-#      argument.
-secret::add () {
-  eval "$(std::parse "$@")"
-  # shellcheck disable=2154
-  _secrets["$name"]="$content"
-}
-
-# fun: secret <name>
-# txt: return the secret text associated with specified name
-secret () {
-  echo "${_secrets["$1"]}"
-}
 #! /bin/bash
 # mod: debug
 # api: blib
@@ -2493,7 +2448,10 @@ arg::usage::action::explain () {
     local help_str="${arg__param["$key"]}"
     param+="$(printf "  %-20s %s" "${par}" "${help_str}")"
     param+=$'\n'
-    spam+="${spam:+ }<${par}>"
+    case "$par" in
+      *\?|*'*') spam+="${spam:+ }[${par}]";;
+      *) spam+="${spam:+ }<${par}>";;
+    esac
   done
 
   if [ "$1" == "MAIN" ]; then
@@ -2597,8 +2555,8 @@ arg::parse::arg () {
     IFS=, read a name <<< "${param}"
     if [ "$action" == "$a" ]; then
       case "$name" in
-        +) ((count++));;
-        ?|'*') ;;
+        *+) ((count++));;
+        *\?|*'*') ;;
         *) ((count++));;
       esac
     fi
@@ -2778,7 +2736,54 @@ tmp::file () {
 tmp::touch () {
   mkdir -p "${BLIB_TMPDIR}" && : > "${BLIB_TMPDIR}/$1"
 }
-BLIB_VERSION='1.0.3'
+BLIB_VERSION='1.0.4'
+#! /bin/bash
+# mod: secret
+# txt: The `secret` module allows you to get/set passwords or secret config
+#      keys from diferent sources instead of save them in plain text in the
+#      potion file.
+# env: SECRET_MASTERKEY: Path to file where the master key for secrets lives.
+#      By default ``/etc/potion.key``
+
+SECRET_MASTERKEY=/etc/potion.key
+
+declare -A _secrets
+
+# fun: secret::load [name=]<name>
+# txt: load a secret file
+secret::load () {
+  local url="${1#name=}"
+  case "$url" in
+    gpg://*|gpg+file://*)
+      url="${url#*://}"
+      eval "$(gpg -d "$url")";;
+    gpg+*)
+      url="${url#gpg+}"
+      eval "$(curl -sqL "$url" | gpg -d)";;
+    crypt+*)
+      url="${url#crypt+}"
+      eval "$(curl -sqL "$url" |
+              openssl enc -d -a -aes256 -kfile "${SECRET_MASTERKEY}")";;
+    *) url="${url#file://}"
+       # shellcheck disable=SC1090
+       source "$url" || err::trace "Invalid secret file format" ;;
+  esac
+}
+
+# fun: secret::add [name=]<name> content=<content>
+# txt: add new secret with specified content associated with key passed as
+#      argument.
+secret::add () {
+  eval "$(std::parse "$@")"
+  # shellcheck disable=2154
+  _secrets["$name"]="$content"
+}
+
+# fun: secret <name>
+# txt: return the secret text associated with specified name
+secret () {
+  echo "${_secrets["$1"]}"
+}
 #! /bin/bash
 # mod: meta
 # txt: This internal module provides information about metadata

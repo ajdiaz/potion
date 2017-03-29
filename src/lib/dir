@@ -3,7 +3,7 @@
 # api: potion
 # txt: The `dir` module provides functions to ensure that specified
 #      directory is created or destroyed.
-# use: dir::present "/mnt" mode=755
+# use: dir::present "/mnt" mode=0755
 
 # private dir::_create <dname> [owner] [mode]
 dir::_create () {
@@ -22,7 +22,7 @@ dir::_destroy () {
 # txt: ensure that specified directory name passed as argument exists, and
 #      create it if not.
 # opt: name: the name of the directory to be created.
-# opt: mode: the octal mode of the new directory (755) by default.
+# opt: mode: the four digit octal mode of the new directory (0755) by default.
 # opt: user: the user owner the directory (root by default).
 # opt: group: the group owner the directory (root by default)
 dir::present () {
