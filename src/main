@@ -14,6 +14,8 @@ export POTION_DEFAULT_SOURCE=
 # fun: main::init
 # txt: print nice potion logo and some custom messages at the beginning.
 main::init () {
+
+  if ! ${NOLOGO:-false}; then
   out::user ""
   out::user "${COLOR_USER}                                   o${COLOR_NONE}"
   out::user "${COLOR_USER}                                     o${COLOR_NONE}"
@@ -33,10 +35,15 @@ main::init () {
   local m="                                '.${COLOR_USER}"
   m+="_____${COLOR_NONE}.'"
   out::user "$m"
+  else
+    out::user "Starting potion..."
+  fi
   out::user "${COLOR_USER}version${COLOR_NONE} ${VERSION}" 
   out::user "detected hardware architecture: $(std::arch)"
   out::user "detected os family: $(os::family)"
   out::user "detected os provider: $(os::provider)"
+
+
 }
 
 # general options handlers
@@ -45,6 +52,7 @@ main::opt_version () { out::info "Potion $VERSION"; exit 0;}
 main::opt_quiet () { QUIET=true; return 1;}
 main::opt_pretend () { export PRETEND=true; return 1;}
 main::opt_verbose () { export VERBOSE=true; return 1;}
+main::opt_nologo () { export NOLOGO=true; return 1;}
 
 # create action
 main::create::opt_artifacts () { main__create__artifacts="$1"; return 2;}
@@ -136,6 +144,7 @@ main () {
   arg::opt MAIN -d --debug   main::opt_debug   'enable debug mode'
   arg::opt MAIN -p --pretend main::opt_pretend 'do nothing, just pretending'
   arg::opt MAIN -V --version main::opt_version 'show program version number'
+  arg::opt MAIN -L --no-logo main::opt_nologo  'do not show ASCI art logo :('
 
   arg::action create main::create 'create new potion from templates'
   arg::param create "infredients+" \
