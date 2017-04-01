@@ -1675,7 +1675,7 @@ artifact::eval () {
   local content
 
   content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
-  eval echo -n \""${content//\"/\\\"}"\"
+  eval echo \""${content//\"/\\\"}"\"
 }
 
 # fun: artifact::build <directory>
