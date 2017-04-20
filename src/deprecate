@@ -1,0 +1,41 @@
+#! /bin/bash
+# mod: deprecate
+# txt: This internal module provides a way to mark deprecated features or
+#      modules.
+
+# fun: deprecate [name=]<name> [version=version] [date=date]
+# txt: set a deprecation mark called name (could be a message), when potion
+#      version is lower to specified version a warning is raised, otherwise
+#      execution fails with an error. The same behaviour can be used with
+#      a date in the format %y-%m-%d, until that date the deprecation
+#      warning message will show, after that date execution breaks.
+deprecate () {
+  local version date name
+  eval "$(std::parse "$@")"
+
+  # shellcheck disable=SC2153
+  version::cmp "$VERSION" "$version"
+  case $? in
+    0|255)
+      err::trace "DEPRECATION ERROR: $name";;
+    1)
+      local line fun file; read -r line fun file < <(caller)
+      out::warn $"DEPRECATION WARNING [$fun at $file:$line]: $name"
+  esac
+
+  [[ "$date" ]] || return
+
+  local year month day
+
+  { IFS='-' read -r year month day <<< "$date"; }
+
+  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
+    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
+    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
+  then
+      local line fun file; read -r line fun file < <(caller)
+      out::warn $"DEPRECATION WARNING [$fun at $file:$line]: $name"
+  else
+    err::trace "DEPRECATION ERROR: $name"
+  fi
+}

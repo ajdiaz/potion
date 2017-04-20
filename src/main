@@ -53,6 +53,7 @@ main::opt_quiet () { QUIET=true; return 1;}
 main::opt_pretend () { export PRETEND=true; return 1;}
 main::opt_verbose () { export VERBOSE=true; return 1;}
 main::opt_nologo () { export NOLOGO=true; return 1;}
+main::opt_nocolor () { export BLIB_DISABLE_COLORS=true; term::init; return 1;}
 
 # create action
 main::create::opt_artifacts () { main__create__artifacts="$1"; return 2;}
@@ -139,12 +140,13 @@ main () {
   # if this is a compiled potion, we don't need main
   ${POTION_COMPILED:-false} && main::init && return 0
   
-  arg::opt MAIN -q --quiet   main::opt_quiet   'do not output messages'
-  arg::opt MAIN -v --verbose main::opt_verbose 'enable verbose mode'
-  arg::opt MAIN -d --debug   main::opt_debug   'enable debug mode'
-  arg::opt MAIN -p --pretend main::opt_pretend 'do nothing, just pretending'
-  arg::opt MAIN -V --version main::opt_version 'show program version number'
-  arg::opt MAIN -L --no-logo main::opt_nologo  'do not show ASCI art logo :('
+  arg::opt MAIN -q --quiet    main::opt_quiet   'do not output messages'
+  arg::opt MAIN -v --verbose  main::opt_verbose 'enable verbose mode'
+  arg::opt MAIN -d --debug    main::opt_debug   'enable debug mode'
+  arg::opt MAIN -p --pretend  main::opt_pretend 'do nothing, just pretending'
+  arg::opt MAIN -V --version  main::opt_version 'show program version number'
+  arg::opt MAIN -L --no-logo  main::opt_nologo  'do not show ASCI art logo :('
+  arg::opt MAIN -C --no-color main::opt_nocolor 'do not output colors ever'
 
   arg::action create main::create 'create new potion from templates'
   arg::param create "infredients+" \

@@ -1,55 +1,82 @@
-#! /bin/bash
-# mod: res
-# txt: The ``res`` module provides a way to work with potion resources.
+#!/bin/bash
+# mod: artifact
+# txt: The `artifact` module contains function to access to artifacts. An
+#      artifact is a file embedded in potion compiled object, usually you
+#      want to set some configuration files as artifacts.
 
-res::variables () {
-  for word in "$@"; do
-    case "$word" in
-      *=*) echo -n "${COLOR_BOLD}${word%%=*}${COLOR_NONE}"
-           echo -n "${C}=${word#*=}${COLOR_NONE} ";;
-      *) echo -n "$word "
-    esac
-  done
+# fun: artifact::hmac <artifact_name>
+# txt: print to stdout the HMAC of the artifact passed as argument.
+# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
+#      sha1, md5, sha256, sha512. The proper helper tool must be installed
+#      on the system.
+artifact::hmac () {
+  if artifact::exists "$1"; then
+    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
+  else
+    err::trace "Missing artifact while calculating HMAC: $1"
+  fi
+}
+
+# fun: artifact::extract
+# txt: extract artifacts if artifact support is enabled.
+artifact::extract () {
+  [ "$POTION_ARTIFACTS" ] || return 0
+  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
+
+  mutex::adquire _artifacts
+  tmp::create _artifacts
+  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
+    err::trace "Unable to extract artifacts"
+  touch "${BLIB_TMPDIR}/.artifacts"
+  tmp::exit
+  mutex::release _artifacts
+}
+
+# fun: artifact::exists <artifact_name>
+# txt: return true if the artifact exists, false otherwise.
+artifact::exists () {
+  artifact::extract
+  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
+}
+
+# fun: artifact::read <artifact_name>
+# txt: read a specific artifact from potion.
+artifact::read () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  cat "${BLIB_TMPDIR}/_artifacts/$1"
+}
+
+
+# fun: artifact::eval <artifact_name>
+# txt: read and eval specific artifact from potion.
+artifact::eval () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  local content
+
+  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
+  eval echo \""${content//\"/\\\"}"\"
+}
+
+# fun: artifact::build <directory>
+# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
+#      variable to stdout with the encoded version of the artifacts.
+artifact::build () {
+  local artifacts
+  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
+  echo "POTION_ARTIFACTS='${artifacts}'"
   echo
 }
 
-res::created () {
-  if ${VERBOSE:-false}; then
-    local mod="$1"; shift
-    printf -v _m "%-12s %-10s %-8s %s" \
-      "${CONTEXT}" \
-      "${COLOR_BOLD}CREATED${COLOR_NONE}" \
-      "$mod" \
-      "$*"
-    out::user "${_m}"
-  fi
-  out::info "created $1: $(C="$COLOR_INFO" res::variables "$2")"
-}
-
-res::deleted () {
-  if ${VERBOSE:-false}; then
-    local mod="$1"; shift
-    printf -v _m "%-12s %-10s %-8s %s" \
-      "${CONTEXT}" \
-      "${COLOR_BOLD}DELETED${COLOR_NONE}" \
-      "$mod" \
-      "$*"
-    out::user "${_m}"
-  fi
-  out::warn "deleted $1: $(C="$COLOR_WARN" res::variables "$2")"
-}
-
-res::refreshed () {
-  if ${VERBOSE:-false}; then
-    local mod="$1"; shift
-    printf -v _m "%-12s %-10s %-8s %s" \
-      "${CONTEXT}" \
-      "${COLOR_BOLD}REFRESH${COLOR_NONE}" \
-      "$mod" \
-      "$*"
-    out::user "${_m}"
-  fi
-  out::info "refreshed $1: $(C="$COLOR_INFO" res::variables "$2")"
+# fun: artifact::load <directory>
+# txt: load in environment potion artifacts
+artifact::load ()
+{
+  eval "$(artifact::build "${1}")"
+  out::user "dumped artifacts from: ${1}"
 }
 #! /bin/bash
 # mod: context
@@ -155,610 +182,6 @@ include::path ()
   done
 }
 #! /bin/bash
-# mod: host
-# api: potion
-# txt: The `host` module provides functions to configure hostname of the
-#      machine.
-# use: host::present myhost.mydomain.com
-
-# fun: host::exists [name=]<hostname>
-# api: potion
-# txt: return true if the FQDN of the node is equal to specified one.
-host::exists () {
-  local host name
-  eval "$(std::parse "$@")"
-  host="$(hostname -f 2>/dev/null)"
-  [ "$host" == "$name" ]
-}
-
-# private host::_create <hostname>
-host::_create () {
-  if ! ${PRETEND:-false}; then
-    echo "${1%%.*}" > /etc/hostname
-    echo "127.0.1.1 $1 ${1%%.*}" > /etc/hosts
-    hostname "${1%%.*}"
-  fi
-}
-
-# private host::_destroy <hostname>
-host::_destroy () {
-  local host
-  if ! ${PRETEND:-false}; then
-    hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
-    echo > /etc/hostname
-    echo "$hosts" > /etc/hosts
-    hostname ''
-  fi
-}
-
-# fun: host::present [name=]<hostname>
-# api: potion
-# txt: ensure than the node has the specified hostname.
-host::present () {
-  eval "$(std::parse "$@")"
-  if ! host::exists "$name"; then
-    if host::_create "$name"; then
-      res::created host "$name"
-    else
-      err::trace "Unable to create host to: $1"
-    fi
-  else
-    return 1
-  fi
-}
-
-# fun: host::absent [name=]<hostname>
-# api: potion
-# txt: ensure than the node has not the specified hostname.
-host::absent () {
-  eval "$(std::parse "$@")"
-  if host::exists "$name"; then
-    if host::_destroy "$name"; then
-      res::deleted host "$name"
-    else
-      err::trace "Unable to destroy host: $1"
-    fi
-  else
-    return 1
-  fi
-}
-#! /bin/bash
-# mod: group
-# api: potion
-# txt: The `group` module offers a way to ensure that specified group of
-#      uses is created or not in the system.
-# use: group::present mygroup
-
-# fun: group::exists [name=]<groupname>
-# api: potion
-# txt: return true or false if the specific groupname exists or not,
-#      respectively.
-group::exists () {
-  local name
-  eval "$(std::parse "$@")"
-  std::mute grep "^$name" /etc/group
-}
-
-# private group::_create <groupname> [password]
-# create specific groupname passed as argument.
-# GROUP_SYSTEM: if true create system group (false by default).
-# GROUP_GID: if set, try to use as GID for the group.
-group::_create () {
-  local -a ua_opts=()
-  ua_opts+=( "${GROUP_SYSTEM:+-r }" )
-  ua_opts+=( "${GROUP_GID:+-g ${GROUP_GID} }" )
-  std::run groupadd "${ua_opts[@]}" "$1"
-}
-
-# private group::_destroy <groupname>
-# destroy the groupname passed as argument.
-group::_destroy () {
-  std::run groupdel "$1"
-}
-
-
-# fun: group::present [name=]<groupname> system=<true|false> [gid=gid]
-# api: potion
-# txt: create group if not exists
-# opt: name: the name of the group to create.
-# opt: system: if true create a system group.
-# opt: gid: the GID of the new group
-group::present () {
-  local system gid
-  eval "$(std::parse "$@")"
-  if ! group::exists "$name"; then
-    # shellcheck disable=SC2015
-    GROUP_SYSTEM="${system}" \
-    GROUP_GID="${gid}" \
-    group::_create "$name" &&
-      res::created group "$name" "system=${system}" "gid=${gid}" ||
-      err::trace "Unable to create group: $name"
-  else
-    return 1
-  fi
-}
-
-# fun: group::absent [name=]<groupname>
-# api: potion
-# txt: destroy groupname if exists
-group::absent () {
-  eval "$(std::parse "$@")"
-  if group::exists "$name"; then
-    if group::_destroy "$name"; then
-      res::deleted group "$name"
-    else
-      err:trace "Unable to destroy group: $name"
-    fi
-  else
-    return 1
-  fi
-}
-#! /bin/bash
-# mod: tz
-# api: potion
-# txt: The `tz` module provides functions to configure timezone in the
-#      system.
-# env: TZ_DIR: path where zoneinfo live. By default `/usr/share/zoneinfo`.
-# use: tz::present Europe/Madrid
-
-TZ_DIR="/usr/share/zoneinfo"
-
-# fun: tz::exists [name=]<zonename>
-# api: potion
-# txt: if timezone especified in argument is set return true, otherwise
-#      return false.
-tz::exists () {
-  local current decided name
-  [ -r /etc/localtime ] || return 1
-
-  eval "$(std::parse "$@")"
-  current="$(file::_hmac file:///etc/localtime)"
-  decided="$(file::_hmac "file:///usr/share/zoneinfo/$name")"
-
-  [ "$current" == "$decided" ]  
-}
-
-# fun: tz::present [name=]<zonename>
-# api: potion
-# txt: ensure that specified timezone is set.
-tz::present () {
-  eval "$(std::parse "$@")"
-
-  if ! tz::exists "$name"; then
-    if std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime; then
-      res::created tz "$name"
-    else
-      err::trace "Unable to create tz: $name"
-    fi
-  else
-    return 1
-  fi
-}
-
-# fun: tz::absent [name=]<zonename>
-# api: potion
-# txt: ensure that the specified timezone is not set.
-tz::absent () {
-  eval "$(std::parse "$@")"
-
-  if tz::exists "$name"; then
-    if std::mute std::run rm -f /etc/localtime; then
-      res::deleted tz "$name"
-    else
-      err::trace "Unable to destroy tz: $name"
-    fi
-  else
-    return 1
-  fi
-}
-#! /bin/bash
-# mod: srv
-# api: potion
-# txt: The `srv` module provides high-level functions to manage package
-#      installations.
-# use: srv::present sshd
-
-# private srv::sysinit
-srv::_sysinit () {
-  local si
-  si="$(cache::get _sysinit)"
-  [ "$si" ] && echo "$si" && return 0
-
-  if std::mute os::path systemctl; then
-    local si=systemd
-  elif std::mute os::path service; then
-    local si=upstart
-  elif std::mute os::patch initctl; then
-    local si=sysv
-  else
-    return 1
-  fi
-  cache::put _sysinit "$si"
-  echo "$si"
-  return 0
-}
-
-# fun: srv::exists [name=]<service>
-# api: potion
-# txt: return true if the specific service is present in the system.
-srv::exists () {
-  local si name
-  eval "$(std::parse "$@")"
-  si="$(srv::_sysinit)"
-
-  if std::func "srv::exists::_${si}"; then
-    "srv::exists::_${si}" "$name"
-  else
-    err::trace "Potion does not support '$si' service control... yet"
-  fi
-}
-
-# fun: srv::present [name=]<service>
-# api: potion
-# txt: ensure that specified service is installed on the system.
-srv::present () {
-  local si name
-  eval "$(std::parse "$@")"
-  si="$(srv::_sysinit)"
-
-  if std::func "srv::present::_${si}"; then
-    "srv::present::_${si}" "$name"
-  else
-    err::trace "Potion does not support '$si' service control... yet"
-  fi
-}
-
-# fun: srv::absent [name=]<service>
-# api: potion
-# txt: ensure that specified service is not present on the system.
-srv::absent () {
-  local si name
-  eval "$(std::parse "$@")"
-  si="$(srv::_sysinit)"
-
-  if std::func "srv::absent::_${si}"; then
-    "srv::absent::_${si}" "$name"
-  else
-    err::trace "Potion does not support '$si' service control... yet"
-  fi
-}
-
-# internal srv::refresh
-srv::refresh () {
-  local si name
-  eval "$(std::parse "$@")"
-  si="$(srv::_sysinit)"
-
-  if std::func "srv::refresh::_${si}"; then
-    "srv::refresh::_${si}" "$name"
-  else
-    err::trace "Potion does not support '$si' service control... yet"
-  fi
-}
-#! /bin/bash
-# mod: srv.systemd
-# txt: The ``srv.systemd`` module contains specific functions to configure
-#      services with systemd.
-
-# private srv::exists::_systemd
-srv::exists::_systemd () {
-  std::mute systemctl is-active "${1}"
-}
-
-# private srv::present::_systemd
-srv::present::_systemd () {
-  if ! srv::exists::_systemd "$1"; then
-    context::task::enqueue "srv::create::_systemd '$1'"
-  fi
-}
-
-# private srv::absent::systemd
-srv::absent::_systemd () {
-  if srv::exists::_systemd "$1"; then
-    context::task::enqueue "srv::destroy::_systemd '$1'"
-  fi
-}
-
-# private srv::create::_systemd
-srv::create::_systemd () {
-  std::mute std::run systemctl enable "${1}" ||
-    err::trace "Unable to enable service: $1"
-  std::mute std::run systemctl start "${1}" ||
-    err::trace "Unable to start service: $1"
-  res::created srv "$1" engine=systemd
-}
-
-# private srv::destroy::_systemd
-srv::destroy::_systemd () {
-  std::mute std::run systemctl stop "${1}" ||
-    err::trace "Unable to stop service: $1"
-  std::mute std::run systemctl disable "${1}" ||
-    err::trace "Unable to disable service: $1"
-  res::deleted srv "$1" engine=systemd
-}
-
-# private srv::refresh::_systemd
-srv::refresh::_systemd () {
-  std::mute std::run systemctl daemon-reload ||
-    err::trace "Unable to reload system"
-  std::mute std::run systemctl restart "$1" ||
-    err::trace "Unable to refresh service: $1"
-}
-#! /bin/bash
-# mod: srv.upstart
-# txt: The ``srv.upstart`` contains specific functions to create and
-#      configure services in upstart based systems.
-
-# private srv::exists::upstart <service>
-srv::exists::_upstart () {
-  std::mute service "$1" status
-}
-
-# private srv::present::_upstart
-srv::present::_upstart () {
-  if ! srv::exists::_upstart "$1"; then
-    context::task::enqueue "srv::create::_upstart '$1'"
-  fi
-}
-
-# private srv::absent::_upstart
-srv::absent::_upstart () {
-  if srv::exists::_upstart "$1"; then
-    context::task::enqueue "srv::destroy::_upstart '$1'"
-  fi
-}
-
-# private srv::create::_upstart
-srv::create::_upstart () {
-  std::mute std::run update-rc.d "${1}" defaults ||
-    err::trace "Unable to enable service: $1"
-  std::mute std::run service "${1}" start ||
-    err::trace "Unable to start service: $1"
-  res::created srv "$1" engine=upstart
-}
-
-# private srv::destroy::_upstart
-srv::destroy::_upstart () {
-  std::mute std::run service "$1" stop ||
-    err::trace "Unable to stop service: $1"
-  std::mute std::run update-rc.d -f "${1}" remove ||
-    err::trace "Unable to disable service: $1"
-  res::deleted srv "$1" engine=upstart
-}
-
-# private srv::refresh::_upstart
-srv::refresh::_upstart () {
-  std::mute std::run service "$1" restart ||
-    err::trace "Unable to refresh service: $1"
-}
-#! /bin/bash
-# mod: swap
-# api: potion
-# txt: The `swap` module contains functions to create and configure swap
-#      space.
-# use: swap::present \\
-#        /tmp/swapfile \\
-#        size=1G \\
-#        format=true
-
-# fun: swap::exists
-# api: potion
-# txt: return true if swap is enabled
-swap::exists () {
-  read -r _ swap _ < <(free | grep '^Swap:')
-  [ "$swap" != "0" ]
-}
-
-
-# private swap::_create <device|file> <size>
-swap::_create () {
-  if [ -b "$1" ]; then
-    local isdevice=true
-  else
-    local isdevice=false
-  fi
-
-  if ${SWAP_FORMAT:-false}; then
-    if ${isdevice:-false}; then
-      std::mute blkid "$1" ||
-        std::mute mkswap "$1" ||
-        err::trace "Unable to make swap for device: $1"
-    else
-      # shellcheck disable=SC2015
-      [ -r "$1" ] ||
-        std::mute std::run dd if=/dev/zero "of=$1" "count=$2" bs=1M &&
-          std::mute std::run mkswap "$1" && std::run chmod 0660 "$1" ||
-          err::trace "Unable to make swap for file: $1"
-    fi
-  fi
-  std::mute std::run swapon "$1"
-}
-
-# private swap::_destroy <device|file>
-swap::_destroy () {
-  std::mute std::run swapoff "$1"
-}
-
-# fun: swap::present [name=<device|file>] [size=<size>] [format=<true|false>]
-# api: potion
-# txt: ensure that swap is enable in specified device or file and specified
-#      size.
-# opt: name: the device use as swap space.
-# opt: size: the size required if swap file is created
-# opt: format: if true, format swap space.
-swap::present () {
-  local name
-  eval "$(std::parse "$@")"
-  if ! swap::exists; then
-    # shellcheck disable=SC2015
-    SWAP_FORMAT=${format:-false} swap::_create "$name" "${size:-0}" &&
-      res::created swap "$name" "size=$size" ||
-      err::trace "Unable to create swap: $name"
-  else
-    return 1
-  fi
-}
-
-# fun: swap::absent [name=]<device|file>
-# api: potion
-# txt: ensure that specified device is not enabled for swap
-# opt: name: the device use as swap space.
-swap::absent () {
-  eval "$(std::parse "$@")"
-  if swap::exists; then
-    if swap::_destroy "$name"; then
-      res::deleted "$name"
-    else
-      err::trace "Unable to destroy swap: $1"
-    fi
-  else
-    return 1
-  fi
-}
-#! /bin/bash
-# mod: pkg.ubuntu
-# txt: The ``pkg.ubuntu`` module contains specific functions to install or
-#      remove packages in ubuntu based distributions.
-pkg__ubuntu__aptopts='-q --yes '
-
-# private pkg::_update::ubuntu
-pkg::_update::ubuntu () {
-  DEBIAN_FRONTEND=noninteractive \
-    mutex::run pkg_ubuntu std::mute \
-      std::run apt-get ${pkg__ubuntu__aptopts} update &&
-        out::user "updated package database" ||
-        err::trace "Unable to update package database"
-  local ret=$?
-  if ! ${NOCACHE:-false}; then
-    tmp::create _pkg_cache
-    : > pkg_update_ubuntu
-    tmp::exit
-  fi
-  return $ret
-}
-
-# private pkg::_exists::ubuntu <package>
-pkg::_exists::ubuntu () {
-  mutex::run pkg_ubuntu dpkg -l | std::mute egrep "^ii\\s+*$1\\s+[^-]*"
-}
-
-# private pkg::_present::ubuntu <package>
-pkg::_present::ubuntu () {
-  if ! pkg::_exists::ubuntu "$1"; then
-    pkg::_create::ubuntu "$1" &&
-      res::created pkg "$1" ||
-      err::trace "Unable to create package: $1"
-  else
-    return 1
-  fi
-}
-
-# private pkg::_absent::ubuntu <package>
-pkg::absent::ubuntu () {
-  if pkg::_exists::ubuntu "$1"; then
-    pkg::_destroy::ubuntu "$1" &&
-      res::deleted pkg "$1" ||
-      err::trace "Unable to destroy package: $1"
-  else
-    return 1
-  fi
-}
-
-# private pkg::_create::ubuntu <package>
-pkg::_create::ubuntu () {
-  tmp::exists pkg_update_ubuntu || pkg::_update::ubuntu
-  DEBIAN_FRONTEND=noninteractive mutex::run pkg_ubuntu std::run std::mute \
-    apt-get ${pkg__ubuntu__aptopts} install "$1"
-}
-
-# private pkg::_destroy::ubuntu <package>
-pkg::_destroy::ubuntu () {
-  DEBIAN_FRONTEND=noninteractive mutex::run pkg_ubuntu std::run std::mute \
-    apt-get ${pkg__ubuntu__aptopts} purge "$1"
-}
-#! /bin/bash
-# vim: ft=sh:
-# mod: fstab
-# txt: The `fstab` module provides functions to add entries to fstab file.
-# use: fstab::present /dev/sda1 \\
-#        mount=/ \\
-#        fstype=xfs \\
-#        opts=default,noauto \\
-#        remount=true
-
-# fun: fstab::exists [name=]<device>
-# api: potion
-# txt: return true if device is set in fstab
-fstab::exists () {
-  local name
-  eval "$(std::parse "$@")"
-  std::mute grep -q "^$name" /etc/fstab
-}
-
-# private fstab::_create <device> <mntpoint> <type> [options] [dump] [pass]
-fstab::_create () {
-  local mount
-  eval "$(std::parse "$@")"
-  [ "$mount" ] || err::trace "fstab require mount parameter"
-  ${PRETEND:-false} || 
-    echo "$name $mount ${fstype:-auto} ${opts:-defaults}" \
-         "${dump:-1} ${pass:-2}" >> /etc/fstab
-
-  if ${FSTAB_REMOUNT:-false}; then
-    std::run mount "-oremount,${opts}" "$mount"
-  fi
-
-  if ${FSTAB_MOUNT:-false}; then
-    std::run mount "$mount"
-  fi
-}
-
-# private fstab::_destroy <device>
-fstab::_destroy () {
-  local fstab
-  fstab="$(grep -v "^$1" /etc/fstab)"
-  ${PRETEND:-false} || echo "$fstab" > /etc/fstab
-}
-
-# fun: fstab::present [name=]<device> mount=<mountpoint> [options]
-# api: potion
-# txt: ensure that fstab entry for device is present
-# opt: name: the device name to ensure
-# opt: mount: the mountpoint for the device
-# opt: fstype: the fstype of the device filesystem (default: auto)
-# opt: opts: mount options (default: defaults)
-# opt: dump: the dump number (default 0)
-# opt: pass: the pass number (default 1)
-# opt: remount: if true remount device when added to fstab
-fstab::present () {
-  local remount
-  if ! fstab::exists "$@"; then
-    # shellcheck disable=SC2015
-    FSTAB_REMOUNT="$remount" \
-      fstab::_create "$@" &&
-        res::created fstab "$@" ||
-        err::trace "Unable to create fstab for device: $*"
-  else
-    return 1
-  fi
-}
-
-# fun: fstab::absent [name=]<device>
-# api: potion
-# txt: ensure that specified device has not entry in fstab
-fstab::absent () {
-  eval "$(std::parse "$@")"
-  if fstab::exists "$name"; then
-    if fstab::_destroy "$name"; then
-      res::deleted fstab "device=$name"
-    else
-      err::trace "Unable to destroy fstab for device: $1"
-    fi
-  else
-    return 1
-  fi
-}
-#! /bin/bash
 # mod: dir
 # api: potion
 # txt: The `dir` module provides functions to ensure that specified
@@ -826,286 +249,6 @@ dir::exists () {
   eval "$(std::parse "$@")"
   [ -d "$name" ]
 }
-#! /bin/bash
-# mod: srv.sysv
-# txt: The ``srv.sysv`` module contains specific functions to create and
-#      configure services in systemv init environments.
-
-# private srv::exists::_sysv
-srv::exists::_sysv () {
-  std::mute /etc/init.d/"${1}" status
-}
-
-# private srv::present::_sysv
-srv::present::_sysv () {
-  if ! srv::exists::_sysv "$1"; then
-    context::task::enqueue "srv::create::_sysv '$1'"
-  fi
-}
-
-# private srv::absent::_sysv
-# txt: implements srv::absent for sysv provider.
-srv::absent::_sysv () {
-  if srv::exists::_sysv "$1"; then
-    context::task::enqueue "srv::destroy::_sysv '$1'"
-  fi
-}
-
-# private srv::create::sysv
-srv::create::_sysv () {
-  std::mute std::run ln -s "/etc/init.d/$1" "/etc/rc3.d/S20-$1" ||
-    err::trace "Unable to enable service: $1"
-  std::mute std::run "/etc/init.d/$1" start ||
-    err::trace "Unable to start service: $1"
-  res::created srv "$1" engine=sysv
-}
-
-# private srv::destroy::_sysv
-srv::destroy::_sysv () {
-  std::mute std::run rm -f "/etc/rc3.d/S20-${1}" ||
-    err::trace "Unable to disable service: $1"
-  std::mute std::run "/etc/init.d/${1}" stop
-    err::trace "Unable to stop service: $1"
-  res::deleted srv "$1" engine=sysv
-}
-
-# private srv::refresh::_sysv
-srv::refresh::_sysv () {
-  std::mute std::run "/etc/init.d/$1" restart ||
-    err::trace "Unable to refresh service: $1"
-}
-#! /bin/bash
-# mod: pkg.archlinux
-# txt: The ``pkg.archlinux`` module contains specific functions to install
-#      or remove packages in archlinux distribution.
-
-# private pkg::_update::archlinux
-pkg::_update::archlinux () {
-  mutex::run pkg_archlinux std::run std::mute pacman -Sy --noconfirm &&
-    out::user "updated package database" ||
-    err::trace "Unable to update package database"
-  if ! ${NOCACHE:-false}; then
-    tmp::touch pkg_update_archlinux
-  fi
-}
-
-# private pkg::_exists::archlinux <package>
-pkg::_exists::archlinux () {
-  mutex::run pkg_archlinux std::mute pacman -Q "$1"
-}
-
-# private pkg::_present::archlinux <package>
-pkg::_present::archlinux () {
-  if ! pkg::_exists::archlinux "$1"; then
-    pkg::_create::archlinux "$1" &&
-      res::created pkg "$1" ||
-      err::trace "Unable to create package: $1"
-  else
-    return 1
-  fi
-}
-
-# private pkg::_absent::archlinux <package>
-pkg::_absent::archlinux () {
-  if pkg::_exists::archlinux "$1"; then
-    pkg::_destroy::archlinux "$1" &&
-      res::deleted pkg "$1" ||
-      err::trace "Unable to destroy package: $1"
-  else
-    return 1
-  fi
-}
-
-# private pkg::_create::archlinux <package>
-pkg::_create::archlinux () {
-  tmp::exists pkg_update_archlinux || pkg::_update::archlinux
-  mutex::run pkg_archlinux std::run std::mute pacman -S --noconfirm "$1"
-}
-
-# private pkg::_destroy::archlinux <package>
-pkg::_destroy::archlinux () {
-  mutex::run pkg_archlinux std::run std::mute pacman -R --noconfirm "$1"
-}
-#! /bin/bash
-# mod: format
-# api: potion
-# txt: The `format` module provides a way to format and mount specified
-#      block devices.
-# use: format::present /dev/sda1 fstype=xfs
-
-# private format::_exists::format <device>
-format::_exists::format () {
-  std::mute blkid "$1"
-}
-
-# fun: format::exists [name=]<device> [options]
-# api: potion
-# txt: return true if device exists and it's mounted on mountpoint
-# opt: name: the device name
-format::exists () {
-  local name
-  eval "$(std::parse "$@")"
-  format::_exists::format "$name"
-}
-
-# private format::_create::format <device> [fstype]
-format::_create::format () {
-  std::run "mkfs.${2:-ext4}" "$1" ||
-    err::trace "Unable to format format: $1"
-
-}
-
-# private format::_create::mount <device> <mountpoint> <fstype> <opts>
-format::_create::mount () {
-  std::run mount ${3:+-t ${3}} ${4:+-o ${4}} "$1" "$2" ||
-    err::trace "Unable to mount format: $1"
-}
-
-# fun: format::present [name=]<device> [options]
-# api: potion
-# txt: ensure that specified device has format
-# opt: name: the device to be initialized
-# opt: fstype: the filesystem type to format the device
-format::present () {
-  local name fstype
-  eval "$(std::parse "$@")"
-
-  if ! format::_exists::format "$name"; then
-    if format::_create::format "$name" "${fstype}"; then
-      res::created format "name=$name fstype=$fstype"
-    else
-      err::trace "Unable to format format: $name"
-    fi
-  else
-    return 1
-  fi
-}
-
-# fun: format::absent [name=]<device>
-# api: potion
-# txt: ensure that specific device is not formatted.
-format::absent () {
-  out::warn "To avoid data loss format::absent do nothing for device $*"
-}
-
-#! /bin/bash
-# mod: pkg
-# api: potion
-# txt: The `pkg` module provides functions to ensure package installation
-#      on the system.
-# use: pkg::present vim
-
-# fun: pkg::exists [name=]<package>
-# api: potion
-# txt: return true if the specific package is present in the system.
-pkg::exists () {
-  local os name
-  eval "$(std::parse "$@")"
-  os="$(os::provider)"
-
-  if std::func "pkg::_exists::${os}"; then
-    "pkg::_exists::${os}" "$name"
-    return $?
-  else
-    err::trace "Potion does not support '$os' operating system... yet"
-  fi
-}
-
-# fun: pkg::present [name=]<package>
-# api: potion
-# txt: ensure that specified package is installed on the system.
-pkg::present () {
-  local os name
-  eval "$(std::parse "$@")"
-  os="$(os::provider)"
-
-  if std::func "pkg::_present::${os}"; then
-    "pkg::_present::${os}" "$name"
-    return $?
-  else
-    err::trace "Potion does not support '$os' operating system... yet"
-  fi
-}
-
-# fun: pkg::absent [name=]<package>
-# api: potion
-# txt: ensure that specified package is not present on the system.
-pkg::absent () {
-  local os
-  eval "$(std::parse "$@")"
-  os="$(os::provider)"
-
-  if std::func "pkg::_absent::${os}"; then
-    "pkg::_absent::${os}" "$name"
-    return $?
-  else
-    err::trace "Potion does not support '$os' operating system... yet"
-  fi
-}
-#! /bin/bash
-# mod: link
-# api: potion
-# txt: The `link` module provides functions to ensure that specified
-#      symlink exists in the system and points to specified file.
-# use: link::present /mylink target=/etc/motd
-
-# fun: link::exists [name=]<link> target=<source>
-# api: potion
-# txt: returnt true if the specified link exists and point to source.
-# opt: target: the target where link points to
-link::exists () {
-  eval "$(std::parse "$@")"
-  # shellcheck disable=2154
-  [ "$target" ] || err::trace "Link::exists require parameter target"
-  # shellcheck disable=2154
-  [ -L "$name" ] && [ "$(readlink "$name")" == "$target" ]
-}
-
-# private link::_create <link> <source>
-link::_create () {
-  std::run ln -sf "$2" "$1"
-}
-
-# private link::_destroy <link> [source]
-link::_destroy () {
-  std::run rm -f "$1"
-}
-
-# fun: link::present [name=]<link> target=<source>
-# api: potion
-# txt: ensure that the link exists and point to source.
-# opt: target: the target where link points to
-link::present () {
-  if ! link::exists "$@"; then
-    eval "$(std::parse "$@")"
-    if link::_create "$name" "$target"; then
-      res::created link "$name" "target=$target"
-    else
-      err::trace "Unable to create link: $name ($target)"
-    fi
-  else
-    return 1
-  fi
-}
-
-# fun: link::absent [name=]<link> target=<source>
-# api: potion
-# txt: ensure that the specified link does not exists or not point to
-#      specified source.
-# opt: target: the target where link points to
-link::absent () {
-  eval "$(std::parse "$@")"
-  if link::exists "$@"; then
-    if link::_destroy "$name" "$target"; then
-      res::deleted link "$name" "target=$target"
-    else
-      err::trace "Unable to destroy link: $name ($target)"
-    fi
-  else
-    return 1
-  fi
-}
-
 #! /bin/bash
 # mod: file
 # api: potion
@@ -1284,6 +427,806 @@ file::absent () {
   fi
 }
 #! /bin/bash
+# mod: format
+# api: potion
+# txt: The `format` module provides a way to format and mount specified
+#      block devices.
+# use: format::present /dev/sda1 fstype=xfs
+
+# private format::_exists::format <device>
+format::_exists::format () {
+  std::mute blkid "$1"
+}
+
+# fun: format::exists [name=]<device> [options]
+# api: potion
+# txt: return true if device exists and it's mounted on mountpoint
+# opt: name: the device name
+format::exists () {
+  local name
+  eval "$(std::parse "$@")"
+  format::_exists::format "$name"
+}
+
+# private format::_create::format <device> [fstype]
+format::_create::format () {
+  std::run "mkfs.${2:-ext4}" "$1" ||
+    err::trace "Unable to format format: $1"
+
+}
+
+# private format::_create::mount <device> <mountpoint> <fstype> <opts>
+format::_create::mount () {
+  std::run mount ${3:+-t ${3}} ${4:+-o ${4}} "$1" "$2" ||
+    err::trace "Unable to mount format: $1"
+}
+
+# fun: format::present [name=]<device> [options]
+# api: potion
+# txt: ensure that specified device has format
+# opt: name: the device to be initialized
+# opt: fstype: the filesystem type to format the device
+format::present () {
+  local name fstype
+  eval "$(std::parse "$@")"
+
+  if ! format::_exists::format "$name"; then
+    if format::_create::format "$name" "${fstype}"; then
+      res::created format "name=$name fstype=$fstype"
+    else
+      err::trace "Unable to format format: $name"
+    fi
+  else
+    return 1
+  fi
+}
+
+# fun: format::absent [name=]<device>
+# api: potion
+# txt: ensure that specific device is not formatted.
+format::absent () {
+  out::warn "To avoid data loss format::absent do nothing for device $*"
+}
+
+#! /bin/bash
+# vim: ft=sh:
+# mod: fstab
+# txt: The `fstab` module provides functions to add entries to fstab file.
+# use: fstab::present /dev/sda1 \\
+#        mount=/ \\
+#        fstype=xfs \\
+#        opts=default,noauto \\
+#        remount=true
+
+# fun: fstab::exists [name=]<device>
+# api: potion
+# txt: return true if device is set in fstab
+fstab::exists () {
+  local name
+  eval "$(std::parse "$@")"
+  std::mute grep -q "^$name" /etc/fstab
+}
+
+# private fstab::_create <device> <mntpoint> <type> [options] [dump] [pass]
+fstab::_create () {
+  local mount
+  eval "$(std::parse "$@")"
+  [ "$mount" ] || err::trace "fstab require mount parameter"
+  ${PRETEND:-false} || 
+    echo "$name $mount ${fstype:-auto} ${opts:-defaults}" \
+         "${dump:-1} ${pass:-2}" >> /etc/fstab
+
+  if ${FSTAB_REMOUNT:-false}; then
+    std::run mount "-oremount,${opts}" "$mount"
+  fi
+
+  if ${FSTAB_MOUNT:-false}; then
+    std::run mount "$mount"
+  fi
+}
+
+# private fstab::_destroy <device>
+fstab::_destroy () {
+  local fstab
+  fstab="$(grep -v "^$1" /etc/fstab)"
+  ${PRETEND:-false} || echo "$fstab" > /etc/fstab
+}
+
+# fun: fstab::present [name=]<device> mount=<mountpoint> [options]
+# api: potion
+# txt: ensure that fstab entry for device is present
+# opt: name: the device name to ensure
+# opt: mount: the mountpoint for the device
+# opt: fstype: the fstype of the device filesystem (default: auto)
+# opt: opts: mount options (default: defaults)
+# opt: dump: the dump number (default 0)
+# opt: pass: the pass number (default 1)
+# opt: remount: if true remount device when added to fstab
+fstab::present () {
+  local remount
+  if ! fstab::exists "$@"; then
+    # shellcheck disable=SC2015
+    FSTAB_REMOUNT="$remount" \
+      fstab::_create "$@" &&
+        res::created fstab "$@" ||
+        err::trace "Unable to create fstab for device: $*"
+  else
+    return 1
+  fi
+}
+
+# fun: fstab::absent [name=]<device>
+# api: potion
+# txt: ensure that specified device has not entry in fstab
+fstab::absent () {
+  eval "$(std::parse "$@")"
+  if fstab::exists "$name"; then
+    if fstab::_destroy "$name"; then
+      res::deleted fstab "device=$name"
+    else
+      err::trace "Unable to destroy fstab for device: $1"
+    fi
+  else
+    return 1
+  fi
+}
+#! /bin/bash
+# mod: group
+# api: potion
+# txt: The `group` module offers a way to ensure that specified group of
+#      uses is created or not in the system.
+# use: group::present mygroup
+
+# fun: group::exists [name=]<groupname>
+# api: potion
+# txt: return true or false if the specific groupname exists or not,
+#      respectively.
+group::exists () {
+  local name
+  eval "$(std::parse "$@")"
+  std::mute grep "^$name" /etc/group
+}
+
+# private group::_create <groupname> [password]
+# create specific groupname passed as argument.
+# GROUP_SYSTEM: if true create system group (false by default).
+# GROUP_GID: if set, try to use as GID for the group.
+group::_create () {
+  local -a ua_opts=()
+  ua_opts+=( "${GROUP_SYSTEM:+-r }" )
+  ua_opts+=( "${GROUP_GID:+-g ${GROUP_GID} }" )
+  std::run groupadd "${ua_opts[@]}" "$1"
+}
+
+# private group::_destroy <groupname>
+# destroy the groupname passed as argument.
+group::_destroy () {
+  std::run groupdel "$1"
+}
+
+
+# fun: group::present [name=]<groupname> system=<true|false> [gid=gid]
+# api: potion
+# txt: create group if not exists
+# opt: name: the name of the group to create.
+# opt: system: if true create a system group.
+# opt: gid: the GID of the new group
+group::present () {
+  local system gid
+  eval "$(std::parse "$@")"
+  if ! group::exists "$name"; then
+    # shellcheck disable=SC2015
+    GROUP_SYSTEM="${system}" \
+    GROUP_GID="${gid}" \
+    group::_create "$name" &&
+      res::created group "$name" "system=${system}" "gid=${gid}" ||
+      err::trace "Unable to create group: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: group::absent [name=]<groupname>
+# api: potion
+# txt: destroy groupname if exists
+group::absent () {
+  eval "$(std::parse "$@")"
+  if group::exists "$name"; then
+    if group::_destroy "$name"; then
+      res::deleted group "$name"
+    else
+      err:trace "Unable to destroy group: $name"
+    fi
+  else
+    return 1
+  fi
+}
+#! /bin/bash
+# mod: host
+# api: potion
+# txt: The `host` module provides functions to configure hostname of the
+#      machine.
+# use: host::present myhost.mydomain.com
+
+# fun: host::exists [name=]<hostname>
+# api: potion
+# txt: return true if the FQDN of the node is equal to specified one.
+host::exists () {
+  local host name
+  eval "$(std::parse "$@")"
+  host="$(hostname -f 2>/dev/null)"
+  [ "$host" == "$name" ]
+}
+
+# private host::_create <hostname>
+host::_create () {
+  if ! ${PRETEND:-false}; then
+    echo "${1%%.*}" > /etc/hostname
+    echo "127.0.1.1 $1 ${1%%.*}" > /etc/hosts
+    hostname "${1%%.*}"
+  fi
+}
+
+# private host::_destroy <hostname>
+host::_destroy () {
+  local host
+  if ! ${PRETEND:-false}; then
+    hosts="$(grep -v "^127.0.1.1 $1 ${1%%.*}" /etc/hosts)"
+    echo > /etc/hostname
+    echo "$hosts" > /etc/hosts
+    hostname ''
+  fi
+}
+
+# fun: host::present [name=]<hostname>
+# api: potion
+# txt: ensure than the node has the specified hostname.
+host::present () {
+  eval "$(std::parse "$@")"
+  if ! host::exists "$name"; then
+    if host::_create "$name"; then
+      res::created host "$name"
+    else
+      err::trace "Unable to create host to: $1"
+    fi
+  else
+    return 1
+  fi
+}
+
+# fun: host::absent [name=]<hostname>
+# api: potion
+# txt: ensure than the node has not the specified hostname.
+host::absent () {
+  eval "$(std::parse "$@")"
+  if host::exists "$name"; then
+    if host::_destroy "$name"; then
+      res::deleted host "$name"
+    else
+      err::trace "Unable to destroy host: $1"
+    fi
+  else
+    return 1
+  fi
+}
+#! /bin/bash
+# mod: link
+# api: potion
+# txt: The `link` module provides functions to ensure that specified
+#      symlink exists in the system and points to specified file.
+# use: link::present /mylink target=/etc/motd
+
+# fun: link::exists [name=]<link> target=<source>
+# api: potion
+# txt: returnt true if the specified link exists and point to source.
+# opt: target: the target where link points to
+link::exists () {
+  eval "$(std::parse "$@")"
+  # shellcheck disable=2154
+  [ "$target" ] || err::trace "Link::exists require parameter target"
+  # shellcheck disable=2154
+  [ -L "$name" ] && [ "$(readlink "$name")" == "$target" ]
+}
+
+# private link::_create <link> <source>
+link::_create () {
+  std::run ln -sf "$2" "$1"
+}
+
+# private link::_destroy <link> [source]
+link::_destroy () {
+  std::run rm -f "$1"
+}
+
+# fun: link::present [name=]<link> target=<source>
+# api: potion
+# txt: ensure that the link exists and point to source.
+# opt: target: the target where link points to
+link::present () {
+  if ! link::exists "$@"; then
+    eval "$(std::parse "$@")"
+    if link::_create "$name" "$target"; then
+      res::created link "$name" "target=$target"
+    else
+      err::trace "Unable to create link: $name ($target)"
+    fi
+  else
+    return 1
+  fi
+}
+
+# fun: link::absent [name=]<link> target=<source>
+# api: potion
+# txt: ensure that the specified link does not exists or not point to
+#      specified source.
+# opt: target: the target where link points to
+link::absent () {
+  eval "$(std::parse "$@")"
+  if link::exists "$@"; then
+    if link::_destroy "$name" "$target"; then
+      res::deleted link "$name" "target=$target"
+    else
+      err::trace "Unable to destroy link: $name ($target)"
+    fi
+  else
+    return 1
+  fi
+}
+
+#! /bin/bash
+# mod: mount
+# api: potion
+# txt: The `mount` module provides functions to ensure that specific
+#      mountpoint is mounted.
+# use: mount::present /mnt device=/dev/sda1 fstype=xfs
+
+# fun: mount::exists [name=]<name> [opts]
+# api: potion
+# txt: return true if specific device is mounted with passed options
+# opt: device: the device to mount
+# opt: fstype: the fstype of the device filesystem (default: auto)
+mount::exists () {
+  eval "$(std::parse "$@")"
+  while read _dev _ _mnt _ _fstype _; do
+    [ "$_mnt" == "${name}" ] && return 0
+  done < <(mount)
+  return 1
+}
+
+mount::_create () {
+  eval "$(std::parse "$@")"
+  mount_opt="${fstype:+-t $fstype}"
+  std::run mount ${mount_opt} ${device} "${name}"
+}
+
+mount::_destroy () {
+  eval "$(std::parse "$@")"
+  std::run umount "$name"
+}
+
+# fun: mount::present [name=]<name> [opts]
+# api: potion
+# txt: ensure that specific device is mounted according with passed options.
+# opt: device: the device to mount
+# opt: fstype: the fstype of the device filesystem (default: auto)
+mount::present () {
+  if ! mount::exists "$@"; then
+    mount::_create "$@" &&
+      res::created mount "$@" ||
+      err::trace "Unable to mount $@"
+  else
+    return 1
+  fi
+}
+
+# fun: mount::absent [name=]<name>
+# api: potion
+# txt: ensure that specific mount point is not mounted.
+mount::absent () {
+  if mount::exists "$@"; then
+    mount::_destroy "$@" &&
+      res::deleted mount "$@" ||
+      err::trace "Unable to umont $@"
+  else
+    return 1
+  fi
+}
+#! /bin/bash
+# mod: pkg
+# api: potion
+# txt: The `pkg` module provides functions to ensure package installation
+#      on the system.
+# use: pkg::present vim
+
+# fun: pkg::exists [name=]<package>
+# api: potion
+# txt: return true if the specific package is present in the system.
+pkg::exists () {
+  local os name
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
+
+  if std::func "pkg::_exists::${os}"; then
+    "pkg::_exists::${os}" "$name"
+    return $?
+  else
+    err::trace "Potion does not support '$os' operating system... yet"
+  fi
+}
+
+# fun: pkg::present [name=]<package>
+# api: potion
+# txt: ensure that specified package is installed on the system.
+pkg::present () {
+  local os name
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
+
+  if std::func "pkg::_present::${os}"; then
+    "pkg::_present::${os}" "$name"
+    return $?
+  else
+    err::trace "Potion does not support '$os' operating system... yet"
+  fi
+}
+
+# fun: pkg::absent [name=]<package>
+# api: potion
+# txt: ensure that specified package is not present on the system.
+pkg::absent () {
+  local os
+  eval "$(std::parse "$@")"
+  os="$(os::provider)"
+
+  if std::func "pkg::_absent::${os}"; then
+    "pkg::_absent::${os}" "$name"
+    return $?
+  else
+    err::trace "Potion does not support '$os' operating system... yet"
+  fi
+}
+#! /bin/bash
+# mod: pkg.archlinux
+# txt: The ``pkg.archlinux`` module contains specific functions to install
+#      or remove packages in archlinux distribution.
+
+# private pkg::_update::archlinux
+pkg::_update::archlinux () {
+  mutex::run pkg_archlinux std::run std::mute pacman -Sy --noconfirm &&
+    out::user "updated package database" ||
+    err::trace "Unable to update package database"
+  if ! ${NOCACHE:-false}; then
+    tmp::touch pkg_update_archlinux
+  fi
+}
+
+# private pkg::_exists::archlinux <package>
+pkg::_exists::archlinux () {
+  mutex::run pkg_archlinux std::mute pacman -Q "$1"
+}
+
+# private pkg::_present::archlinux <package>
+pkg::_present::archlinux () {
+  if ! pkg::_exists::archlinux "$1"; then
+    pkg::_create::archlinux "$1" &&
+      res::created pkg "$1" ||
+      err::trace "Unable to create package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_absent::archlinux <package>
+pkg::_absent::archlinux () {
+  if pkg::_exists::archlinux "$1"; then
+    pkg::_destroy::archlinux "$1" &&
+      res::deleted pkg "$1" ||
+      err::trace "Unable to destroy package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_create::archlinux <package>
+pkg::_create::archlinux () {
+  tmp::exists pkg_update_archlinux || pkg::_update::archlinux
+  mutex::run pkg_archlinux std::run std::mute pacman -S --noconfirm "$1"
+}
+
+# private pkg::_destroy::archlinux <package>
+pkg::_destroy::archlinux () {
+  mutex::run pkg_archlinux std::run std::mute pacman -R --noconfirm "$1"
+}
+#! /bin/bash
+# mod: pkg.ubuntu
+# txt: The ``pkg.ubuntu`` module contains specific functions to install or
+#      remove packages in ubuntu based distributions.
+pkg__ubuntu__aptopts='-q --yes '
+
+# private pkg::_update::ubuntu
+pkg::_update::ubuntu () {
+  DEBIAN_FRONTEND=noninteractive \
+    mutex::run pkg_ubuntu std::mute \
+      std::run apt-get ${pkg__ubuntu__aptopts} update &&
+        out::user "updated package database" ||
+        err::trace "Unable to update package database"
+  local ret=$?
+  if ! ${NOCACHE:-false}; then
+    tmp::create _pkg_cache
+    : > pkg_update_ubuntu
+    tmp::exit
+  fi
+  return $ret
+}
+
+# private pkg::_exists::ubuntu <package>
+pkg::_exists::ubuntu () {
+  mutex::run pkg_ubuntu dpkg -l | std::mute egrep "^ii\\s+*$1\\s+[^-]*"
+}
+
+# private pkg::_present::ubuntu <package>
+pkg::_present::ubuntu () {
+  if ! pkg::_exists::ubuntu "$1"; then
+    pkg::_create::ubuntu "$1" &&
+      res::created pkg "$1" ||
+      err::trace "Unable to create package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_absent::ubuntu <package>
+pkg::absent::ubuntu () {
+  if pkg::_exists::ubuntu "$1"; then
+    pkg::_destroy::ubuntu "$1" &&
+      res::deleted pkg "$1" ||
+      err::trace "Unable to destroy package: $1"
+  else
+    return 1
+  fi
+}
+
+# private pkg::_create::ubuntu <package>
+pkg::_create::ubuntu () {
+  tmp::exists pkg_update_ubuntu || pkg::_update::ubuntu
+  DEBIAN_FRONTEND=noninteractive mutex::run pkg_ubuntu std::run std::mute \
+    apt-get ${pkg__ubuntu__aptopts} install "$1"
+}
+
+# private pkg::_destroy::ubuntu <package>
+pkg::_destroy::ubuntu () {
+  DEBIAN_FRONTEND=noninteractive mutex::run pkg_ubuntu std::run std::mute \
+    apt-get ${pkg__ubuntu__aptopts} purge "$1"
+}
+#! /bin/bash
+# mod: srv
+# api: potion
+# txt: The `srv` module provides high-level functions to manage package
+#      installations.
+# use: srv::present sshd
+
+# private srv::sysinit
+srv::_sysinit () {
+  local si
+  si="$(cache::get _sysinit)"
+  [ "$si" ] && echo "$si" && return 0
+
+  if std::mute os::path systemctl; then
+    local si=systemd
+  elif std::mute os::path service; then
+    local si=upstart
+  elif std::mute os::patch initctl; then
+    local si=sysv
+  else
+    return 1
+  fi
+  cache::put _sysinit "$si"
+  echo "$si"
+  return 0
+}
+
+# fun: srv::exists [name=]<service>
+# api: potion
+# txt: return true if the specific service is present in the system.
+srv::exists () {
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
+
+  if std::func "srv::exists::_${si}"; then
+    "srv::exists::_${si}" "$name"
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+  fi
+}
+
+# fun: srv::present [name=]<service>
+# api: potion
+# txt: ensure that specified service is installed on the system.
+srv::present () {
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
+
+  if std::func "srv::present::_${si}"; then
+    "srv::present::_${si}" "$name"
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+  fi
+}
+
+# fun: srv::absent [name=]<service>
+# api: potion
+# txt: ensure that specified service is not present on the system.
+srv::absent () {
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
+
+  if std::func "srv::absent::_${si}"; then
+    "srv::absent::_${si}" "$name"
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+  fi
+}
+
+# internal srv::refresh
+srv::refresh () {
+  local si name
+  eval "$(std::parse "$@")"
+  si="$(srv::_sysinit)"
+
+  if std::func "srv::refresh::_${si}"; then
+    "srv::refresh::_${si}" "$name"
+  else
+    err::trace "Potion does not support '$si' service control... yet"
+  fi
+}
+#! /bin/bash
+# mod: srv.systemd
+# txt: The ``srv.systemd`` module contains specific functions to configure
+#      services with systemd.
+
+# private srv::exists::_systemd
+srv::exists::_systemd () {
+  std::mute systemctl is-active "${1}"
+}
+
+# private srv::present::_systemd
+srv::present::_systemd () {
+  if ! srv::exists::_systemd "$1"; then
+    context::task::enqueue "srv::create::_systemd '$1'"
+  fi
+}
+
+# private srv::absent::systemd
+srv::absent::_systemd () {
+  if srv::exists::_systemd "$1"; then
+    context::task::enqueue "srv::destroy::_systemd '$1'"
+  fi
+}
+
+# private srv::create::_systemd
+srv::create::_systemd () {
+  std::mute std::run systemctl enable "${1}" ||
+    err::trace "Unable to enable service: $1"
+  std::mute std::run systemctl start "${1}" ||
+    err::trace "Unable to start service: $1"
+  res::created srv "$1" engine=systemd
+}
+
+# private srv::destroy::_systemd
+srv::destroy::_systemd () {
+  std::mute std::run systemctl stop "${1}" ||
+    err::trace "Unable to stop service: $1"
+  std::mute std::run systemctl disable "${1}" ||
+    err::trace "Unable to disable service: $1"
+  res::deleted srv "$1" engine=systemd
+}
+
+# private srv::refresh::_systemd
+srv::refresh::_systemd () {
+  std::mute std::run systemctl daemon-reload ||
+    err::trace "Unable to reload system"
+  std::mute std::run systemctl restart "$1" ||
+    err::trace "Unable to refresh service: $1"
+}
+#! /bin/bash
+# mod: srv.sysv
+# txt: The ``srv.sysv`` module contains specific functions to create and
+#      configure services in systemv init environments.
+
+# private srv::exists::_sysv
+srv::exists::_sysv () {
+  std::mute /etc/init.d/"${1}" status
+}
+
+# private srv::present::_sysv
+srv::present::_sysv () {
+  if ! srv::exists::_sysv "$1"; then
+    context::task::enqueue "srv::create::_sysv '$1'"
+  fi
+}
+
+# private srv::absent::_sysv
+# txt: implements srv::absent for sysv provider.
+srv::absent::_sysv () {
+  if srv::exists::_sysv "$1"; then
+    context::task::enqueue "srv::destroy::_sysv '$1'"
+  fi
+}
+
+# private srv::create::sysv
+srv::create::_sysv () {
+  std::mute std::run ln -s "/etc/init.d/$1" "/etc/rc3.d/S20-$1" ||
+    err::trace "Unable to enable service: $1"
+  std::mute std::run "/etc/init.d/$1" start ||
+    err::trace "Unable to start service: $1"
+  res::created srv "$1" engine=sysv
+}
+
+# private srv::destroy::_sysv
+srv::destroy::_sysv () {
+  std::mute std::run rm -f "/etc/rc3.d/S20-${1}" ||
+    err::trace "Unable to disable service: $1"
+  std::mute std::run "/etc/init.d/${1}" stop
+    err::trace "Unable to stop service: $1"
+  res::deleted srv "$1" engine=sysv
+}
+
+# private srv::refresh::_sysv
+srv::refresh::_sysv () {
+  std::mute std::run "/etc/init.d/$1" restart ||
+    err::trace "Unable to refresh service: $1"
+}
+#! /bin/bash
+# mod: srv.upstart
+# txt: The ``srv.upstart`` contains specific functions to create and
+#      configure services in upstart based systems.
+
+# private srv::exists::upstart <service>
+srv::exists::_upstart () {
+  std::mute service "$1" status
+}
+
+# private srv::present::_upstart
+srv::present::_upstart () {
+  if ! srv::exists::_upstart "$1"; then
+    context::task::enqueue "srv::create::_upstart '$1'"
+  fi
+}
+
+# private srv::absent::_upstart
+srv::absent::_upstart () {
+  if srv::exists::_upstart "$1"; then
+    context::task::enqueue "srv::destroy::_upstart '$1'"
+  fi
+}
+
+# private srv::create::_upstart
+srv::create::_upstart () {
+  std::mute std::run update-rc.d "${1}" defaults ||
+    err::trace "Unable to enable service: $1"
+  std::mute std::run service "${1}" start ||
+    err::trace "Unable to start service: $1"
+  res::created srv "$1" engine=upstart
+}
+
+# private srv::destroy::_upstart
+srv::destroy::_upstart () {
+  std::mute std::run service "$1" stop ||
+    err::trace "Unable to stop service: $1"
+  std::mute std::run update-rc.d -f "${1}" remove ||
+    err::trace "Unable to disable service: $1"
+  res::deleted srv "$1" engine=upstart
+}
+
+# private srv::refresh::_upstart
+srv::refresh::_upstart () {
+  std::mute std::run service "$1" restart ||
+    err::trace "Unable to refresh service: $1"
+}
+#! /bin/bash
 # mod: sudo
 # txt: The `sudo` module provides functions to grant or deny permissions
 #      to specific users.
@@ -1446,6 +1389,148 @@ sudo::group::absent () {
   fi
 }
 #! /bin/bash
+# mod: swap
+# api: potion
+# txt: The `swap` module contains functions to create and configure swap
+#      space.
+# use: swap::present \\
+#        /tmp/swapfile \\
+#        size=1G \\
+#        format=true
+
+# fun: swap::exists
+# api: potion
+# txt: return true if swap is enabled
+swap::exists () {
+  read -r _ swap _ < <(free | grep '^Swap:')
+  [ "$swap" != "0" ]
+}
+
+
+# private swap::_create <device|file> <size>
+swap::_create () {
+  if [ -b "$1" ]; then
+    local isdevice=true
+  else
+    local isdevice=false
+  fi
+
+  if ${SWAP_FORMAT:-false}; then
+    if ${isdevice:-false}; then
+      std::mute blkid "$1" ||
+        std::mute mkswap "$1" ||
+        err::trace "Unable to make swap for device: $1"
+    else
+      # shellcheck disable=SC2015
+      [ -r "$1" ] ||
+        std::mute std::run dd if=/dev/zero "of=$1" "count=$2" bs=1M &&
+          std::mute std::run mkswap "$1" && std::run chmod 0660 "$1" ||
+          err::trace "Unable to make swap for file: $1"
+    fi
+  fi
+  std::mute std::run swapon "$1"
+}
+
+# private swap::_destroy <device|file>
+swap::_destroy () {
+  std::mute std::run swapoff "$1"
+}
+
+# fun: swap::present [name=<device|file>] [size=<size>] [format=<true|false>]
+# api: potion
+# txt: ensure that swap is enable in specified device or file and specified
+#      size.
+# opt: name: the device use as swap space.
+# opt: size: the size required if swap file is created
+# opt: format: if true, format swap space.
+swap::present () {
+  local name
+  eval "$(std::parse "$@")"
+  if ! swap::exists; then
+    # shellcheck disable=SC2015
+    SWAP_FORMAT=${format:-false} swap::_create "$name" "${size:-0}" &&
+      res::created swap "$name" "size=$size" ||
+      err::trace "Unable to create swap: $name"
+  else
+    return 1
+  fi
+}
+
+# fun: swap::absent [name=]<device|file>
+# api: potion
+# txt: ensure that specified device is not enabled for swap
+# opt: name: the device use as swap space.
+swap::absent () {
+  eval "$(std::parse "$@")"
+  if swap::exists; then
+    if swap::_destroy "$name"; then
+      res::deleted "$name"
+    else
+      err::trace "Unable to destroy swap: $1"
+    fi
+  else
+    return 1
+  fi
+}
+#! /bin/bash
+# mod: tz
+# api: potion
+# txt: The `tz` module provides functions to configure timezone in the
+#      system.
+# env: TZ_DIR: path where zoneinfo live. By default `/usr/share/zoneinfo`.
+# use: tz::present Europe/Madrid
+
+TZ_DIR="/usr/share/zoneinfo"
+
+# fun: tz::exists [name=]<zonename>
+# api: potion
+# txt: if timezone especified in argument is set return true, otherwise
+#      return false.
+tz::exists () {
+  local current decided name
+  [ -r /etc/localtime ] || return 1
+
+  eval "$(std::parse "$@")"
+  current="$(file::_hmac file:///etc/localtime)"
+  decided="$(file::_hmac "file:///usr/share/zoneinfo/$name")"
+
+  [ "$current" == "$decided" ]  
+}
+
+# fun: tz::present [name=]<zonename>
+# api: potion
+# txt: ensure that specified timezone is set.
+tz::present () {
+  eval "$(std::parse "$@")"
+
+  if ! tz::exists "$name"; then
+    if std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime; then
+      res::created tz "$name"
+    else
+      err::trace "Unable to create tz: $name"
+    fi
+  else
+    return 1
+  fi
+}
+
+# fun: tz::absent [name=]<zonename>
+# api: potion
+# txt: ensure that the specified timezone is not set.
+tz::absent () {
+  eval "$(std::parse "$@")"
+
+  if tz::exists "$name"; then
+    if std::mute std::run rm -f /etc/localtime; then
+      res::deleted tz "$name"
+    else
+      err::trace "Unable to destroy tz: $name"
+    fi
+  else
+    return 1
+  fi
+}
+#! /bin/bash
 # mod: user
 # api: potion
 # txt: The `user` module provides functions to manage users in the system.
@@ -1558,321 +1643,451 @@ user::absent () {
   fi
 }
 #! /bin/bash
-# mod: mount
-# api: potion
-# txt: The `mount` module provides functions to ensure that specific
-#      mountpoint is mounted.
-# use: mount::present /mnt device=/dev/sda1 fstype=xfs
+# mod: meta
+# txt: This internal module provides information about metadata
 
-# fun: mount::exists [name=]<name> [opts]
-# api: potion
-# txt: return true if specific device is mounted with passed options
-# opt: device: the device to mount
-# opt: fstype: the fstype of the device filesystem (default: auto)
-mount::exists () {
-  eval "$(std::parse "$@")"
-  while read _dev _ _mnt _ _fstype _; do
-    [ "$_mnt" == "${name}" ] && return 0
-  done < <(mount)
-  return 1
+declare -A POTION_METADATA=()
+
+# fun: meta::get <key>
+# txt: get the current value of key
+meta::get ()
+{
+  echo "${POTION_METADATA["$1"]}"
 }
 
-mount::_create () {
-  eval "$(std::parse "$@")"
-  mount_opt="${fstype:+-t $fstype}"
-  std::run mount ${mount_opt} ${device} "${name}"
+# fun: meta::set <key> <value>
+# txt: add new value to the metadata
+meta::set ()
+{
+  POTION_METADATA["$1"]="$2"
 }
 
-mount::_destroy () {
-  eval "$(std::parse "$@")"
-  std::run umount "$name"
-}
+# fun: meta::polulate
+# txt: poplulate metadata values from the system
+meta::populate ()
+{
+  meta::set "core.processors" "$(getconf _NPROCESSORS_ONLN)"
+  meta::set "core.hostname" "$(hostname)"
+  meta::set "core.fqdn" "$(hostname -f)"
 
-# fun: mount::present [name=]<name> [opts]
-# api: potion
-# txt: ensure that specific device is mounted according with passed options.
-# opt: device: the device to mount
-# opt: fstype: the fstype of the device filesystem (default: auto)
-mount::present () {
-  if ! mount::exists "$@"; then
-    mount::_create "$@" &&
-      res::created mount "$@" ||
-      err::trace "Unable to mount $@"
+  out::user "loaded metadata: ${#POTION_METADATA[@]} variables loaded"
+}
+#! /bin/bash
+# mod: refresh
+# txt: The `refresh` add functionality to refresh services or other
+#      resources.
+
+refresh () {
+  local res="$1"; shift
+
+  if std::func "${res}::refresh"; then
+    "${res}::refresh" "$@" &&
+      res::refreshed "${res}" "$1"
   else
-    return 1
+    out::warn "unable to refresh ${res}: cannot found refresh handler"
   fi
 }
+#! /bin/bash
+# mod: res
+# txt: The ``res`` module provides a way to work with potion resources.
 
-# fun: mount::absent [name=]<name>
-# api: potion
-# txt: ensure that specific mount point is not mounted.
-mount::absent () {
-  if mount::exists "$@"; then
-    mount::_destroy "$@" &&
-      res::deleted mount "$@" ||
-      err::trace "Unable to umont $@"
-  else
-    return 1
-  fi
-}
-#!/bin/bash
-# mod: artifact
-# txt: The `artifact` module contains function to access to artifacts. An
-#      artifact is a file embedded in potion compiled object, usually you
-#      want to set some configuration files as artifacts.
-
-# fun: artifact::hmac <artifact_name>
-# txt: print to stdout the HMAC of the artifact passed as argument.
-# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
-#      sha1, md5, sha256, sha512. The proper helper tool must be installed
-#      on the system.
-artifact::hmac () {
-  if artifact::exists "$1"; then
-    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
-  else
-    err::trace "Missing artifact while calculating HMAC: $1"
-  fi
-}
-
-# fun: artifact::extract
-# txt: extract artifacts if artifact support is enabled.
-artifact::extract () {
-  [ "$POTION_ARTIFACTS" ] || return 0
-  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
-
-  mutex::adquire _artifacts
-  tmp::create _artifacts
-  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
-    err::trace "Unable to extract artifacts"
-  touch "${BLIB_TMPDIR}/.artifacts"
-  tmp::exit
-  mutex::release _artifacts
-}
-
-# fun: artifact::exists <artifact_name>
-# txt: return true if the artifact exists, false otherwise.
-artifact::exists () {
-  artifact::extract
-  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
-}
-
-# fun: artifact::read <artifact_name>
-# txt: read a specific artifact from potion.
-artifact::read () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  cat "${BLIB_TMPDIR}/_artifacts/$1"
-}
-
-
-# fun: artifact::eval <artifact_name>
-# txt: read and eval specific artifact from potion.
-artifact::eval () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  local content
-
-  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
-  eval echo \""${content//\"/\\\"}"\"
-}
-
-# fun: artifact::build <directory>
-# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
-#      variable to stdout with the encoded version of the artifacts.
-artifact::build () {
-  local artifacts
-  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
-  echo "POTION_ARTIFACTS='${artifacts}'"
+res::variables () {
+  for word in "$@"; do
+    case "$word" in
+      *=*) echo -n "${COLOR_BOLD}${word%%=*}${COLOR_NONE}"
+           echo -n "${C}=${word#*=}${COLOR_NONE} ";;
+      *) echo -n "$word "
+    esac
+  done
   echo
 }
 
-# fun: artifact::load <directory>
-# txt: load in environment potion artifacts
-artifact::load ()
-{
-  eval "$(artifact::build "${1}")"
-  out::user "dumped artifacts from: ${1}"
+res::created () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}CREATED${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::info "created $1: $(C="$COLOR_INFO" res::variables "$2")"
+}
+
+res::deleted () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}DELETED${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::warn "deleted $1: $(C="$COLOR_WARN" res::variables "$2")"
+}
+
+res::refreshed () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}REFRESH${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::info "refreshed $1: $(C="$COLOR_INFO" res::variables "$2")"
 }
 #! /bin/bash
-# mod: main
-# txt: The ``main`` module contain the specified potion body.
+# mod: secret
+# txt: The `secret` module allows you to get/set passwords or secret config
+#      keys from diferent sources instead of save them in plain text in the
+#      potion file.
+# env: SECRET_MASTERKEY: Path to file where the master key for secrets lives.
+#      By default ``/etc/potion.key``
 
-VERSION="0.2.9"
-export CONTEXT="main"
+SECRET_MASTERKEY=/etc/potion.key
 
-# env: POTION_DEFAULT_SOURCE
-# txt: If set, always try to get potion files from this url. Note that if
-#      other arguments are passed in the command line, potion will load
-#      all of them plus the defined in ``POTION_DEFAULT_SOURCE.``
-export POTION_DEFAULT_SOURCE=
+declare -A _secrets
 
-# fun: main::init
-# txt: print nice potion logo and some custom messages at the beginning.
-main::init () {
-
-  if ! ${NOLOGO:-false}; then
-  out::user ""
-  out::user "${COLOR_USER}                                   o${COLOR_NONE}"
-  out::user "${COLOR_USER}                                     o${COLOR_NONE}"
-  out::user "                                   ___"
-  out::user "${COLOR_WARN} ____       _   _                  ${COLOR_NONE}| |"
-  local m="${COLOR_WARN}|  _ \\ ___ | |_(_) ___  _ __       "
-  m+="${COLOR_NONE}|${COLOR_USER}o${COLOR_NONE}|"
-  out::user "$m"
-  local m="${COLOR_WARN}| |_) / _ \| __| |/ _ \| '_ \\    ${COLOR_NONE}.'   '."
-  out::user "$m"
-  local m="${COLOR_WARN}|  __/ (_) | |_| | (_) | | | |  ${COLOR_NONE}/   "
-  m+="${COLOR_USER}o${COLOR_NONE}   \\"
-  out::user "$m"
-  local m="${COLOR_WARN}|_|   \\___/ \\__|_|\___/|_| |_|  "
-  m+="${COLOR_NONE}:${COLOR_USER}____o__${COLOR_NONE}:"
-  out::user "$m"
-  local m="                                '.${COLOR_USER}"
-  m+="_____${COLOR_NONE}.'"
-  out::user "$m"
-  else
-    out::user "Starting potion..."
-  fi
-  out::user "${COLOR_USER}version${COLOR_NONE} ${VERSION}" 
-  out::user "detected hardware architecture: $(std::arch)"
-  out::user "detected os family: $(os::family)"
-  out::user "detected os provider: $(os::provider)"
-
-
+# fun: secret::load [name=]<name>
+# txt: load a secret file
+secret::load () {
+  local url="${1#name=}"
+  case "$url" in
+    gpg://*|gpg+file://*)
+      url="${url#*://}"
+      eval "$(gpg -d "$url")";;
+    gpg+*)
+      url="${url#gpg+}"
+      eval "$(curl -sqL "$url" | gpg -d)";;
+    crypt+*)
+      url="${url#crypt+}"
+      eval "$(curl -sqL "$url" |
+              openssl enc -d -a -aes256 -kfile "${SECRET_MASTERKEY}")";;
+    *) url="${url#file://}"
+       # shellcheck disable=SC1090
+       source "$url" || err::trace "Invalid secret file format" ;;
+  esac
 }
 
-# general options handlers
-main::opt_debug () { set -x; return 1;}
-main::opt_version () { out::info "Potion $VERSION"; exit 0;}
-main::opt_quiet () { QUIET=true; return 1;}
-main::opt_pretend () { export PRETEND=true; return 1;}
-main::opt_verbose () { export VERBOSE=true; return 1;}
-main::opt_nologo () { export NOLOGO=true; return 1;}
-
-# create action
-main::create::opt_artifacts () { main__create__artifacts="$1"; return 2;}
-main::create::opt_compress () { main__create__compress=true; return 1;}
-main::create::opt_output () { main__create__output="$1"; return 2;}
-main::create::opt_secrets () { main__create__secrets="$1"; return 2;}
-
-export artifacts
-main::create () {
-  local output=$'#! /bin/bash\nPOTION_COMPILED=true\n'
-  ${QUIET:-false} || main::init
-  out::info "output file: ${main__create__output:=./a.potion}"
-  output+="$(<"$0")"$'\n'
-  if [ "${main__create__artifacts}" ]; then
-    [ -d "${main__create__artifacts}" ] ||
-      err::trace "Artifacts directory does not exists or isn't a directory"
-
-    [ -r "${main__create__artifacts}" ] ||
-      err::trace "Unable to read artifacts directory"
-
-    artifacts="$(cd "${main__create__artifacts}" &&
-                 tar -c . | base64)"
-    output+=$'\n'"$(artifact::build "${main__create__artifacts}")"$'\n'
-
-    out::user "dumped artifacts from: ${main__create__artifacts}"
-  fi
-  if [ "${main__create__secrets}" ]; then
-    output+=$'\n'"secret::load '${main__create__secrets}'"$'\n'
-    out::user "set secret url to: ${main__create__secrets}"
-  fi
-  out::info "created core launcher"
-  for template in "$@"; do
-    [ -r "$template" ] ||
-      err::trace "Unable to find template: $template"
-    output+="$(<"$template")"$'\n'
-    out::info "dumping template: $template"
-  done
-  output+=$'\nmeta::polulate\n'
-  output+=$'\ncontext::run\n'
-  if ${main__create__compress:-false}; then
-    local launcher="#!/bin/bash"$'\n'
-    launcher+="POTION_PAYLOAD='$(echo "${output}" | gzip -9 | base64)'"$'\n'
-    # shellcheck disable=SC2016
-    launcher+='exec bash < <(echo "$POTION_PAYLOAD" | base64 -d | gzip -d)'
-    launcher+=$'\n'
-    output="$launcher"
-  fi
-  echo "${output}" > "${main__create__output}"
+# fun: secret::add [name=]<name> content=<content>
+# txt: add new secret with specified content associated with key passed as
+#      argument.
+secret::add () {
+  eval "$(std::parse "$@")"
+  # shellcheck disable=2154
+  _secrets["$name"]="$content"
 }
 
-# run action
-main::run::opt_artifacts () { main__run__artifacts="$1"; return 2; }
-main::run::opt_secrets () { main__run__secrets="$1"; return 2; }
-main::run () {
-  main::init "in-line"
-  if [ "${main__run__artifacts}" ]; then
-    [ -d "${main__run__artifacts}" ] ||
-      err::trace "Artifacts directory does not exists or isn't a directory"
-
-    [ -r "${main__run__artifacts}" ] ||
-      err::trace "Unable to read artifacts directory"
-
-    eval "$(artifact::build "${main__run__artifacts}")"
-    out::user "dumped artifacts from: ${main__run__artifacts}"
-  fi
-  if [ "${main__run__secrets}" ]; then
-    secret::load "${main__run__secrets}"
-    out::user "loaded secrets from: ${main__run__secrets}"
-  fi
-  for src in "$@"; do
-    include "$src" || err::trace "Unable to load potion file(s): $src"
-  done
-  if [[ "$POTION_DEFAULT_SOURCE" ]]; then
-    include "$POTION_DEFAULT_SOURCE" ||
-      err::trace "Unable to load potion file(s): $POTION_DEFAULT_SOURCE"
-  fi
-  meta::populate
-  context::run
+# fun: secret <name>
+# txt: return the secret text associated with specified name
+secret () {
+  echo "${_secrets["$1"]}"
 }
-
-# fun: main [arguments]
-# txt: function to create random errors and weird behaviour.
-main () {
-  # if this is a compiled potion, we don't need main
-  ${POTION_COMPILED:-false} && main::init && return 0
-  
-  arg::opt MAIN -q --quiet   main::opt_quiet   'do not output messages'
-  arg::opt MAIN -v --verbose main::opt_verbose 'enable verbose mode'
-  arg::opt MAIN -d --debug   main::opt_debug   'enable debug mode'
-  arg::opt MAIN -p --pretend main::opt_pretend 'do nothing, just pretending'
-  arg::opt MAIN -V --version main::opt_version 'show program version number'
-  arg::opt MAIN -L --no-logo main::opt_nologo  'do not show ASCI art logo :('
-
-  arg::action create main::create 'create new potion from templates'
-  arg::param create "infredients+" \
-    'URL to the ingredient files to make the potion'
-  arg::opt create -o: --output: main::create::opt_output \
-    'set path to output potion filename'
-  arg::opt create -a: --artifacts: main::create::opt_artifacts \
-    'set path to artifacts directory'
-  arg::opt create -c  --compress   main::create::opt_compress \
-    'create compressed potion (require gzip)'
-  arg::opt create -s:  --secrets:   main::create::opt_secrets \
-    'set a secret file or URL to store passwords'
-  
-  arg::action run main::run 'run potion template'
-  arg::param run "ingredients*" \
-    'path to the scripts files (ingredients) to make the potion'
-  arg::opt run -a: --artifacts: main::run::opt_artifacts \
-    'set path to artifacts directory'
-  arg::opt run -s:  --secrets:   main::run::opt_secrets \
-    'set a secret file or URL to store passwords'
-
-  arg::parse "$@"
-}
-shopt -s expand_aliases
 #! /bin/bash
-# mod: debug
+# mod: arg
 # api: blib
-# txt: The debug module enable or disable debug featuring.
-# env: DEBUG: if true enable debug mode
+# txt: The `arg` module provides a number of functions to parse arguments
+#      from command line.
+#
+#      To use `arg` module you need to create handler functions which will
+#      be call during the parser process. The handler functions sould return
+#      the number of parameters comsumed from the parameter list. See
+#      example below for more information.
+# use: opt_quiet () {
+#          QUIET=true; return 1; # we consum only the -q param
+#      }
+#      create () { echo "$arguments" }
+#
+#      arg::opt MAIN -q --quiet   opt_quiet   'do not output messages'
+#
+#      arg::action create create 'create new things'
+#      arg::param create "arguments+"  'argument to create subcommand'
+#
+#      arg::parse "$@"
 
-${DEBUG:+set -x}
+
+declare -A arg__opt_long
+declare -A arg__opt_short
+declare -A arg__opt_help
+declare -A arg__actions
+declare -A arg__actions_help
+declare -A arg__param
+
+# fun: arg::opt <action> <short> <long> <handler> [help]
+# api: blib
+# txt: set an option for a specific action argument.
+# opt: action: the action for which the option will be added
+# opt: short: the short form of the option (usually prefixed by ``-``)
+# opt: long: the long form of the option (usually prefixed by ``--``)
+# opt: handler: function to handler when option is present.
+arg::opt () {
+  arg__opt_short["$1,${2#-}"]="$4"
+  arg__opt_long["$1,${3#--}"]="$4"
+  arg__opt_help["$1,${2#-},${3#--}"]="$5"
+}
+
+# fun: arg::parse::opt::fail <cmdline>
+# txt: exit program with error 2 (cmdline error) interpreting cmdline passed
+#      as argument.
+# opt: cmdline: the cmdline which fails.
+arg::parse::opt::fail () {
+  echo "unrecognized command line option '${1}'" >&2
+  E=2 arg::usage >&2
+}
+
+# fun: arg::parse::opt::long <action> <option> [option argument]
+# txt: set the specific long option for the action passed as argument. The
+#      option can be suffixed with a colon (:) to specify a mandatory
+#      argument.
+arg::parse::opt::long () {
+  local opt="${2#--}"
+  local fun="${arg__opt_long["$1,$opt"]}"
+  [ "$fun" ] || 
+    local fun="${arg__opt_long["$1,$opt:"]}"
+
+  if [ "$fun" ]; then
+    "$fun" "$3"
+  else
+    arg::parse::opt::fail "${2%:}"
+  fi
+}
+
+# fun: arg::parse::opt::short <action> <option> [option argument]
+# txt: set the specific short option for the action passed as argument. The
+#      option can be suffixed with a colon (:) to specify a mandatory
+#      argument.
+arg::parse::opt::short () {
+  local opt="${2#-}"
+  local fun="${arg__opt_short["$1,$opt"]}"
+  [ "$fun" ] || 
+    local fun="${arg__opt_short["$1,$opt:"]}"
+  if [ "$fun" ]; then
+    $fun "$3"
+  else
+    arg::parse::opt::fail "${2%:}"
+  fi
+}
+
+# fun: arg::action <action> <handler> [help_message]
+# api: blib
+# txt: set a new action in argument parser.
+# opt: action: the action name to add to the parser
+# opt: handler: the function name to use as handler for this action.
+# opt: help_message: a message to print on usage.
+arg::action () {
+  arg::opt "$1" -h --help "arg::usage::action::explain $1" \
+    "print help message about $1 action"
+  arg__actions["${1}"]="$2"
+  arg__actions_help["${1}"]="$3"
+}
+
+# fun: arg::usage::action <action>
+# txt: print usage information for the action passed as argument.
+arg::usage::action::explain () {
+  local summ="usage: $0 ${1//MAIN/}"
+  local text=""
+  local param=""
+
+  for key in "${!arg__opt_help[@]}"; do
+    IFS=',' read -r action short long <<<"${key}"
+    [ "$action" != "$1" ] && continue
+    local help_str="${arg__opt_help["$key"]}"
+
+    if [ "${short: -1}" == ":" ]; then
+      local argname="${long%:}"
+      local argname="${argname/-/_}"
+      local argname=" ${argname^^}"
+    else
+      local argname=''
+    fi
+    summ+=" [-${short%:}${argname}]"
+
+    if [ "${argname}" ]; then
+      text+="$(printf "  %-20s" \
+               "-${short%:}${argname}, --${long%:}${argname}")"
+      text+=$'\n'
+      text+="$(printf "  %-20s %s" '' "${help_str}")"
+    else
+      text+="$(printf "  %-20s %s" \
+               "-${short%:}${argname}, --${long%:}" \
+               "${help_str}")"
+    fi
+    text+=$'\n'
+  done
+
+  local spam=''
+  for key in "${!arg__param[@]}"; do
+    IFS=',' read -r action par <<<"${key}"
+    [ "$action" != "$1" ] && continue
+    local help_str="${arg__param["$key"]}"
+    param+="$(printf "  %-20s %s" "${par}" "${help_str}")"
+    param+=$'\n'
+    case "$par" in
+      *\?|*'*') spam+="${spam:+ }[${par}]";;
+      *) spam+="${spam:+ }<${par}>";;
+    esac
+  done
+
+  if [ "$1" == "MAIN" ]; then
+    local sact=''
+    for action in "${!arg__actions[@]}"; do
+      [ "$action" == "MAIN" ] && continue
+      sact+="${sact:+, }$action"
+      actions+="$(printf "  %-20s %s" \
+                  "${action}" \
+                  "${arg__actions_help["$action"]}")"
+      actions+=$'\n'
+    done
+  fi
+  echo "$summ${sact:+" \{$sact\}"}${spam:+ $spam}"
+  echo
+
+  [ "$1" == "MAIN" ] && [ "${arg__actions_help["MAIN"]}" ] &&
+    echo "${arg__actions_help["MAIN"]}" && echo
+
+  if [ "$actions" ]; then
+    echo "command line actions:"
+    echo "$actions"
+  fi
+  if [ "$param" ]; then
+    echo "positional parameters:"
+    echo "$param"
+  fi
+  if [ "$text" ]; then
+    echo "optional arguments:"
+    echo "$text"
+  fi
+
+  exit "${E:-0}"
+}
+
+# fun: arg:::main::help <text>
+# api: blib
+# txt: Set the main help for the program
+# opt: text: the main help string for the program
+arg::main::help () {
+  arg__actions_help["MAIN"]="$1"
+}
+
+# fun: arg:::main::action <fun>
+# api: blib
+# txt: Set the function handler for main action, used when no action
+#      defined.
+# opt: fun: the handler for the MAIN action.
+arg::main::action () {
+  arg__actions["MAIN"]="$1"
+}
+
+# fun: arg::usage
+# api: blib
+# txt: print main usage information
+# env: E: the error code to return to OS on exit.
+arg::usage () {
+  arg::usage::action::explain MAIN
+}
+
+# fun: arg::parse::action <action> [arguments]
+# txt: parse arguments starting with action passed as argument.
+arg::parse::action () {
+  local action="$1"; shift;
+  while [ $# -ne 0 ]; do
+    case "$1" in
+      --*=*)
+        arg::parse::opt::long "$action" "${1%=*}" "${1#*=}"; shift;;
+      --*) arg::parse::opt::long "$action" "$@"; shift $?;;
+      -*) arg::parse::opt::short "$action" "$@"; shift $?;;
+      *) break;;
+    esac
+  done
+  if [ "$action" == "MAIN" ]; then
+    if [ "${arg__actions["MAIN"]}" ]; then
+      arg::parse::arg MAIN "$@"; shift $?
+    else
+      arg::parse::action "$@";
+    fi
+    return
+  else
+    arg::parse::arg "$action" "$@"; shift $?
+  fi
+
+}
+
+# fun: arg::parse::arg <action> [arguments]
+# txt: parse arguments (not options) for specific action passed as argument.
+arg::parse::arg () {
+  local action="$1"; shift
+  if [ -z "$action" ]; then
+    echo "missing action command" >&2
+    arg::usage >&2
+    exit 2
+  fi
+  local handler="${arg__actions["$action"]}"
+  [ "$handler" ] || arg::parse::opt::fail "$action"
+
+  count=0
+  for param in "${!arg__param[@]}"; do
+    IFS=, read -r a name <<< "${param}"
+    if [ "$action" == "$a" ]; then
+      case "$name" in
+        *+) ((count++));;
+        *\?|*'*') ;;
+        *) ((count++));;
+      esac
+    fi
+  done
+
+  if [ $# -lt $count ]; then
+    echo "missing arguments: $# found, $count expected" >&2
+    arg::usage::action::explain "$action" >&2
+    exit 2
+  fi
+
+  $handler "$@"
+}
+
+# fun: arg::parse [arguments]
+# api: blib
+# txt: parse arguments according with previous configured parser.
+arg::parse () {
+  arg::opt MAIN -h --help 'arg::usage' 'print help message'
+  arg::parse::action MAIN "$@"
+}
+
+# fun: arg::param <action> <parameter_name> [help_str]
+# api: blib
+# txt: add position parameter to parser.
+# opt: action: action where add the parameter
+# opt: parameter_name: the name of the paramenter
+# opt: help_str: a help string for the parameter to show in usage
+arg::param () {
+  arg__param["$1,$2"]="$3"
+}
+#! /bin/bash
+# mod: cache
+# api: blib
+# txt: The `cache` module provides a simple in-memory cache.
+# use: cache::put "key" "val"
+#      cache::get "key"
+
+# fun: cache::get <key>
+# api: blib
+# txt: get the value of the key from the potion in-memory cache.
+cache::get () {
+  echo "${cache__contents["$1"]}"
+}
+
+# fun: cache::put <key> <value>
+# api: blib
+# txt: save the content of the specified key to the in-memory cache.
+cache::put () {
+  cache__contents["$1"]="$2"
+}
+
+declare -A cache__contents
 #! /bin/bash
 # mod: config
 # api: blib
@@ -1939,57 +2154,59 @@ config::iter ()
   done
 }
 #! /bin/bash
-# mod: cache
+# mod: curl
 # api: blib
-# txt: The `cache` module provides a simple in-memory cache.
-# use: cache::put "key" "val"
-#      cache::get "key"
+# txt: The curl module offers a way to access to HTTP resources easily.
 
-# fun: cache::get <key>
+# fun: curl::get <url>
 # api: blib
-# txt: get the value of the key from the potion in-memory cache.
-cache::get () {
-  echo "${cache__contents["$1"]}"
+# txt: get an object from url and output it to stdout
+# opt: url: any URL valid for curl.
+# use: curl::get http://example.com
+curl::get () {
+  command curl -qsSL "$1"
 }
 
-# fun: cache::put <key> <value>
+# fun: curl::source <url>
 # api: blib
-# txt: save the content of the specified key to the in-memory cache.
-cache::put () {
-  cache__contents["$1"]="$2"
-}
-
-declare -A cache__contents
-#! /bin/bash
-# mod: term
-# api: blib
-# txt: The `term` module provides functions related with terminal
-#      configuration. This module also define some useful color variables to
-#      be used in `out` module.
-
-# fun: term::attached
-# api: blib
-# txt: return true if output is a terminal, false otherwise
-term::attached () { [ -t 1 ]; }
-
-# fun: term::tcap <capability>
-# api: blib
-# txt: check if some capabilty is enabled in terminal
-term::tcap () { tput "$1" 2>/dev/null; }
-
-if term::attached; then
-  case "$(term::tcap colors)" in
-    256)
-      COLOR_NONE=$'\033[0;0;0m'
-      COLOR_INFO=$'\033[38;5;79m'
-      COLOR_WARN=$'\033[38;5;190m'
-      COLOR_FAIL=$'\033[38;5;160m'
-      COLOR_DATE=$'\033[38;5;242m'
-      COLOR_USER=$'\033[38;5;201m'
-      COLOR_BOLD=$'\033[1;15m'
-      ;;
+# txt: sources a file from url
+# use: curl::source http://mydomain.com/file.bash
+curl::source () {
+  case "$1" in
+    *://*) source <(curl::get "$1");;
+    *) source "$1" ;;
   esac
-fi
+}
+#! /bin/bash
+# mod: debug
+# api: blib
+# txt: The debug module enable or disable debug featuring.
+# env: DEBUG: if true enable debug mode
+
+${DEBUG:+set -x}
+#! /bin/bash
+# mod: err
+# api: blib
+# txt: The `err` module offers a way to stop potion execution with
+#      a traceback.
+
+# fun: err::trace
+# api: blib
+# txt: print to stderr a traceback of an error.
+# use: false || err::trace "Error because of false"
+err::trace () {
+  echo "${COLOR_FAIL}Traceback (most recent call last):${COLOR_NONE}" >&2
+  for ((i=0;; i++)); do
+    read line fun file < <(caller $i)
+    if [ "$line" ]; then
+      echo "${COLOR_FAIL} File '$file', line $line, in $fun${COLOR_NONE}" >&2
+    else
+      break
+    fi
+  done
+  out::fail "$1"
+  exit 127
+}
 #! /bin/bash
 # mod: mutex
 # api: blib
@@ -2043,6 +2260,67 @@ mutex::run () {
   local ret=$?
   mutex::release "$name"
   return $ret
+}
+#! /bin/bash
+# mod: os
+# api: blib
+# txt: The `os` module provides specified functions to guess the operating
+#      system related variables.
+
+# fun: os::family
+# api: blib
+# txt: print to stdout the operating system family
+os::family () {
+  uname -o
+}
+
+# fun: os::provider
+# api: blib
+# txt: print the operating system provider (formerly distribution).
+os::provider () {
+  for f in ${!os__provider[@]}; do
+    if [ -r "$f" ]; then
+      echo "${os__provider["$f"]}"
+      return 0
+    fi
+  done
+
+  if [ -r /etc/lsb-release ]; then
+    std::mute grep 'DISTRIB_ID=Ubuntu' /etc/lsb-release &&
+      echo ubuntu && return 0
+  fi
+  return 1
+}
+declare -A os__provider
+os__provider["/etc/arch-release"]="archlinux"
+
+# fun: os::release
+# api: blib
+# txt: print to stdout the properly release of operating system provider.
+os::release () {
+  local provider="$(os::provider)"
+  if std::func os::release::${provider}; then
+    std::func::os::release::${provider}
+  fi
+  true
+}
+
+# fun: os::path <file>
+# api: blib
+# txt: return the path of a file in PATH
+# opt: file: the file name to find the full path.
+# env: PATH: contains the path to search file
+os::path () { type -P "$1" 2>/dev/null; }
+#! /bin/bash
+# mod: os.ubuntu
+# txt: The ``os.ubuntu`` module extends ``os`` module adding specific
+#      functions for Ubuntu based systems.
+
+# fun: os::relase::ubuntu
+# txt: return specific relese for ubuntu operating systems.
+os::release::ubuntu () {
+  IFS='=' read _ release < <(grep "^DISTRIB_RELEASE=" /etc/lsb-release)
+  echo "$release"
 }
 #! /bin/bash
 # mod: out
@@ -2106,7 +2384,7 @@ out::user () { out::log "$1" "${COLOR_USER}user${COLOR_NONE}"; }
 # api: blib
 # txt: perform an exit clean of the running program.
 std::quit () {
-  for handler in ${std__quit_handler[@]}; do
+  for handler in "${std__quit_handler[@]}"; do
     $handler
   done
 }
@@ -2141,10 +2419,10 @@ trap std::quit CHLD
 std::hmac () {
   ALGO="${ALGO:=sha1}"
   local sum=
-  local path="$(os::path ${ALGO}sum)"
+  local path; path="$(os::path ${ALGO}sum)"
   if [ "$path" ]; then
     sum="$(echo -n "$1" | ${ALGO}sum)"
-    read sum _ <<<"$sum"
+    read -r sum _ <<<"$sum"
     echo "$sum"
   else
     err::trace "Required binary '${ALGO}sum' not found"
@@ -2199,6 +2477,7 @@ std::arch () {
 # env: TZ: the timezone to use to print the timestamp, by default get the
 #      timezone from the system.
 std::timestamp () {
+  # shellcheck disable=SC2183
   printf "%(%s)T\n"
 }
 
@@ -2285,7 +2564,6 @@ std::sort () {
 #      echo "${str2array_ret[@]}"
 std::str2array () {
   local str="$1"
-  local sep="${2:-,}"
   # remove [] if present
   str="${str#[}"
   str="${str%]}"
@@ -2293,394 +2571,7 @@ std::str2array () {
   eval set -- "${str//,/ }"
   str2array_ret=( "$@" )
 }
-declare -a str2array_ret
-#! /bin/bash
-# mod: curl
-# api: blib
-# txt: The curl module offers a way to access to HTTP resources easily.
-
-# fun: curl::get <url>
-# api: blib
-# txt: get an object from url and output it to stdout
-# opt: url: any URL valid for curl.
-# use: curl::get http://example.com
-curl::get () {
-  command curl -qsSL "$1"
-}
-
-# fun: curl::source <url>
-# api: blib
-# txt: sources a file from url
-# use: curl::source http://mydomain.com/file.bash
-curl::source () {
-  case "$1" in
-    *://*) source <(curl::get "$1");;
-    *) source "$1" ;;
-  esac
-}
-#! /bin/bash
-# mod: arg
-# api: blib
-# txt: The `arg` module provides a number of functions to parse arguments
-#      from command line.
-#
-#      To use `arg` module you need to create handler functions which will
-#      be call during the parser process. The handler functions sould return
-#      the number of parameters comsumed from the parameter list. See
-#      example below for more information.
-# use: opt_quiet () {
-#          QUIET=true; return 1; # we consum only the -q param
-#      }
-#      create () { echo "$arguments" }
-#
-#      arg::opt MAIN -q --quiet   opt_quiet   'do not output messages'
-#
-#      arg::action create create 'create new things'
-#      arg::param create "arguments+"  'argument to create subcommand'
-#
-#      arg::parse "$@"
-
-
-declare -A arg__opt_arg
-declare -A arg__opt_long
-declare -A arg__opt_short
-declare -A arg__opt_help
-declare -A arg__actions
-declare -A arg__actions_help
-declare -A arg__param
-
-# fun: arg::opt <action> <short> <long> <handler> [help]
-# api: blib
-# txt: set an option for a specific action argument.
-# opt: action: the action for which the option will be added
-# opt: short: the short form of the option (usually prefixed by ``-``)
-# opt: long: the long form of the option (usually prefixed by ``--``)
-# opt: handler: function to handler when option is present.
-arg::opt () {
-  arg__opt_short["$1,${2#-}"]="$4"
-  arg__opt_long["$1,${3#--}"]="$4"
-  arg__opt_help["$1,${2#-},${3#--}"]="$5"
-}
-
-# fun: arg::parse::opt::fail <cmdline>
-# txt: exit program with error 2 (cmdline error) interpreting cmdline passed
-#      as argument.
-# opt: cmdline: the cmdline which fails.
-arg::parse::opt::fail () {
-  echo "unrecognized command line option '${1}'" >&2
-  E=2 arg::usage >&2
-}
-
-# fun: arg::parse::opt::long <action> <option> [option argument]
-# txt: set the specific long option for the action passed as argument. The
-#      option can be suffixed with a colon (:) to specify a mandatory
-#      argument.
-arg::parse::opt::long () {
-  local opt="${2#--}"
-  local fun="${arg__opt_long["$1,$opt"]}"
-  [ "$fun" ] || 
-    local fun="${arg__opt_long["$1,$opt:"]}"
-
-  if [ "$fun" ]; then
-    "$fun" "$3"
-  else
-    arg::parse::opt::fail "${2%:}"
-  fi
-}
-
-# fun: arg::parse::opt::short <action> <option> [option argument]
-# txt: set the specific short option for the action passed as argument. The
-#      option can be suffixed with a colon (:) to specify a mandatory
-#      argument.
-arg::parse::opt::short () {
-  local opt="${2#-}"
-  local fun="${arg__opt_short["$1,$opt"]}"
-  [ "$fun" ] || 
-    local fun="${arg__opt_short["$1,$opt:"]}"
-  if [ "$fun" ]; then
-    $fun "$3"
-  else
-    arg::parse::opt::fail "${2%:}"
-  fi
-}
-
-# fun: arg::action <action> <handler> [help_message]
-# api: blib
-# txt: set a new action in argument parser.
-# opt: action: the action name to add to the parser
-# opt: handler: the function name to use as handler for this action.
-# opt: help_message: a message to print on usage.
-arg::action () {
-  arg::opt "$1" -h --help "arg::usage::action::explain $1" \
-    "print help message about $1 action"
-  arg__actions["${1}"]="$2"
-  arg__actions_help["${1}"]="$3"
-}
-
-# fun: arg::usage::action <action>
-# txt: print usage information for the action passed as argument.
-arg::usage::action::explain () {
-  local summ="usage: $0 ${1//MAIN/}"
-  local text=""
-  local param=""
-
-  for key in "${!arg__opt_help[@]}"; do
-    IFS=',' read action short long <<<"${key}"
-    [ "$action" != "$1" ] && continue
-    local help_str="${arg__opt_help["$key"]}"
-
-    if [ "${short: -1}" == ":" ]; then
-      local argname="${long%:}"
-      local argname="${argname/-/_}"
-      local argname=" ${argname^^}"
-    else
-      local argname=''
-    fi
-    summ+=" [-${short%:}${argname}]"
-
-    if [ "${argname}" ]; then
-      text+="$(printf "  %-20s" "-${short%:}${arg}, --${long%:}${argname}")"
-      text+=$'\n'
-      text+="$(printf "  %-20s %s" '' "${help_str}")"
-    else
-      text+="$(printf "  %-20s %s" \
-               "-${short%:}${arg}, --${long%:}" \
-               "${help_str}")"
-    fi
-    text+=$'\n'
-  done
-
-  local spam=''
-  for key in "${!arg__param[@]}"; do
-    IFS=',' read action par <<<"${key}"
-    [ "$action" != "$1" ] && continue
-    local help_str="${arg__param["$key"]}"
-    param+="$(printf "  %-20s %s" "${par}" "${help_str}")"
-    param+=$'\n'
-    case "$par" in
-      *\?|*'*') spam+="${spam:+ }[${par}]";;
-      *) spam+="${spam:+ }<${par}>";;
-    esac
-  done
-
-  if [ "$1" == "MAIN" ]; then
-    local sact=''
-    for action in "${!arg__actions[@]}"; do
-      [ "$action" == "MAIN" ] && continue
-      sact+="${sact:+, }$action"
-      actions+="$(printf "  %-20s %s" \
-                  "${action}" \
-                  "${arg__actions_help["$action"]}")"
-      actions+=$'\n'
-    done
-  fi
-  echo "$summ${sact:+" {$sact}"}${spam:+ $spam}"
-  echo
-
-  [ "$1" == "MAIN" ] && [ "${arg__actions_help["MAIN"]}" ] &&
-    echo "${arg__actions_help["MAIN"]}" && echo
-
-  if [ "$actions" ]; then
-    echo "command line actions:"
-    echo "$actions"
-  fi
-  if [ "$param" ]; then
-    echo "positional parameters:"
-    echo "$param"
-  fi
-  if [ "$text" ]; then
-    echo "optional arguments:"
-    echo "$text"
-  fi
-
-  exit ${E:-0}
-}
-
-# fun: arg:::main::help <text>
-# api: blib
-# txt: Set the main help for the program
-# opt: text: the main help string for the program
-arg::main::help () {
-  arg__actions_help["MAIN"]="$1"
-}
-
-# fun: arg:::main::action <fun>
-# api: blib
-# txt: Set the function handler for main action, used when no action
-#      defined.
-# opt: fun: the handler for the MAIN action.
-arg::main::action () {
-  arg__actions["MAIN"]="$1"
-}
-
-# fun: arg::usage
-# api: blib
-# txt: print main usage information
-# env: E: the error code to return to OS on exit.
-arg::usage () {
-  arg::usage::action::explain MAIN
-}
-
-# fun: arg::parse::action <action> [arguments]
-# txt: parse arguments starting with action passed as argument.
-arg::parse::action () {
-  local action="$1"; shift;
-  while [ $# -ne 0 ]; do
-    case "$1" in
-      --*=*)
-        arg::parse::opt::long "$action" "${1%=*}" "${1#*=}"; shift;;
-      --*) arg::parse::opt::long "$action" "$@"; shift $?;;
-      -*) arg::parse::opt::short "$action" "$@"; shift $?;;
-      *) break;;
-    esac
-  done
-  if [ "$action" == "MAIN" ]; then
-    if [ "${arg__actions["MAIN"]}" ]; then
-      arg::parse::arg MAIN "$@"; shift $?
-    else
-      arg::parse::action "$@";
-    fi
-    return
-  else
-    arg::parse::arg "$action" "$@"; shift $?
-  fi
-
-}
-
-# fun: arg::parse::arg <action> [arguments]
-# txt: parse arguments (not options) for specific action passed as argument.
-arg::parse::arg () {
-  local action="$1"; shift
-  if [ -z "$action" ]; then
-    echo "missing action command" >&2
-    arg::usage >&2
-    exit 2
-  fi
-  local handler="${arg__actions["$action"]}"
-  [ "$handler" ] || arg::parse::opt::fail "$action"
-
-  count=0
-  for param in "${!arg__param[@]}"; do
-    IFS=, read a name <<< "${param}"
-    if [ "$action" == "$a" ]; then
-      case "$name" in
-        *+) ((count++));;
-        *\?|*'*') ;;
-        *) ((count++));;
-      esac
-    fi
-  done
-
-  if [ $# -lt $count ]; then
-    echo "missing arguments: $# found, $count expected" >&2
-    arg::usage::action::explain "$action" >&2
-    exit 2
-  fi
-
-  $handler "$@"
-}
-
-# fun: arg::parse [arguments]
-# api: blib
-# txt: parse arguments according with previous configured parser.
-arg::parse () {
-  arg::opt MAIN -h --help 'arg::usage' 'print help message'
-  arg::parse::action MAIN "$@"
-}
-
-# fun: arg::param <action> <parameter_name> [help_str]
-# api: blib
-# txt: add position parameter to parser.
-# opt: action: action where add the parameter
-# opt: parameter_name: the name of the paramenter
-# opt: help_str: a help string for the parameter to show in usage
-arg::param () {
-  arg__param["$1,$2"]="$3"
-}
-#! /bin/bash
-# mod: os
-# api: blib
-# txt: The `os` module provides specified functions to guess the operating
-#      system related variables.
-
-# fun: os::family
-# api: blib
-# txt: print to stdout the operating system family
-os::family () {
-  uname -o
-}
-
-# fun: os::provider
-# api: blib
-# txt: print the operating system provider (formerly distribution).
-os::provider () {
-  for f in ${!os__provider[@]}; do
-    if [ -r "$f" ]; then
-      echo "${os__provider["$f"]}"
-      return 0
-    fi
-  done
-
-  if [ -r /etc/lsb-release ]; then
-    std::mute grep 'DISTRIB_ID=Ubuntu' /etc/lsb-release &&
-      echo ubuntu && return 0
-  fi
-  return 1
-}
-declare -A os__provider
-os__provider["/etc/arch-release"]="archlinux"
-
-# fun: os::release
-# api: blib
-# txt: print to stdout the properly release of operating system provider.
-os::release () {
-  local provider="$(os::provider)"
-  if std::func os::release::${provider}; then
-    std::func::os::release::${provider}
-  fi
-  true
-}
-
-# fun: os::path <file>
-# api: blib
-# txt: return the path of a file in PATH
-# opt: file: the file name to find the full path.
-# env: PATH: contains the path to search file
-os::path () { type -P "$1" 2>/dev/null; }
-#! /bin/bash
-# mod: err
-# api: blib
-# txt: The `err` module offers a way to stop potion execution with
-#      a traceback.
-
-# fun: err::trace
-# api: blib
-# txt: print to stderr a traceback of an error.
-# use: false || err::trace "Error because of false"
-err::trace () {
-  echo "${COLOR_FAIL}Traceback (most recent call last):${COLOR_NONE}" >&2
-  for ((i=0;; i++)); do
-    read line fun file < <(caller $i)
-    if [ "$line" ]; then
-      echo "${COLOR_FAIL} File '$file', line $line, in $fun${COLOR_NONE}" >&2
-    else
-      break
-    fi
-  done
-  out::fail "$1"
-  exit 127
-}
-#! /bin/bash
-# mod: os.ubuntu
-# txt: The ``os.ubuntu`` module extends ``os`` module adding specific
-#      functions for Ubuntu based systems.
-
-# fun: os::relase::ubuntu
-# txt: return specific relese for ubuntu operating systems.
-os::release::ubuntu () {
-  IFS='=' read _ release < <(grep "^DISTRIB_RELEASE=" /etc/lsb-release)
-  echo "$release"
-}
+declare -xa str2array_ret
 #! /bin/bash
 # mod: tmp
 # api: blib
@@ -2745,97 +2636,284 @@ tmp::file () {
 tmp::touch () {
   mkdir -p "${BLIB_TMPDIR}" && : > "${BLIB_TMPDIR}/$1"
 }
-BLIB_VERSION='1.0.4'
 #! /bin/bash
-# mod: secret
-# txt: The `secret` module allows you to get/set passwords or secret config
-#      keys from diferent sources instead of save them in plain text in the
-#      potion file.
-# env: SECRET_MASTERKEY: Path to file where the master key for secrets lives.
-#      By default ``/etc/potion.key``
+# mod: term
+# api: blib
+# txt: The `term` module provides functions related with terminal
+#      configuration. This module also define some useful color variables to
+#      be used in `out` module.
 
-SECRET_MASTERKEY=/etc/potion.key
+# fun: term::attached
+# api: blib
+# txt: return true if output is a terminal, false otherwise
+term::attached () { [ -t 1 ] && ! ${BLIB_DISABLE_COLORS:-false}; }
 
-declare -A _secrets
+# fun: term::tcap <capability>
+# api: blib
+# txt: check if some capabilty is enabled in terminal
+term::tcap () { tput "$1" 2>/dev/null; }
 
-# fun: secret::load [name=]<name>
-# txt: load a secret file
-secret::load () {
-  local url="${1#name=}"
-  case "$url" in
-    gpg://*|gpg+file://*)
-      url="${url#*://}"
-      eval "$(gpg -d "$url")";;
-    gpg+*)
-      url="${url#gpg+}"
-      eval "$(curl -sqL "$url" | gpg -d)";;
-    crypt+*)
-      url="${url#crypt+}"
-      eval "$(curl -sqL "$url" |
-              openssl enc -d -a -aes256 -kfile "${SECRET_MASTERKEY}")";;
-    *) url="${url#file://}"
-       # shellcheck disable=SC1090
-       source "$url" || err::trace "Invalid secret file format" ;;
-  esac
-}
-
-# fun: secret::add [name=]<name> content=<content>
-# txt: add new secret with specified content associated with key passed as
-#      argument.
-secret::add () {
-  eval "$(std::parse "$@")"
-  # shellcheck disable=2154
-  _secrets["$name"]="$content"
-}
-
-# fun: secret <name>
-# txt: return the secret text associated with specified name
-secret () {
-  echo "${_secrets["$1"]}"
-}
-#! /bin/bash
-# mod: meta
-# txt: This internal module provides information about metadata
-
-declare -A POTION_METADATA=()
-
-# fun: meta::get <key>
-# txt: get the current value of key
-meta::get ()
-{
-  echo "${POTION_METADATA["$1"]}"
-}
-
-# fun: meta::set <key> <value>
-# txt: add new value to the metadata
-meta::set ()
-{
-  POTION_METADATA["$1"]="$2"
-}
-
-# fun: meta::polulate
-# txt: poplulate metadata values from the system
-meta::populate ()
-{
-  meta::set "core.processors" "$(getconf _NPROCESSORS_ONLN)"
-  meta::set "core.hostname" "$(hostname)"
-  meta::set "core.fqdn" "$(hostname -f)"
-
-  out::user "loaded metadata: ${#POTION_METADATA[@]} variables loaded"
-}
-#! /bin/bash
-# mod: refresh
-# txt: The `refresh` add functionality to refresh services or other
-#      resources.
-
-refresh () {
-  local res="$1"; shift
-
-  if std::func "${res}::refresh"; then
-    "${res}::refresh" "$@" &&
-      res::refreshed "${res}" "$1"
+# fun: term::init
+# api: blib
+# txt: initialize terminal, in theory you never need to call this function,
+#      unless you want to change your terminal online.
+term::init () {
+  if term::attached; then
+    case "$(term::tcap colors)" in
+      256)
+        COLOR_NONE=$'\033[0;0;0m'
+        COLOR_INFO=$'\033[38;5;79m'
+        COLOR_WARN=$'\033[38;5;190m'
+        COLOR_FAIL=$'\033[38;5;160m'
+        COLOR_DATE=$'\033[38;5;242m'
+        COLOR_USER=$'\033[38;5;201m'
+        COLOR_BOLD=$'\033[1;15m'
+        ;;
+    esac
   else
-    out::warn "unable to refresh ${res}: cannot found refresh handler"
+    unset COLOR_NONE COLOR_INFO COLOR_WARN COLOR_FAIL
+    unset COLOR_DATE COLOR_USER COLOR_BOLD
+  fi
+}
+
+term::init
+#! /bin/bash
+# mod: version
+# api: blib
+# txt: The `version` module provides a number of functions to handle version
+#      numbers.
+
+# fun: version::cmp <version1> <version2>
+# txt: compare two version numbers, return -1 (255) if version1 is greater
+#      than version2, return 1 if version2 is greater than version1 and 0
+#      if both are equal
+version::cmp () {
+  local ver1 rev1 pat1 ver2 rev2 pat2
+  { IFS='.' read -r ver1 rev1 pat1 <<<"$1"; }
+  { IFS='.' read -r ver2 rev2 pat2 <<<"$2"; }
+
+  [[ "$ver1" -gt "$ver2" ]] && return 255
+  [[ "$ver2" -gt "$ver1" ]] && return 1
+  [[ "$rev1" -gt "$rev2" ]] && return 255
+  [[ "$rev2" -gt "$rev1" ]] && return 1
+  [[ "$pat1" -gt "$pat2" ]] && return 255
+  [[ "$pat2" -gt "$pat1" ]] && return 1
+
+  return 0
+}
+BLIB_VERSION='1.1'
+#! /bin/bash
+# mod: main
+# txt: The ``main`` module contain the specified potion body.
+
+VERSION="0.2.9"
+export CONTEXT="main"
+
+# env: POTION_DEFAULT_SOURCE
+# txt: If set, always try to get potion files from this url. Note that if
+#      other arguments are passed in the command line, potion will load
+#      all of them plus the defined in ``POTION_DEFAULT_SOURCE.``
+export POTION_DEFAULT_SOURCE=
+
+# fun: main::init
+# txt: print nice potion logo and some custom messages at the beginning.
+main::init () {
+
+  if ! ${NOLOGO:-false}; then
+  out::user ""
+  out::user "${COLOR_USER}                                   o${COLOR_NONE}"
+  out::user "${COLOR_USER}                                     o${COLOR_NONE}"
+  out::user "                                   ___"
+  out::user "${COLOR_WARN} ____       _   _                  ${COLOR_NONE}| |"
+  local m="${COLOR_WARN}|  _ \\ ___ | |_(_) ___  _ __       "
+  m+="${COLOR_NONE}|${COLOR_USER}o${COLOR_NONE}|"
+  out::user "$m"
+  local m="${COLOR_WARN}| |_) / _ \| __| |/ _ \| '_ \\    ${COLOR_NONE}.'   '."
+  out::user "$m"
+  local m="${COLOR_WARN}|  __/ (_) | |_| | (_) | | | |  ${COLOR_NONE}/   "
+  m+="${COLOR_USER}o${COLOR_NONE}   \\"
+  out::user "$m"
+  local m="${COLOR_WARN}|_|   \\___/ \\__|_|\___/|_| |_|  "
+  m+="${COLOR_NONE}:${COLOR_USER}____o__${COLOR_NONE}:"
+  out::user "$m"
+  local m="                                '.${COLOR_USER}"
+  m+="_____${COLOR_NONE}.'"
+  out::user "$m"
+  else
+    out::user "Starting potion..."
+  fi
+  out::user "${COLOR_USER}version${COLOR_NONE} ${VERSION}" 
+  out::user "detected hardware architecture: $(std::arch)"
+  out::user "detected os family: $(os::family)"
+  out::user "detected os provider: $(os::provider)"
+
+
+}
+
+# general options handlers
+main::opt_debug () { set -x; return 1;}
+main::opt_version () { out::info "Potion $VERSION"; exit 0;}
+main::opt_quiet () { QUIET=true; return 1;}
+main::opt_pretend () { export PRETEND=true; return 1;}
+main::opt_verbose () { export VERBOSE=true; return 1;}
+main::opt_nologo () { export NOLOGO=true; return 1;}
+main::opt_nocolor () { export BLIB_DISABLE_COLORS=true; term::init; return 1;}
+
+# create action
+main::create::opt_artifacts () { main__create__artifacts="$1"; return 2;}
+main::create::opt_compress () { main__create__compress=true; return 1;}
+main::create::opt_output () { main__create__output="$1"; return 2;}
+main::create::opt_secrets () { main__create__secrets="$1"; return 2;}
+
+export artifacts
+main::create () {
+  local output=$'#! /bin/bash\nPOTION_COMPILED=true\n'
+  ${QUIET:-false} || main::init
+  out::info "output file: ${main__create__output:=./a.potion}"
+  output+="$(<"$0")"$'\n'
+  if [ "${main__create__artifacts}" ]; then
+    [ -d "${main__create__artifacts}" ] ||
+      err::trace "Artifacts directory does not exists or isn't a directory"
+
+    [ -r "${main__create__artifacts}" ] ||
+      err::trace "Unable to read artifacts directory"
+
+    artifacts="$(cd "${main__create__artifacts}" &&
+                 tar -c . | base64)"
+    output+=$'\n'"$(artifact::build "${main__create__artifacts}")"$'\n'
+
+    out::user "dumped artifacts from: ${main__create__artifacts}"
+  fi
+  if [ "${main__create__secrets}" ]; then
+    output+=$'\n'"secret::load '${main__create__secrets}'"$'\n'
+    out::user "set secret url to: ${main__create__secrets}"
+  fi
+  out::info "created core launcher"
+  for template in "$@"; do
+    [ -r "$template" ] ||
+      err::trace "Unable to find template: $template"
+    output+="$(<"$template")"$'\n'
+    out::info "dumping template: $template"
+  done
+  output+=$'\nmeta::polulate\n'
+  output+=$'\ncontext::run\n'
+  if ${main__create__compress:-false}; then
+    local launcher="#!/bin/bash"$'\n'
+    launcher+="POTION_PAYLOAD='$(echo "${output}" | gzip -9 | base64)'"$'\n'
+    # shellcheck disable=SC2016
+    launcher+='exec bash < <(echo "$POTION_PAYLOAD" | base64 -d | gzip -d)'
+    launcher+=$'\n'
+    output="$launcher"
+  fi
+  echo "${output}" > "${main__create__output}"
+}
+
+# run action
+main::run::opt_artifacts () { main__run__artifacts="$1"; return 2; }
+main::run::opt_secrets () { main__run__secrets="$1"; return 2; }
+main::run () {
+  main::init "in-line"
+  if [ "${main__run__artifacts}" ]; then
+    [ -d "${main__run__artifacts}" ] ||
+      err::trace "Artifacts directory does not exists or isn't a directory"
+
+    [ -r "${main__run__artifacts}" ] ||
+      err::trace "Unable to read artifacts directory"
+
+    eval "$(artifact::build "${main__run__artifacts}")"
+    out::user "dumped artifacts from: ${main__run__artifacts}"
+  fi
+  if [ "${main__run__secrets}" ]; then
+    secret::load "${main__run__secrets}"
+    out::user "loaded secrets from: ${main__run__secrets}"
+  fi
+  for src in "$@"; do
+    include "$src" || err::trace "Unable to load potion file(s): $src"
+  done
+  if [[ "$POTION_DEFAULT_SOURCE" ]]; then
+    include "$POTION_DEFAULT_SOURCE" ||
+      err::trace "Unable to load potion file(s): $POTION_DEFAULT_SOURCE"
+  fi
+  meta::populate
+  context::run
+}
+
+# fun: main [arguments]
+# txt: function to create random errors and weird behaviour.
+main () {
+  # if this is a compiled potion, we don't need main
+  ${POTION_COMPILED:-false} && main::init && return 0
+  
+  arg::opt MAIN -q --quiet    main::opt_quiet   'do not output messages'
+  arg::opt MAIN -v --verbose  main::opt_verbose 'enable verbose mode'
+  arg::opt MAIN -d --debug    main::opt_debug   'enable debug mode'
+  arg::opt MAIN -p --pretend  main::opt_pretend 'do nothing, just pretending'
+  arg::opt MAIN -V --version  main::opt_version 'show program version number'
+  arg::opt MAIN -L --no-logo  main::opt_nologo  'do not show ASCI art logo :('
+  arg::opt MAIN -C --no-color main::opt_nocolor 'do not output colors ever'
+
+  arg::action create main::create 'create new potion from templates'
+  arg::param create "infredients+" \
+    'URL to the ingredient files to make the potion'
+  arg::opt create -o: --output: main::create::opt_output \
+    'set path to output potion filename'
+  arg::opt create -a: --artifacts: main::create::opt_artifacts \
+    'set path to artifacts directory'
+  arg::opt create -c  --compress   main::create::opt_compress \
+    'create compressed potion (require gzip)'
+  arg::opt create -s:  --secrets:   main::create::opt_secrets \
+    'set a secret file or URL to store passwords'
+  
+  arg::action run main::run 'run potion template'
+  arg::param run "ingredients*" \
+    'path to the scripts files (ingredients) to make the potion'
+  arg::opt run -a: --artifacts: main::run::opt_artifacts \
+    'set path to artifacts directory'
+  arg::opt run -s:  --secrets:   main::run::opt_secrets \
+    'set a secret file or URL to store passwords'
+
+  arg::parse "$@"
+}
+shopt -s expand_aliases
+#! /bin/bash
+# mod: deprecate
+# txt: This internal module provides a way to mark deprecated features or
+#      modules.
+
+# fun: deprecate [name=]<name> [version=version] [date=date]
+# txt: set a deprecation mark called name (could be a message), when potion
+#      version is lower to specified version a warning is raised, otherwise
+#      execution fails with an error. The same behaviour can be used with
+#      a date in the format %y-%m-%d, until that date the deprecation
+#      warning message will show, after that date execution breaks.
+deprecate () {
+  local version date name
+  eval "$(std::parse "$@")"
+
+  # shellcheck disable=SC2153
+  version::cmp "$VERSION" "$version"
+  case $? in
+    0|255)
+      err::trace "DEPRECATION ERROR: $name";;
+    1)
+      local line fun file; read -r line fun file < <(caller)
+      out::warn $"DEPRECATION WARNING [$fun at $file:$line]: $name"
+  esac
+
+  [[ "$date" ]] || return
+
+  local year month day
+
+  { IFS='-' read -r year month day <<< "$date"; }
+
+  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
+    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
+    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
+  then
+      local line fun file; read -r line fun file < <(caller)
+      out::warn $"DEPRECATION WARNING [$fun at $file:$line]: $name"
+  else
+    err::trace "DEPRECATION ERROR: $name"
   fi
 }
 std::installed 'grep' ||  err::trace 'grep is required but not found'
