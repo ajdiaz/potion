@@ -68,7 +68,13 @@ file::exists () {
 
   local old_hmac; old_hmac="$(file::_hmac "file://$name")"
   local new_hmac; new_hmac="$(file::_hmac "$data")"
-  [ "$new_hmac" == "$old_hmac" ]
+  if [[ "$new_hmac" == "$old_hmac" ]]; then
+    return 0
+  elif ${SHOWDIFF:-false}; then
+    # shellcheck disable=SC2086
+    echo "$data" | diff ${DIFF_OPTIONS:--Naurr --color=always} "$name" -
+  fi
+  return 1
 }
 
 # private file::create <fname> <owner:group> <mode> <data>
@@ -79,6 +85,7 @@ file::_create () {
       err::trace "Unable to dump content to file: $1"
   fi
 
+  # shellcheck disable=SC2015
   std::run chown "${2:-0:0}" "$1" &&
     std::run chmod "${3:-644}" "$1" ||
     err::trace "Unable to set permissions to file: $1"

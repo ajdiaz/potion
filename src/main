@@ -42,8 +42,6 @@ main::init () {
   out::user "detected hardware architecture: $(std::arch)"
   out::user "detected os family: $(os::family)"
   out::user "detected os provider: $(os::provider)"
-
-
 }
 
 # general options handlers
@@ -134,6 +132,15 @@ main::run () {
   context::run
 }
 
+# eval action
+main::eval ()
+{
+  local cmd="$1"; shift
+  main::init "in-line"
+  meta::populate
+  "$cmd" "$@" || err::trace
+}
+
 # fun: main [arguments]
 # txt: function to create random errors and weird behaviour.
 main () {
@@ -149,7 +156,7 @@ main () {
   arg::opt MAIN -C --no-color main::opt_nocolor 'do not output colors ever'
 
   arg::action create main::create 'create new potion from templates'
-  arg::param create "infredients+" \
+  arg::param create "ingredients+" \
     'URL to the ingredient files to make the potion'
   arg::opt create -o: --output: main::create::opt_output \
     'set path to output potion filename'
@@ -167,6 +174,12 @@ main () {
     'set path to artifacts directory'
   arg::opt run -s:  --secrets:   main::run::opt_secrets \
     'set a secret file or URL to store passwords'
+
+  arg::action eval main::eval 'run potion command'
+  arg::param eval "command" \
+    'the potion command to evaluate'
+  arg::param eval "params*" \
+    'parameters to pass to the evaluation command'
 
   arg::parse "$@"
 }

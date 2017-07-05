@@ -37,6 +37,7 @@ context::execute () {
 
 # fun: context::run
 # txt: run all context in paralell.
+declare -a context__run__pids=()
 context::run () {
   local tim cctx=0
 
@@ -55,9 +56,15 @@ context::run () {
 
   while read -r _ _ context; do
     context::execute "$context" &
-    ${ONETHREAD:-false} && wait
+    if ${ONETHREAD:-false}; then
+      wait $!
+    else
+      context__run__pids+=( "$!" )
+    fi
   done < <(declare -F | grep '^declare -f @')
-  wait
+  if ! ${ONETHREAD:-false}; then
+    wait "${context__run__pids[@]}"
+  fi
   context::task::apply "main"
   tim="$(( $(std::timestamp) - tim ))"
   out::info "Finished potion exection in ${tim} seconds."
