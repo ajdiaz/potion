@@ -105,6 +105,7 @@ main::create () {
 # run action
 main::run::opt_artifacts () { main__run__artifacts="$1"; return 2; }
 main::run::opt_secrets () { main__run__secrets="$1"; return 2; }
+main::run::opt_show_diffs() { export SHOWDIFF=true; return 1; }
 main::run () {
   main::init "in-line"
   if [ "${main__run__artifacts}" ]; then
@@ -133,6 +134,7 @@ main::run () {
 }
 
 # eval action
+main::eval::opt_show_diffs() { export SHOWDIFF=true; return 1; }
 main::eval ()
 {
   local cmd="$1"; shift
@@ -174,13 +176,17 @@ main () {
     'set path to artifacts directory'
   arg::opt run -s:  --secrets:   main::run::opt_secrets \
     'set a secret file or URL to store passwords'
+  arg::opt run -D --show-diffs   main::run::opt_show_diffs \
+    'show differences when change a file'
 
   arg::action eval main::eval 'run potion command'
   arg::param eval "command" \
     'the potion command to evaluate'
   arg::param eval "params*" \
     'parameters to pass to the evaluation command'
-
+  arg::opt eval -D --show-diffs   main::eval::opt_show_diffs \
+    'show differences when change a file'
   arg::parse "$@"
+
 }
 shopt -s expand_aliases
