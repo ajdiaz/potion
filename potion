@@ -1530,6 +1530,15 @@ file::present () {
   local group="${group:-$LOGNAME}"
   local user="${user:-$LOGNAME}"
 
+  # Deprecation check
+  local data
+  if [[ "$data" ]] && [[ ! "$content" ]]; then
+    local content="$data"
+    deprecated data \
+      version=1.0 \
+      message="'data' parameter in file is deprecated, use 'content' instead"
+  fi
+
   if ! file::exists "$name" "content=$content"; then
     if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$content"
     then
@@ -1792,47 +1801,6 @@ secret::add () {
 # txt: return the secret text associated with specified name
 secret () {
   echo "${_secrets["$1"]}"
-}
-#! /bin/bash
-# mod: deprecate
-# txt: This internal module provides a way to mark deprecated features or
-#      modules.
-
-# fun: deprecate [name=]<name> [version=version] [date=date]
-# txt: set a deprecation mark called name (could be a message), when potion
-#      version is lower to specified version a warning is raised, otherwise
-#      execution fails with an error. The same behaviour can be used with
-#      a date in the format %y-%m-%d, until that date the deprecation
-#      warning message will show, after that date execution breaks.
-deprecate () {
-  local version date name
-  eval "$(std::parse "$@")"
-
-  # shellcheck disable=SC2153
-  version::cmp "$VERSION" "$version"
-  case $? in
-    0|255)
-      err::trace "DEPRECATION ERROR: $name";;
-    1)
-      local line fun file; read -r line fun file < <(caller)
-      out::warn $"DEPRECATION WARNING [$fun at $file:$line]: $name"
-  esac
-
-  [[ "$date" ]] || return
-
-  local year month day
-
-  { IFS='-' read -r year month day <<< "$date"; }
-
-  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
-    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
-    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
-  then
-      local line fun file; read -r line fun file < <(caller)
-      out::warn $"DEPRECATION WARNING [$fun at $file:$line]: $name"
-  else
-    err::trace "DEPRECATION ERROR: $name"
-  fi
 }
 #! /bin/bash
 # mod: arg
@@ -3030,6 +2998,46 @@ context::run () {
   context::task::apply "main"
   tim="$(( $(std::timestamp) - tim ))"
   out::info "Finished potion exection in ${tim} seconds."
+}
+#! /bin/bash
+# mod: deprecated
+# txt: This internal module provides a way to mark deprecated features or
+#      modules.
+
+# fun: deprecated [name=]<name> [version=version] [date=date]
+# txt: set a deprecation mark called name (could be a message), when potion
+#      version is lower to specified version a warning is raised, otherwise
+#      execution fails with an error. The same behaviour can be used with
+#      a date in the format %y-%m-%d, until that date the deprecation
+#      warning message will show, after that date execution breaks.
+deprecated () {
+  local line file; read -r line _ file < <(caller 1)
+  local version date name message="deprecation mark"
+  eval "$(std::parse "$@")"
+
+  # shellcheck disable=SC2153
+  version::cmp "$VERSION" "$version"
+  case $? in
+    0|255)
+      err::trace "Deprecated $name: $message (at $file:$line)";;
+    1)
+      out::warn "deprecated $name: $message (at $file:$line)";;
+  esac
+
+  [[ "$date" ]] || return
+
+  local year month day
+
+  { IFS='-' read -r year month day <<< "$date"; }
+
+  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
+    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
+    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
+  then
+      out::warn "deprecated $name: $message (at $file:$line)"
+  else
+    err::trace "Deprecated $name: $message (at $file:$line)"
+  fi
 }
 std::installed 'grep' ||  err::trace 'grep is required but not found'
 std::installed 'egrep' ||  err::trace 'egrep is required but not found'

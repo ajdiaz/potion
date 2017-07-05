@@ -25,39 +25,39 @@ context @test_file
     user=root \
     group=root \
     mode=0644 \
-    data="normal string"
+    content="normal string"
 
   file::present \
     name=/tmp/nonexistant2 \
     user=root \
     group=root \
     mode=0644 \
-    data="file:///etc/motd"
+    content="file:///etc/motd"
 
   file::present \
     name=/tmp/nonexistant2 \
     user=root \
     group=root \
     mode=0644 \
-    data="http://ajdiaz.me/potion/index.html"
+    content="http://ajdiaz.me/potion/index.html"
 
   file::present \
     name=/tmp/nonexistant3 \
     user=root \
     group=root \
     mode=0644 \
-    data="artifact://sample.txt"
+    content="artifact://sample.txt"
 
   file::present \
     name=/tmp/nonexistant4 \
     user=root \
     group=root \
     mode=0644 \
-    data="artifact+eval://sample.txt"
+    content="artifact+eval://sample.txt"
 
   file::absent \
     name=/etc/passwd \
-    data="none"
+    content="none"
 
   file::absent \
     name=/etc/passwd

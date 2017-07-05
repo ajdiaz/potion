@@ -127,6 +127,15 @@ file::present () {
   local group="${group:-$LOGNAME}"
   local user="${user:-$LOGNAME}"
 
+  # Deprecation check
+  local data
+  if [[ "$data" ]] && [[ ! "$content" ]]; then
+    local content="$data"
+    deprecated data \
+      version=1.0 \
+      message="'data' parameter in file is deprecated, use 'content' instead"
+  fi
+
   if ! file::exists "$name" "content=$content"; then
     if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$content"
     then
