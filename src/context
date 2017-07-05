@@ -63,7 +63,8 @@ context::run () {
     fi
   done < <(declare -F | grep '^declare -f @')
   if ! ${ONETHREAD:-false}; then
-    wait "${context__run__pids[@]}"
+    [[ ${#context__run__pids[@]} -gt 0 ]] && 
+      wait "${context__run__pids[@]}"
   fi
   context::task::apply "main"
   tim="$(( $(std::timestamp) - tim ))"
