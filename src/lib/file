@@ -3,15 +3,15 @@
 # api: potion
 # txt: The `file` module provides functions to ensure that specified file
 #      exists or not in the system and also has specified content.
-#      To creat content, use the ``data`` parameter, usually this parameter
+#      To creat content, use the ``content`` parameter, usually this parameter
 #      accepts a URL (in the usual curl accepted format or ``artifact://``
 #      to read from static artifact or ``artifact+eval://`` to read from an
 #      evaluated artifact.
 #
 # use: file::present /etc/somefile \\
-#        data="artifact://someartifact"
+#        content="artifact://someartifact"
 # use: file::present /etc/otherfile \\
-#        data="some string content"
+#        content="some string content"
 
 # private file::hmac <url>
 file::_hmac () {
@@ -59,25 +59,25 @@ file::_data () {
 # api: potion
 # txt: return true if file exists, or none otherwise
 # opt: name: the filename to check for.
-# opt: data: the content URL
+# opt: content: the content URL
 file::exists () {
-  local data
+  local content
   eval "$(std::parse "$@")"
 
   [ -r "$name" ] || return 1
 
   local old_hmac; old_hmac="$(file::_hmac "file://$name")"
-  local new_hmac; new_hmac="$(file::_hmac "$data")"
+  local new_hmac; new_hmac="$(file::_hmac "$content")"
   if [[ "$new_hmac" == "$old_hmac" ]]; then
     return 0
   elif ${SHOWDIFF:-false}; then
     # shellcheck disable=SC2086
-    echo "$data" | diff ${DIFF_OPTIONS:--Naurr --color=always} "$name" -
+    echo "$content" | diff ${DIFF_OPTIONS:--Naurr --color=always} "$name" -
   fi
   return 1
 }
 
-# private file::create <fname> <owner:group> <mode> <data>
+# private file::create <fname> <owner:group> <mode> <content>
 file::_create () {
   # we required an explitic if here because of the redirection.
   if ! ${PRETEND:-false}; then
@@ -121,14 +121,14 @@ file::_group ()
 # opt: user: the user owner the file
 # opt: group: the group owner the file
 # opt: mode: the four digit octal mode of the file (i.e. 0644)
-# opt: data: the content url
+# opt: content: the content url
 file::present () {
   eval "$(std::parse "$@")"
   local group="${group:-$LOGNAME}"
   local user="${user:-$LOGNAME}"
 
-  if ! file::exists "$name" "data=$data"; then
-    if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$data"
+  if ! file::exists "$name" "content=$content"; then
+    if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$content"
     then
       res::created file \
         "name=$name user=${user} group=${group} mode=${mode:-0644}"
@@ -171,10 +171,10 @@ file::present () {
 # fun: file::absent [name=]<name> [options]
 # api: potion
 # txt: ensure that file passed as argument does not exist.
-# opt: data: the content url (only removes the file if data is the same).
+# opt: content: the content url (only removes the file if content is the same).
 file::absent () {
   eval "$(std::parse "$@")"
-  if file::exists "$name" "data=$data"; then
+  if file::exists "$name" "content=$content"; then
     file::_destroy "$name" &&
       res::deleted file "name=$name" ||
       err::trace "Unable to destroy file: $name"
