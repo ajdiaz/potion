@@ -2,7 +2,7 @@
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.9"
+VERSION="0.2.10"
 export CONTEXT="main"
 
 # env: POTION_DEFAULT_SOURCE

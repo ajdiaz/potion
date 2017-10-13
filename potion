@@ -2736,10 +2736,122 @@ std::str2array () {
 declare -xa str2array_ret
 BLIB_VERSION='1.2'
 #! /bin/bash
+# mod: context
+# txt: This internal module provides functionality to run different context
+#      in paralell.
+
+alias context=function
+
+declare -A __context__task
+# fun: context::task::enqueue <fun>
+# txt: enqueue a task to be done when context finished.
+context::task::enqueue () {
+  if ! std::strin "${__context__task["${CONTEXT}"]}" ",$1,"; then
+    __context__task["${CONTEXT}"]+=",$1,"
+  fi
+}
+
+# fun: context::task::apply <context>
+# txt: apply functions enqueued by context::task::enqueue.
+context::task::apply () {
+  task="${__context__task["${1}"]}"
+  if [ "$task" ]; then
+    export IFS=,
+    for t in $task; do
+      [ "$t" ] || continue
+      eval "${t}" || err::trace "Unable to apply post-context task: $t ($CONTEXT)"
+    done
+  fi
+}
+
+# fun: context::execute <name>
+# txt: Execute a context named as name.
+# env: CONTEXT: contains the context name, and this variable will be
+#      propagated to other functions in the same context.
+context::execute () {
+  export CONTEXT="$1" && $1 && context::task::apply "$1"
+}
+
+# fun: context::run
+# txt: run all context in paralell.
+declare -a context__run__pids=()
+context::run () {
+  local tim cctx=0
+
+  tim="$(std::timestamp)"
+  # shellcheck disable=SC2015
+  [ "$POTION_COMPILED" ] && local kind="compiled" || local kind="in-line"
+  while read -r _ _ context; do
+    ((cctx++))
+  done < <(declare -F | grep '^declare -f @')
+
+  out::user "found ${cctx} contexts"
+  # shellcheck disable=SC2015
+  ${PRETEND:-false} &&
+    out::info "Starting $kind potion execution (pretending)" ||
+    out::info "Starting $kind potion execution"
+
+  while read -r _ _ context; do
+    context::execute "$context" &
+    if ${ONETHREAD:-false}; then
+      wait $!
+    else
+      context__run__pids+=( "$!" )
+    fi
+  done < <(declare -F | grep '^declare -f @')
+  if ! ${ONETHREAD:-false}; then
+    [[ ${#context__run__pids[@]} -gt 0 ]] && 
+      wait "${context__run__pids[@]}"
+  fi
+  context::task::apply "main"
+  tim="$(( $(std::timestamp) - tim ))"
+  out::info "Finished potion exection in ${tim} seconds."
+}
+#! /bin/bash
+# mod: deprecated
+# txt: This internal module provides a way to mark deprecated features or
+#      modules.
+
+# fun: deprecated [name=]<name> [version=version] [date=date]
+# txt: set a deprecation mark called name (could be a message), when potion
+#      version is lower to specified version a warning is raised, otherwise
+#      execution fails with an error. The same behaviour can be used with
+#      a date in the format %y-%m-%d, until that date the deprecation
+#      warning message will show, after that date execution breaks.
+deprecated () {
+  local line file; read -r line _ file < <(caller 1)
+  local version date name message="deprecation mark"
+  eval "$(std::parse "$@")"
+
+  # shellcheck disable=SC2153
+  version::cmp "$VERSION" "$version"
+  case $? in
+    0|255)
+      err::trace "Deprecated $name: $message (at $file:$line)";;
+    1)
+      out::warn "deprecated $name: $message (at $file:$line)";;
+  esac
+
+  [[ "$date" ]] || return
+
+  local year month day
+
+  { IFS='-' read -r year month day <<< "$date"; }
+
+  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
+    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
+    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
+  then
+      out::warn "deprecated $name: $message (at $file:$line)"
+  else
+    err::trace "Deprecated $name: $message (at $file:$line)"
+  fi
+}
+#! /bin/bash
 # mod: main
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.9"
+VERSION="0.2.10"
 export CONTEXT="main"
 
 # env: POTION_DEFAULT_SOURCE
@@ -2927,118 +3039,6 @@ main () {
 
 }
 shopt -s expand_aliases
-#! /bin/bash
-# mod: context
-# txt: This internal module provides functionality to run different context
-#      in paralell.
-
-alias context=function
-
-declare -A __context__task
-# fun: context::task::enqueue <fun>
-# txt: enqueue a task to be done when context finished.
-context::task::enqueue () {
-  if ! std::strin "${__context__task["${CONTEXT}"]}" ",$1,"; then
-    __context__task["${CONTEXT}"]+=",$1,"
-  fi
-}
-
-# fun: context::task::apply <context>
-# txt: apply functions enqueued by context::task::enqueue.
-context::task::apply () {
-  task="${__context__task["${1}"]}"
-  if [ "$task" ]; then
-    export IFS=,
-    for t in $task; do
-      [ "$t" ] || continue
-      eval "${t}" || err::trace "Unable to apply post-context task: $t ($CONTEXT)"
-    done
-  fi
-}
-
-# fun: context::execute <name>
-# txt: Execute a context named as name.
-# env: CONTEXT: contains the context name, and this variable will be
-#      propagated to other functions in the same context.
-context::execute () {
-  export CONTEXT="$1" && $1 && context::task::apply "$1"
-}
-
-# fun: context::run
-# txt: run all context in paralell.
-declare -a context__run__pids=()
-context::run () {
-  local tim cctx=0
-
-  tim="$(std::timestamp)"
-  # shellcheck disable=SC2015
-  [ "$POTION_COMPILED" ] && local kind="compiled" || local kind="in-line"
-  while read -r _ _ context; do
-    ((cctx++))
-  done < <(declare -F | grep '^declare -f @')
-
-  out::user "found ${cctx} contexts"
-  # shellcheck disable=SC2015
-  ${PRETEND:-false} &&
-    out::info "Starting $kind potion execution (pretending)" ||
-    out::info "Starting $kind potion execution"
-
-  while read -r _ _ context; do
-    context::execute "$context" &
-    if ${ONETHREAD:-false}; then
-      wait $!
-    else
-      context__run__pids+=( "$!" )
-    fi
-  done < <(declare -F | grep '^declare -f @')
-  if ! ${ONETHREAD:-false}; then
-    [[ ${#context__run__pids[@]} -gt 0 ]] && 
-      wait "${context__run__pids[@]}"
-  fi
-  context::task::apply "main"
-  tim="$(( $(std::timestamp) - tim ))"
-  out::info "Finished potion exection in ${tim} seconds."
-}
-#! /bin/bash
-# mod: deprecated
-# txt: This internal module provides a way to mark deprecated features or
-#      modules.
-
-# fun: deprecated [name=]<name> [version=version] [date=date]
-# txt: set a deprecation mark called name (could be a message), when potion
-#      version is lower to specified version a warning is raised, otherwise
-#      execution fails with an error. The same behaviour can be used with
-#      a date in the format %y-%m-%d, until that date the deprecation
-#      warning message will show, after that date execution breaks.
-deprecated () {
-  local line file; read -r line _ file < <(caller 1)
-  local version date name message="deprecation mark"
-  eval "$(std::parse "$@")"
-
-  # shellcheck disable=SC2153
-  version::cmp "$VERSION" "$version"
-  case $? in
-    0|255)
-      err::trace "Deprecated $name: $message (at $file:$line)";;
-    1)
-      out::warn "deprecated $name: $message (at $file:$line)";;
-  esac
-
-  [[ "$date" ]] || return
-
-  local year month day
-
-  { IFS='-' read -r year month day <<< "$date"; }
-
-  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
-    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
-    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
-  then
-      out::warn "deprecated $name: $message (at $file:$line)"
-  else
-    err::trace "Deprecated $name: $message (at $file:$line)"
-  fi
-}
 std::installed 'grep' ||  err::trace 'grep is required but not found'
 std::installed 'egrep' ||  err::trace 'egrep is required but not found'
 std::installed 'uname' ||  err::trace 'uname is required but not found'
