@@ -426,13 +426,13 @@ $ <span class="fu">sudo</span> -i potion run script.potion</code></pre></div>
 </div>
 <div id="file" class="section level2 module">
 <h2>file</h2>
-<p>The <code>file</code> module provides functions to ensure that specified file exists or not in the system and also has specified content. To creat content, use the <code>data</code> parameter, usually this parameter accepts a URL (in the usual curl accepted format or <code>artifact://</code> to read from static artifact or <code>artifact+eval://</code> to read from an evaluated artifact.</p>
+<p>The <code>file</code> module provides functions to ensure that specified file exists or not in the system and also has specified content. To creat content, use the <code>content</code> parameter, usually this parameter accepts a URL (in the usual curl accepted format or <code>artifact://</code> to read from static artifact or <code>artifact+eval://</code> to read from an evaluated artifact.</p>
 <div id="usage-example-1" class="section level4">
 <h4>Usage example</h4>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">file</span>::present /etc/somefile \
-  data=<span class="st">&quot;artifact://someartifact&quot;</span></code></pre></div>
+  content=<span class="st">&quot;artifact://someartifact&quot;</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">file</span>::present /etc/otherfile \
-  data=<span class="st">&quot;some string content&quot;</span></code></pre></div>
+  content=<span class="st">&quot;some string content&quot;</span></code></pre></div>
 </div>
 <div id="fileexists-namefname-options" class="section level3 function">
 <h3>file::exists <code>[name=]&lt;fname&gt;</code> <code>[options]</code></h3>
@@ -443,7 +443,7 @@ $ <span class="fu">sudo</span> -i potion run script.potion</code></pre></div>
 <dt><code>name</code></dt>
 <dd>the filename to check for.
 </dd>
-<dt><code>data</code></dt>
+<dt><code>content</code></dt>
 <dd>the content URL
 </dd>
 </dl>
@@ -467,7 +467,7 @@ $ <span class="fu">sudo</span> -i potion run script.potion</code></pre></div>
 <dt><code>mode</code></dt>
 <dd>the four digit octal mode of the file (i.e. 0644)
 </dd>
-<dt><code>data</code></dt>
+<dt><code>content</code></dt>
 <dd>the content url
 </dd>
 </dl>
@@ -479,8 +479,8 @@ $ <span class="fu">sudo</span> -i potion run script.potion</code></pre></div>
 <div id="parameters-4" class="section level4">
 <h4>Parameters</h4>
 <dl>
-<dt><code>data</code></dt>
-<dd>the content url (only removes the file if data is the same).
+<dt><code>content</code></dt>
+<dd>the content url (only removes the file if content is the same).
 </dd>
 </dl>
 </div>
