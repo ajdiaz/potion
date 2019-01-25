@@ -930,7 +930,7 @@ std::str2array () {
   str2array_ret=( "$@" )
 }
 declare -xa str2array_ret
-BLIB_VERSION='1.2-4-g5e403b2'
+BLIB_VERSION='1.2-5-g84801fd'
 #!/bin/bash
 # mod: artifact
 # txt: The `artifact` module contains function to access to artifacts. An
