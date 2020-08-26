@@ -1,5 +1,3 @@
-#! /bin/bash # Because potion syntax is bash compatible
-
 # Contexts are groups of configuration which are independent between them.
 # Potion try to run context in parallel unless ONETHREAD environment
 # variable is set to true.

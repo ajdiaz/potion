@@ -26,7 +26,7 @@ test: all
  		$(OUTBIN) run -a test/artifacts -s test/test.secrets ./test/test.potion
 
 doc: all
-	$(BASHDOC) -T potion -a potion -f README.md -o doc/potion.html $(OUTBIN)
+	$(BASHDOC) -T potion -A External,Internal -f README.md -o doc/potion.html $(OUTBIN)
 clean:
 	rm -f $(OUTBIN)
 # vim:ft=make

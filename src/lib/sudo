@@ -17,7 +17,7 @@ sudo::_syntax () {
 }
 
 # fun: sudo::user::exists [name=]<username> grant=<permissions>
-# api: potion
+# api: External
 # txt: return true if user has specific permissions
 # opt: name: the username to check permissions
 # opt: grant: the permissions to granted to the user.
@@ -50,7 +50,7 @@ sudo::user::_destroy () {
 }
 
 # fun: sudo::user::present [name=]<username> grant=[permissions]
-# api: potion
+# api: External
 # txt: ensure that specific user has permissions passed as argument, or if
 #      not permissions defined grant root permissions.
 # opt: name: the username to give permissions
@@ -70,7 +70,7 @@ sudo::user::present () {
 }
 
 # fun: sudo::user::absent [name=]<username> grant=[permissions]
-# api: potion
+# api: External
 # txt: ensure that the specific permission for the specific username is not
 #      granted.
 # opt: name: the username to give permissions
@@ -89,7 +89,7 @@ sudo::user::absent () {
 }
 
 # fun: sudo::group::exists [name=]<username> grant=<sudoline>
-# api: potion
+# api: External
 # txt: return true if group has configured the specific sudoline.
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
@@ -122,7 +122,7 @@ sudo::group::_destroy () {
 }
 
 # fun: sudo::group::present [name=]<groupname> [grant=permissions]
-# api: potion
+# api: External
 # txt: ensure that specific group has permissions passed as argument, or if
 #      not permissions defined grant root permissions.
 # opt: name: the username to give permissions
@@ -142,7 +142,7 @@ sudo::group::present () {
 }
 
 # fun: sudo::group::absent [name=]<groupname> [grant=permissions]
-# api: potion
+# api: External
 # txt: ensure that the specific permission for the specific groupname is not
 #      granted.
 # opt: name: the username to give permissions

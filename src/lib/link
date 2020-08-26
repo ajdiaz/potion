@@ -1,12 +1,12 @@
 #! /bin/bash
 # mod: link
-# api: potion
+# api: External
 # txt: The `link` module provides functions to ensure that specified
 #      symlink exists in the system and points to specified file.
 # use: link::present /mylink target=/etc/motd
 
 # fun: link::exists [name=]<link> target=<source>
-# api: potion
+# api: External
 # txt: returnt true if the specified link exists and point to source.
 # opt: target: the target where link points to
 link::exists () {
@@ -28,7 +28,7 @@ link::_destroy () {
 }
 
 # fun: link::present [name=]<link> target=<source>
-# api: potion
+# api: External
 # txt: ensure that the link exists and point to source.
 # opt: target: the target where link points to
 link::present () {
@@ -45,7 +45,7 @@ link::present () {
 }
 
 # fun: link::absent [name=]<link> target=<source>
-# api: potion
+# api: External
 # txt: ensure that the specified link does not exists or not point to
 #      specified source.
 # opt: target: the target where link points to

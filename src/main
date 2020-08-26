@@ -1,18 +1,20 @@
 #! /bin/bash
 # mod: main
+# api: Internal
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.10"
+readonly VERSION="0.2.11"
 export CONTEXT="main"
 
-# env: POTION_DEFAULT_SOURCE
-# txt: If set, always try to get potion files from this url. Note that if
-#      other arguments are passed in the command line, potion will load
-#      all of them plus the defined in ``POTION_DEFAULT_SOURCE.``
 export POTION_DEFAULT_SOURCE=
 
 # fun: main::init
+# api: Internal
 # txt: print nice potion logo and some custom messages at the beginning.
+# env: POTION_DEFAULT_SOURCE: If set, always try to get potion files from this
+#      url. Note that if ther arguments are passed in the command line, potion
+#      will load all of them plus the defined in `POTION_DEFAULT_SOURCE`.
+# env: VERSION: a readonly variable which contains the potion version number.
 main::init () {
 
   if ! ${NOLOGO:-false}; then

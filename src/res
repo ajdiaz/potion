@@ -1,7 +1,11 @@
 #! /bin/bash
 # mod: res
+# api: Internal
 # txt: The ``res`` module provides a way to work with potion resources.
 
+# fun: res::variables <var=value>+
+# api: Internal
+# txt: pretty priting resources variables
 res::variables () {
   for word in "$@"; do
     case "$word" in
@@ -13,6 +17,9 @@ res::variables () {
   echo
 }
 
+# fun: res::created <resource>
+# api: Internal
+# txt: print the properly message when resource is created
 res::created () {
   if ${VERBOSE:-false}; then
     local mod="$1"; shift
@@ -26,6 +33,10 @@ res::created () {
   out::info "created $1: $(C="$COLOR_INFO" res::variables "$2")"
 }
 
+
+# fun: res::deleted <resource>
+# api: Internal
+# txt: print the properly message when resource is deleted
 res::deleted () {
   if ${VERBOSE:-false}; then
     local mod="$1"; shift
@@ -39,6 +50,9 @@ res::deleted () {
   out::warn "deleted $1: $(C="$COLOR_WARN" res::variables "$2")"
 }
 
+# fun: res::refreshed <resource>
+# api: Internal
+# txt: print the properly message when resource is refreshed
 res::refreshed () {
   if ${VERBOSE:-false}; then
     local mod="$1"; shift
@@ -50,4 +64,15 @@ res::refreshed () {
     out::user "${_m}"
   fi
   out::info "refreshed $1: $(C="$COLOR_INFO" res::variables "$2")"
+}
+
+# fun: res::override <resource_name> <function_name>
+# api: Internal
+# txt: override a resource with another function, the new function will
+#      receive the same parameters than the original resource. The original
+#      one can be invoked with `\resource_name` (prepending a backslash).
+res::override ()
+{
+  # shellcheck disable=2139
+  alias "$1=$2"
 }

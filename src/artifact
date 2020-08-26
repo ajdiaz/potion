@@ -1,10 +1,12 @@
 #!/bin/bash
 # mod: artifact
+# api: Internal
 # txt: The `artifact` module contains function to access to artifacts. An
 #      artifact is a file embedded in potion compiled object, usually you
 #      want to set some configuration files as artifacts.
 
 # fun: artifact::hmac <artifact_name>
+# api: Internal
 # txt: print to stdout the HMAC of the artifact passed as argument.
 # env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
 #      sha1, md5, sha256, sha512. The proper helper tool must be installed
@@ -18,6 +20,7 @@ artifact::hmac () {
 }
 
 # fun: artifact::extract
+# api: Internal
 # txt: extract artifacts if artifact support is enabled.
 artifact::extract () {
   [ "$POTION_ARTIFACTS" ] || return 0
@@ -33,6 +36,7 @@ artifact::extract () {
 }
 
 # fun: artifact::exists <artifact_name>
+# api: Internal
 # txt: return true if the artifact exists, false otherwise.
 artifact::exists () {
   artifact::extract
@@ -40,6 +44,7 @@ artifact::exists () {
 }
 
 # fun: artifact::read <artifact_name>
+# api: Internal
 # txt: read a specific artifact from potion.
 artifact::read () {
   artifact::exists "$1" ||
@@ -50,6 +55,7 @@ artifact::read () {
 
 
 # fun: artifact::eval <artifact_name>
+# api: Internal
 # txt: read and eval specific artifact from potion.
 artifact::eval () {
   artifact::exists "$1" ||
@@ -62,6 +68,7 @@ artifact::eval () {
 }
 
 # fun: artifact::build <directory>
+# api: Internal
 # txt: scan the directory passed as argument and return a POTION_ARTIFACTS
 #      variable to stdout with the encoded version of the artifacts.
 artifact::build () {
@@ -72,6 +79,7 @@ artifact::build () {
 }
 
 # fun: artifact::load <directory>
+# api: Internal
 # txt: load in environment potion artifacts
 artifact::load ()
 {

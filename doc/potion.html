@@ -11,26 +11,27 @@
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
   <![endif]-->
   <style type="text/css">
-a.sourceLine { display: inline-block; line-height: 1.25; }
-a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
-a.sourceLine:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-a.sourceLine { text-indent: -1em; padding-left: 1em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
-pre.numberSource a.sourceLine
-  { position: relative; left: -4em; }
-pre.numberSource a.sourceLine::before
-  { content: attr(title);
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
     position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; pointer-events: all; display: inline-block;
+    border: none; display: inline-block;
     -webkit-touch-callout: none; -webkit-user-select: none;
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
@@ -39,9 +40,9 @@ pre.numberSource a.sourceLine::before
   }
 pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
 div.sourceCode
-  {  }
+  {   }
 @media screen {
-a.sourceLine::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; } /* Alert */
 code span.an { color: #008000; } /* Annotation */
@@ -90,12 +91,12 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
       line-height: 1.4;
       background: #3E4042;
       }
-  
+
       h1,h2,h3,h4,h5,h6 {
         font-family: "Work sans","Helvetica Neue", Helvetica, Arial, sans-serif;
         font-weight: 500;
       }
-  
+
       #toc ul { padding:0; margin:0; }
       #toc > ul > li { margin-bottom: 2em; }
       #toc li { list-style: none; padding-left:0; }
@@ -113,7 +114,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
         margin:0 0 0 25%;
         background: #fff;
       }
-  
+
       .section pre {
         border-radius: 10px;
         border:1px solid #dadada;
@@ -123,37 +124,37 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
         font-family: monospace;
         font-size:120%
       }
-  
+
       pre.sourceCode {
         border-radius: 0;
         border: 0;
-        background: none;
-        padding-top:10px;
-        width: 100%;
+        background: #ededed;
+        padding:10px 5px 10px 5px;
+        width: auto;
         font-size: 90%;
       }
-  
+
       .module .section {
         padding-left: 2em;
       }
-  
+
       .module .section p::first-letter {
         text-transform: capitalize;
       }
-  
+
       .module h4 { margin-bottom:0 !important; }
-  
+
       p { 
         width: 80%;
         text-align: justify;
       }
-  
+
       .module p {
         padding-left: 1em;
         color: #555;
         font-style: italic;
       }
-  
+
     .module h2 { margin-bottom:0.2em; margin-top: 2.5em;}
     .module h2:before {
        content: "module";
@@ -162,7 +163,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
        font-size: 90%;
        padding-right:0.4em;
     }
-  
+
     .module h3:before {
        content: "function";
        color: #888;
@@ -170,12 +171,13 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
        font-size: 90%;
        padding-right:0.4em;
     }
-  
+
     .module dl {
       padding: 0.5em;
     }
     .module dt {
       display: inline-block;
+      float: left;
       min-width: 125px;
       font-weight: bold;
       color: #333;
@@ -188,22 +190,21 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
       content: ":";
     }
     .module dd {
-      display: inline;
-      margin: 0;
+      margin: 0 0 0 125px;
     }
     .module h3 code {
       font-size: 80%;
       color: #555;
     }
-  
+
     hr { margin-top:2em; margin-bottom: 2em; border:1px solid #555;
     background: none; }
     div.sourceCode { width: 100% !important; }
     td.lineNumbers { padding-left:0 !important; }
     .sourceCode pre { margin-bottom:0 !important; }
     .sourceCode { margin-bottom: 0.5em !important; }
-  
-  
+
+
   h1 code,h2 code,h3 code,h4 code,.section p code, dl code {
     background: none !important;
     color: #555 !important;
@@ -212,8 +213,10 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <body class="book toc2 toc-left">
 <div id="toc" class="toc2">
 <ul>
-<li><a href="#potion">potion</a><ul>
-<li><a href="#usage">Usage</a><ul>
+<li><a href="#potion">potion</a>
+<ul>
+<li><a href="#usage">Usage</a>
+<ul>
 <li><a href="#using-potion-to-run-a-recipe">Using potion to run a recipe</a></li>
 <li><a href="#using-potion-to-create-a-self-executable-recipe">Using potion to create a self-executable recipe</a></li>
 <li><a href="#using-potion-to-run-a-local-recipe-in-remote-host">Using potion to run a local recipe in remote host</a></li>
@@ -221,7 +224,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><a href="#using-default-recipes">Using default recipes</a></li>
 </ul></li>
 <li><a href="#using-potion-to-run-periodically">Using potion to run periodically</a></li>
-<li><a href="#writing-recipes">Writing recipes</a><ul>
+<li><a href="#writing-recipes">Writing recipes</a>
+<ul>
 <li><a href="#contexts">Contexts</a></li>
 <li><a href="#artifacts">Artifacts</a></li>
 </ul></li>
@@ -230,65 +234,136 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><a href="#testing-changes">Testing changes</a></li>
 <li><a href="#bonus-how-structure-your-recipes">Bonus: How structure your recipes</a></li>
 </ul></li>
-<li><a href="#api-reference-potion">API Reference (potion)</a><ul>
-<li><a href="#dir">dir</a><ul>
+<li><a href="#external-api-reference">External API Reference</a>
+<ul>
+<li><a href="#dir">dir</a>
+<ul>
 <li><a href="#dirpresent-namename-options">dir::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
 <li><a href="#dirabsent-namename">dir::absent <code>[name=]&lt;name&gt;</code></a></li>
 <li><a href="#direxists-namefname">dir::exists <code>[name=&lt;fname&gt;]</code></a></li>
 </ul></li>
-<li><a href="#file">file</a><ul>
+<li><a href="#file">file</a>
+<ul>
 <li><a href="#fileexists-namefname-options">file::exists <code>[name=]&lt;fname&gt;</code> <code>[options]</code></a></li>
 <li><a href="#filepresent-namename-options">file::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
 <li><a href="#fileabsent-namename-options">file::absent <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
 </ul></li>
-<li><a href="#format">format</a><ul>
+<li><a href="#format">format</a>
+<ul>
 <li><a href="#formatexists-namedevice-options">format::exists <code>[name=]&lt;device&gt;</code> <code>[options]</code></a></li>
 <li><a href="#formatpresent-namedevice-options">format::present <code>[name=]&lt;device&gt;</code> <code>[options]</code></a></li>
 <li><a href="#formatabsent-namedevice">format::absent <code>[name=]&lt;device&gt;</code></a></li>
 </ul></li>
-<li><a href="#group">group</a><ul>
+<li><a href="#group">group</a>
+<ul>
 <li><a href="#groupexists-namegroupname">group::exists <code>[name=]&lt;groupname&gt;</code></a></li>
 <li><a href="#grouppresent-namegroupname-systemtruefalse-gidgid">group::present <code>[name=]&lt;groupname&gt;</code> <code>system=&lt;true|false&gt;</code> <code>[gid=gid]</code></a></li>
 <li><a href="#groupabsent-namegroupname">group::absent <code>[name=]&lt;groupname&gt;</code></a></li>
 </ul></li>
-<li><a href="#host">host</a><ul>
+<li><a href="#host">host</a>
+<ul>
 <li><a href="#hostexists-namehostname">host::exists <code>[name=]&lt;hostname&gt;</code></a></li>
 <li><a href="#hostpresent-namehostname">host::present <code>[name=]&lt;hostname&gt;</code></a></li>
 <li><a href="#hostabsent-namehostname">host::absent <code>[name=]&lt;hostname&gt;</code></a></li>
 </ul></li>
-<li><a href="#link">link</a><ul>
+<li><a href="#include">include</a>
+<ul>
+<li><a href="#includepath-glob_expr">include::path <code>&lt;glob_expr&gt;</code></a></li>
+</ul></li>
+<li><a href="#link">link</a>
+<ul>
 <li><a href="#linkexists-namelink-targetsource">link::exists <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></a></li>
 <li><a href="#linkpresent-namelink-targetsource">link::present <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></a></li>
 <li><a href="#linkabsent-namelink-targetsource">link::absent <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></a></li>
 </ul></li>
-<li><a href="#mount">mount</a><ul>
+<li><a href="#mount">mount</a>
+<ul>
 <li><a href="#mountexists-namename-opts">mount::exists <code>[name=]&lt;name&gt;</code> <code>[opts]</code></a></li>
 <li><a href="#mountpresent-namename-opts">mount::present <code>[name=]&lt;name&gt;</code> <code>[opts]</code></a></li>
 <li><a href="#mountabsent-namename">mount::absent <code>[name=]&lt;name&gt;</code></a></li>
 </ul></li>
-<li><a href="#pkg">pkg</a><ul>
+<li><a href="#pkg">pkg</a>
+<ul>
 <li><a href="#pkgexists-namepackage">pkg::exists <code>[name=]&lt;package&gt;</code></a></li>
 <li><a href="#pkgpresent-namepackage">pkg::present <code>[name=]&lt;package&gt;</code></a></li>
 <li><a href="#pkgabsent-namepackage">pkg::absent <code>[name=]&lt;package&gt;</code></a></li>
 </ul></li>
-<li><a href="#srv">srv</a><ul>
+<li><a href="#refresh">refresh</a>
+<ul>
+<li><a href="#refresh-resource">refresh <code>&lt;resource&gt;</code></a></li>
+</ul></li>
+<li><a href="#secret">secret</a>
+<ul>
+<li><a href="#secretdump-namename">secret::dump <code>[name=]&lt;name&gt;</code></a></li>
+<li><a href="#secretload-namename">secret::load <code>[name=]&lt;name&gt;</code></a></li>
+<li><a href="#secretload_inline-format-content">secret::load_inline <code>&lt;format&gt;</code> <code>&lt;content&gt;</code></a></li>
+<li><a href="#secretadd-namename-contentcontent">secret::add <code>[name=]&lt;name&gt;</code> <code>content=&lt;content&gt;</code></a></li>
+<li><a href="#secret-name">secret <code>&lt;name&gt;</code></a></li>
+</ul></li>
+<li><a href="#srv">srv</a>
+<ul>
 <li><a href="#srvexists-nameservice">srv::exists <code>[name=]&lt;service&gt;</code></a></li>
 <li><a href="#srvpresent-nameservice">srv::present <code>[name=]&lt;service&gt;</code></a></li>
 <li><a href="#srvabsent-nameservice">srv::absent <code>[name=]&lt;service&gt;</code></a></li>
 </ul></li>
-<li><a href="#swap">swap</a><ul>
+<li><a href="#swap">swap</a>
+<ul>
 <li><a href="#swapexists">swap::exists</a></li>
 <li><a href="#swappresent-namedevicefile-sizesize-formattruefalse">swap::present <code>[name=&lt;device|file&gt;]</code> <code>[size=&lt;size&gt;]</code> <code>[format=&lt;true|false&gt;]</code></a></li>
 <li><a href="#swapabsent-namedevicefile">swap::absent <code>[name=]&lt;device|file&gt;</code></a></li>
 </ul></li>
-<li><a href="#tz">tz</a><ul>
+<li><a href="#tz">tz</a>
+<ul>
 <li><a href="#tzexists-namezonename">tz::exists <code>[name=]&lt;zonename&gt;</code></a></li>
 <li><a href="#tzpresent-namezonename">tz::present <code>[name=]&lt;zonename&gt;</code></a></li>
 <li><a href="#tzabsent-namezonename">tz::absent <code>[name=]&lt;zonename&gt;</code></a></li>
 </ul></li>
-<li><a href="#user">user</a><ul>
+<li><a href="#user">user</a>
+<ul>
 <li><a href="#userpresent-nameusername-options">user::present <code>[name=&lt;username&gt;]</code> <code>[options]</code></a></li>
 <li><a href="#userabsent-nameusername-keepdatatrue">user::absent <code>[name=]&lt;username&gt;</code> <code>[keepdata=true]</code></a></li>
+</ul></li>
+</ul></li>
+<li><a href="#internal-api-reference">Internal API Reference</a>
+<ul>
+<li><a href="#artifact">artifact</a>
+<ul>
+<li><a href="#artifacthmac-artifact_name">artifact::hmac <code>&lt;artifact_name&gt;</code></a></li>
+<li><a href="#artifactextract">artifact::extract</a></li>
+<li><a href="#artifactexists-artifact_name">artifact::exists <code>&lt;artifact_name&gt;</code></a></li>
+<li><a href="#artifactread-artifact_name">artifact::read <code>&lt;artifact_name&gt;</code></a></li>
+<li><a href="#artifacteval-artifact_name">artifact::eval <code>&lt;artifact_name&gt;</code></a></li>
+<li><a href="#artifactbuild-directory">artifact::build <code>&lt;directory&gt;</code></a></li>
+<li><a href="#artifactload-directory">artifact::load <code>&lt;directory&gt;</code></a></li>
+</ul></li>
+<li><a href="#context">context</a>
+<ul>
+<li><a href="#contexttaskenqueue-fun">context::task::enqueue <code>&lt;fun&gt;</code></a></li>
+<li><a href="#contexttaskapply-context">context::task::apply <code>&lt;context&gt;</code></a></li>
+<li><a href="#contextexecute-name">context::execute <code>&lt;name&gt;</code></a></li>
+<li><a href="#contextrun">context::run</a></li>
+</ul></li>
+<li><a href="#deprecated">deprecated</a>
+<ul>
+<li><a href="#deprecated-namename-versionversion-datedate">deprecated <code>[name=]&lt;name&gt;</code> <code>[version=version]</code> <code>[date=date]</code></a></li>
+</ul></li>
+<li><a href="#main">main</a>
+<ul>
+<li><a href="#maininit">main::init</a></li>
+</ul></li>
+<li><a href="#meta">meta</a>
+<ul>
+<li><a href="#metaget-key">meta::get <code>&lt;key&gt;</code></a></li>
+<li><a href="#metaset-key-value">meta::set <code>&lt;key&gt;</code> <code>&lt;value&gt;</code></a></li>
+<li><a href="#metapolulate">meta::polulate</a></li>
+</ul></li>
+<li><a href="#res">res</a>
+<ul>
+<li><a href="#resvariables-varvalue">res::variables <code>&lt;var=value&gt;+</code></a></li>
+<li><a href="#rescreated-resource">res::created <code>&lt;resource&gt;</code></a></li>
+<li><a href="#resdeleted-resource">res::deleted <code>&lt;resource&gt;</code></a></li>
+<li><a href="#resrefreshed-resource">res::refreshed <code>&lt;resource&gt;</code></a></li>
+<li><a href="#resoverride-resource_name-function_name">res::override <code>&lt;resource_name&gt;</code> <code>&lt;function_name&gt;</code></a></li>
 </ul></li>
 </ul></li>
 </ul>
@@ -309,36 +384,36 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </ol>
 <section id="using-potion-to-run-a-recipe" class="level3">
 <h3>Using potion to run a recipe</h3>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" title="1"><span class="ex">potion</span> run Potionfile Otherrecipe.potion</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ex">potion</span> run Potionfile Otherrecipe.potion</span></code></pre></div>
 <p>The recipe is any bash script which can contain a number of specific funtions, listed below in API Reference.</p>
 </section>
 <section id="using-potion-to-create-a-self-executable-recipe" class="level3">
 <h3>Using potion to create a self-executable recipe</h3>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" title="1"><span class="ex">potion</span> create Potionfile <span class="op">&gt;</span> recipe.sh</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ex">potion</span> create Potionfile <span class="op">&gt;</span> recipe.sh</span></code></pre></div>
 </section>
 <section id="using-potion-to-run-a-local-recipe-in-remote-host" class="level3">
 <h3>Using potion to run a local recipe in remote host</h3>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb3-1" title="1"><span class="ex">potion</span> -q create Potionfile <span class="kw">|</span> <span class="fu">ssh</span> -tt hostname</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="ex">potion</span> -q create Potionfile <span class="kw">|</span> <span class="fu">ssh</span> -tt hostname</span></code></pre></div>
 </section>
 <section id="using-potion-with-remote-recipes" class="level3">
 <h3>Using potion with remote recipes</h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb4-1" title="1"><span class="ex">potion</span> run https://miremotehost/remoterecipe.potion</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="ex">potion</span> run https://miremotehost/remoterecipe.potion</span></code></pre></div>
 <p>Or more complex example with ssh and git:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb5-1" title="1"><span class="ex">potion</span> run ssh+git://myremoterepohost/mirepo.git</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a><span class="ex">potion</span> run ssh+git://myremoterepohost/mirepo.git</span></code></pre></div>
 <p>When you point to a repo, a file called <code>init.potion</code> in the root dir of the repo is loaded automatically, as potion starting point.</p>
 </section>
 <section id="using-default-recipes" class="level3">
 <h3>Using default recipes</h3>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb6-1" title="1"><span class="bu">export</span> <span class="va">POTION</span>\_<span class="va">DEFAULT_SOURCE=</span><span class="st">&quot;ssh+git://myremoterepohost/mirepo.git&quot;</span></a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="ex">potion</span> run</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="bu">export</span> <span class="va">POTION_DEFAULT_SOURCE=</span><span class="st">&quot;ssh+git://myremoterepohost/mirepo.git&quot;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="ex">potion</span> run</span></code></pre></div>
 </section>
 </section>
 <section id="using-potion-to-run-periodically" class="level2">
 <h2>Using potion to run periodically</h2>
 <p>Potion does not support daemon mode, but you can use systemd timers or cron jobs to run potion every hour or when you prefer. Please note that potion requires some environment variables like <code>HOME</code>. Is a good practice tu run potion with sudo as unprivileged user, for example:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb7-1" title="1">$ <span class="fu">id</span></a>
-<a class="sourceLine" id="cb7-2" title="2"><span class="va">uid=</span>1000<span class="va">(</span>user<span class="va">)</span> <span class="va">gid=</span>1000<span class="va">(</span>user<span class="va">)</span> <span class="va">groups=</span>1000<span class="va">(</span>user<span class="va">)</span></a>
-<a class="sourceLine" id="cb7-3" title="3">$ <span class="fu">sudo</span> -i potion run script.potion</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>$ <span class="fu">id</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a><span class="va">uid=</span>1000<span class="va">(</span>user<span class="va">)</span> <span class="va">gid=</span>1000<span class="va">(</span>user<span class="va">)</span> <span class="va">groups=</span>1000<span class="va">(</span>user<span class="va">)</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>$ <span class="fu">sudo</span> -i potion run script.potion</span></code></pre></div>
 </section>
 <section id="writing-recipes" class="level2">
 <h2>Writing recipes</h2>
@@ -346,28 +421,28 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="contexts" class="level3">
 <h3>Contexts</h3>
 <p>A context is a new process running by potion to perform some task in parallel. You can configure context with the following syntax in the Potion file:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb8-1" title="1"><span class="ex">@context1</span></a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="kw">{</span></a>
-<a class="sourceLine" id="cb8-3" title="3">  <span class="co"># do some actions</span></a>
-<a class="sourceLine" id="cb8-4" title="4"><span class="kw">}</span></a>
-<a class="sourceLine" id="cb8-5" title="5"></a>
-<a class="sourceLine" id="cb8-6" title="6"><span class="ex">@context2</span></a>
-<a class="sourceLine" id="cb8-7" title="7"><span class="kw">{</span></a>
-<a class="sourceLine" id="cb8-8" title="8">  <span class="co"># do other actions</span></a>
-<a class="sourceLine" id="cb8-9" title="9"><span class="kw">}</span></a></code></pre></div>
-<p>In this example we create two context which will be running in parallel in the host.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a><span class="ex">context</span> @foo</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="kw">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a>  <span class="co"># do some actions</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="kw">}</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a><span class="ex">context</span> @bar</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a><span class="kw">{</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a>  <span class="co"># do other actions</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a><span class="kw">}</span></span></code></pre></div>
+<p>In this example we create two context which will be running in parallel in the host. Please note that context must be start with <code>@</code> character.</p>
 </section>
 <section id="artifacts" class="level3">
 <h3>Artifacts</h3>
 <p>An artifact is a set of files which should be included in the potion file and deployed by Potion application. You can think an artifact like a template for file. You can use artifacts like any other file, in the form:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" title="1"><span class="ex">file</span>::present /etc/config.json \</a>
-<a class="sourceLine" id="cb9-2" title="2">  data=<span class="st">&quot;artifact://config.json&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a><span class="ex">file</span>::present /etc/config.json <span class="kw">\</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a>  <span class="va">data=</span><span class="st">&quot;artifact://config.json&quot;</span></span></code></pre></div>
 <p>This code will create (if doesn’t exist yet) a fil in <code>/etc/config.json</code>, which content is generated from artifact called <code>config.json</code>. The artifacts directory must be specified by command like when called potion, like the following example:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb10-1" title="1"><span class="ex">potion</span> run -a ./artifacts_dir Potionfile</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a><span class="ex">potion</span> run -a ./artifacts_dir Potionfile</span></code></pre></div>
 <p>If you generate a self-executable potion file, the artifacts will be included in the script.</p>
 <p>Instead of <code>artifact://</code> url, you can use <code>artifact+eval://</code> url, which allows you to expand variables inside the artifact file. You can use normal <code>$variable</code> form, or even run more complex like <code>$(if $var; then echo value; fi)</code>.</p>
 <p>You can also load artifacts programatically from the potion recipe, using <code>artifact::load</code>:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb11-1" title="1"><span class="ex">artifact</span>::load ./path/to/artifactsdir</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a><span class="ex">artifact</span>::load ./path/to/artifactsdir</span></code></pre></div>
 </section>
 </section>
 <section id="secrets" class="level2">
@@ -380,16 +455,16 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><p>Using asymetric encyption via GnuPG, using different keyfiles for each host. This is the most secure way, but hard to maintain.</p></li>
 </ol>
 <p>Recomended option is to set a plain <code>secret.potion</code> file outside your recipes repository and encrypt it with:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb12-1" title="1"><span class="ex">openssl</span> enc -e -a -aes256 -in secret.potion -out secret.potion.aes</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="ex">openssl</span> enc -e -a -aes256 -in secret.potion -out secret.potion.aes</span></code></pre></div>
 <p>And keep <code>secret.potion.aes</code> (encrypted file) under version control system (The <code>-a</code> flag in openssl indicates to encode the file using base64, which is used by potion too). This methid provide a reasonable security and a goo way to manage the secrets from central repository.</p>
 <p>Of course, you can load secrets programatically, for example:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb13-1" title="1"><span class="ex">secret</span>::load <span class="st">&quot;crypt+file://</span><span class="va">$PWD</span><span class="st">/secrets.potion.aes&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="ex">secret</span>::load <span class="st">&quot;crypt+file://</span><span class="va">$PWD</span><span class="st">/secrets.potion.aes&quot;</span></span></code></pre></div>
 <p>This example using openssl encrypt (<code>crypt</code>) method to decrupt secrets file. In API documentation, under module <code>secret</code> you can see different load formats, including plain and gpg ones.</p>
 </section>
 <section id="including-other-potion-files" class="level2">
 <h2>Including other potion files</h2>
 <p>You can split your config in different modules, and you can load them from the starting potion file (<code>init.potion</code> if you are loading recipes from repository). See the <code>include</code> module to learn in which ways you can include other modules, but in general you will use the following:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb14-1" title="1"><span class="ex">include</span>::path ./modules/<span class="dt">\*</span>.potion</a></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a><span class="ex">include</span>::path ./modules/<span class="dt">\*</span>.potion</span></code></pre></div>
 </section>
 <section id="testing-changes" class="level2">
 <h2>Testing changes</h2>
@@ -409,17 +484,17 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <hr />
 </section>
 </section>
-<section id="api-reference-potion" class="level1">
-<h1>API Reference (potion)</h1>
+<section id="external-api-reference" class="level1">
+<h1>External API Reference</h1>
 <section id="dir" class="level2 module">
-<h2>dir</h2>
+<h2 class="module">dir</h2>
 <p>The <code>dir</code> module provides functions to ensure that specified directory is created or destroyed.</p>
 <section id="usage-example" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb15-1" title="1"><span class="ex">dir</span>::present <span class="st">&quot;/mnt&quot;</span> mode=0755</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a><span class="ex">dir</span>::present <span class="st">&quot;/mnt&quot;</span> mode=0755</span></code></pre></div>
 </section>
 <section id="dirpresent-namename-options" class="level3 function">
-<h3>dir::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
+<h3 class="function">dir::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
 <p>ensure that specified directory name passed as argument exists, and create it if not.</p>
 <section id="parameters" class="level4">
 <h4>Parameters</h4>
@@ -440,7 +515,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="dirabsent-namename" class="level3 function">
-<h3>dir::absent <code>[name=]&lt;name&gt;</code></h3>
+<h3 class="function">dir::absent <code>[name=]&lt;name&gt;</code></h3>
 <p>ensure that directory named as arguement, does not exist, removing it if necessary.</p>
 <section id="parameters-1" class="level4">
 <h4>Parameters</h4>
@@ -452,22 +527,22 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="direxists-namefname" class="level3 function">
-<h3>dir::exists <code>[name=&lt;fname&gt;]</code></h3>
+<h3 class="function">dir::exists <code>[name=&lt;fname&gt;]</code></h3>
 <p>return true if directory name passed as argument exists, or false otherwise.</p>
 </section>
 </section>
 <section id="file" class="level2 module">
-<h2>file</h2>
+<h2 class="module">file</h2>
 <p>The <code>file</code> module provides functions to ensure that specified file exists or not in the system and also has specified content. To creat content, use the <code>content</code> parameter, usually this parameter accepts a URL (in the usual curl accepted format or <code>artifact://</code> to read from static artifact or <code>artifact+eval://</code> to read from an evaluated artifact.</p>
 <section id="usage-example-1" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb16-1" title="1"><span class="ex">file</span>::present /etc/somefile \</a>
-<a class="sourceLine" id="cb16-2" title="2">  content=<span class="st">&quot;artifact://someartifact&quot;</span></a></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb17-1" title="1"><span class="ex">file</span>::present /etc/otherfile \</a>
-<a class="sourceLine" id="cb17-2" title="2">  content=<span class="st">&quot;some string content&quot;</span></a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a><span class="ex">file</span>::present /etc/somefile <span class="kw">\</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a>  <span class="va">content=</span><span class="st">&quot;artifact://someartifact&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a><span class="ex">file</span>::present /etc/otherfile <span class="kw">\</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a>  <span class="va">content=</span><span class="st">&quot;some string content&quot;</span></span></code></pre></div>
 </section>
 <section id="fileexists-namefname-options" class="level3 function">
-<h3>file::exists <code>[name=]&lt;fname&gt;</code> <code>[options]</code></h3>
+<h3 class="function">file::exists <code>[name=]&lt;fname&gt;</code> <code>[options]</code></h3>
 <p>return true if file exists, or none otherwise</p>
 <section id="parameters-2" class="level4">
 <h4>Parameters</h4>
@@ -482,7 +557,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="filepresent-namename-options" class="level3 function">
-<h3>file::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
+<h3 class="function">file::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
 <p>ensure that file passed as argument exists.</p>
 <section id="parameters-3" class="level4">
 <h4>Parameters</h4>
@@ -506,7 +581,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="fileabsent-namename-options" class="level3 function">
-<h3>file::absent <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
+<h3 class="function">file::absent <code>[name=]&lt;name&gt;</code> <code>[options]</code></h3>
 <p>ensure that file passed as argument does not exist.</p>
 <section id="parameters-4" class="level4">
 <h4>Parameters</h4>
@@ -519,14 +594,14 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="format" class="level2 module">
-<h2>format</h2>
+<h2 class="module">format</h2>
 <p>The <code>format</code> module provides a way to format and mount specified block devices.</p>
 <section id="usage-example-2" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb18-1" title="1"><span class="ex">format</span>::present /dev/sda1 fstype=xfs</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true"></a><span class="ex">format</span>::present /dev/sda1 fstype=xfs</span></code></pre></div>
 </section>
 <section id="formatexists-namedevice-options" class="level3 function">
-<h3>format::exists <code>[name=]&lt;device&gt;</code> <code>[options]</code></h3>
+<h3 class="function">format::exists <code>[name=]&lt;device&gt;</code> <code>[options]</code></h3>
 <p>return true if device exists and it’s mounted on mountpoint</p>
 <section id="parameters-5" class="level4">
 <h4>Parameters</h4>
@@ -538,7 +613,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="formatpresent-namedevice-options" class="level3 function">
-<h3>format::present <code>[name=]&lt;device&gt;</code> <code>[options]</code></h3>
+<h3 class="function">format::present <code>[name=]&lt;device&gt;</code> <code>[options]</code></h3>
 <p>ensure that specified device has format</p>
 <section id="parameters-6" class="level4">
 <h4>Parameters</h4>
@@ -553,23 +628,23 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="formatabsent-namedevice" class="level3 function">
-<h3>format::absent <code>[name=]&lt;device&gt;</code></h3>
+<h3 class="function">format::absent <code>[name=]&lt;device&gt;</code></h3>
 <p>ensure that specific device is not formatted.</p>
 </section>
 </section>
 <section id="group" class="level2 module">
-<h2>group</h2>
+<h2 class="module">group</h2>
 <p>The <code>group</code> module offers a way to ensure that specified group of uses is created or not in the system.</p>
 <section id="usage-example-3" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb19-1" title="1"><span class="ex">group</span>::present mygroup</a></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true"></a><span class="ex">group</span>::present mygroup</span></code></pre></div>
 </section>
 <section id="groupexists-namegroupname" class="level3 function">
-<h3>group::exists <code>[name=]&lt;groupname&gt;</code></h3>
+<h3 class="function">group::exists <code>[name=]&lt;groupname&gt;</code></h3>
 <p>return true or false if the specific groupname exists or not, respectively.</p>
 </section>
 <section id="grouppresent-namegroupname-systemtruefalse-gidgid" class="level3 function">
-<h3>group::present <code>[name=]&lt;groupname&gt;</code> <code>system=&lt;true|false&gt;</code> <code>[gid=gid]</code></h3>
+<h3 class="function">group::present <code>[name=]&lt;groupname&gt;</code> <code>system=&lt;true|false&gt;</code> <code>[gid=gid]</code></h3>
 <p>create group if not exists</p>
 <section id="parameters-7" class="level4">
 <h4>Parameters</h4>
@@ -587,39 +662,47 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="groupabsent-namegroupname" class="level3 function">
-<h3>group::absent <code>[name=]&lt;groupname&gt;</code></h3>
+<h3 class="function">group::absent <code>[name=]&lt;groupname&gt;</code></h3>
 <p>destroy groupname if exists</p>
 </section>
 </section>
 <section id="host" class="level2 module">
-<h2>host</h2>
+<h2 class="module">host</h2>
 <p>The <code>host</code> module provides functions to configure hostname of the machine.</p>
 <section id="usage-example-4" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb20-1" title="1"><span class="ex">host</span>::present myhost.mydomain.com</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true"></a><span class="ex">host</span>::present myhost.mydomain.com</span></code></pre></div>
 </section>
 <section id="hostexists-namehostname" class="level3 function">
-<h3>host::exists <code>[name=]&lt;hostname&gt;</code></h3>
+<h3 class="function">host::exists <code>[name=]&lt;hostname&gt;</code></h3>
 <p>return true if the FQDN of the node is equal to specified one.</p>
 </section>
 <section id="hostpresent-namehostname" class="level3 function">
-<h3>host::present <code>[name=]&lt;hostname&gt;</code></h3>
+<h3 class="function">host::present <code>[name=]&lt;hostname&gt;</code></h3>
 <p>ensure than the node has the specified hostname.</p>
 </section>
 <section id="hostabsent-namehostname" class="level3 function">
-<h3>host::absent <code>[name=]&lt;hostname&gt;</code></h3>
+<h3 class="function">host::absent <code>[name=]&lt;hostname&gt;</code></h3>
 <p>ensure than the node has not the specified hostname.</p>
 </section>
 </section>
+<section id="include" class="level2 module">
+<h2 class="module">include</h2>
+<p>The <code>include</code> module allows you to include other potions from remote sites.</p>
+<section id="includepath-glob_expr" class="level3 function">
+<h3 class="function">include::path <code>&lt;glob_expr&gt;</code></h3>
+<p>include all files matches with glob expression</p>
+</section>
+</section>
 <section id="link" class="level2 module">
-<h2>link</h2>
+<h2 class="module">link</h2>
 <p>The <code>link</code> module provides functions to ensure that specified symlink exists in the system and points to specified file.</p>
 <section id="usage-example-5" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb21-1" title="1"><span class="ex">link</span>::present /mylink target=/etc/motd</a></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true"></a><span class="ex">link</span>::present /mylink target=/etc/motd</span></code></pre></div>
 </section>
 <section id="linkexists-namelink-targetsource" class="level3 function">
-<h3>link::exists <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
+<h3 class="function">link::exists <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
 <p>returnt true if the specified link exists and point to source.</p>
 <section id="parameters-8" class="level4">
 <h4>Parameters</h4>
@@ -631,7 +714,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="linkpresent-namelink-targetsource" class="level3 function">
-<h3>link::present <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
+<h3 class="function">link::present <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
 <p>ensure that the link exists and point to source.</p>
 <section id="parameters-9" class="level4">
 <h4>Parameters</h4>
@@ -643,7 +726,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="linkabsent-namelink-targetsource" class="level3 function">
-<h3>link::absent <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
+<h3 class="function">link::absent <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
 <p>ensure that the specified link does not exists or not point to specified source.</p>
 <section id="parameters-10" class="level4">
 <h4>Parameters</h4>
@@ -656,14 +739,14 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="mount" class="level2 module">
-<h2>mount</h2>
+<h2 class="module">mount</h2>
 <p>The <code>mount</code> module provides functions to ensure that specific mountpoint is mounted.</p>
 <section id="usage-example-6" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb22-1" title="1"><span class="ex">mount</span>::present /mnt device=/dev/sda1 fstype=xfs</a></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true"></a><span class="ex">mount</span>::present /mnt device=/dev/sda1 fstype=xfs</span></code></pre></div>
 </section>
 <section id="mountexists-namename-opts" class="level3 function">
-<h3>mount::exists <code>[name=]&lt;name&gt;</code> <code>[opts]</code></h3>
+<h3 class="function">mount::exists <code>[name=]&lt;name&gt;</code> <code>[opts]</code></h3>
 <p>return true if specific device is mounted with passed options</p>
 <section id="parameters-11" class="level4">
 <h4>Parameters</h4>
@@ -678,7 +761,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="mountpresent-namename-opts" class="level3 function">
-<h3>mount::present <code>[name=]&lt;name&gt;</code> <code>[opts]</code></h3>
+<h3 class="function">mount::present <code>[name=]&lt;name&gt;</code> <code>[opts]</code></h3>
 <p>ensure that specific device is mounted according with passed options.</p>
 <section id="parameters-12" class="level4">
 <h4>Parameters</h4>
@@ -693,66 +776,106 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="mountabsent-namename" class="level3 function">
-<h3>mount::absent <code>[name=]&lt;name&gt;</code></h3>
+<h3 class="function">mount::absent <code>[name=]&lt;name&gt;</code></h3>
 <p>ensure that specific mount point is not mounted.</p>
 </section>
 </section>
 <section id="pkg" class="level2 module">
-<h2>pkg</h2>
+<h2 class="module">pkg</h2>
 <p>The <code>pkg</code> module provides functions to ensure package installation on the system.</p>
 <section id="usage-example-7" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb23-1" title="1"><span class="ex">pkg</span>::present vim</a></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true"></a><span class="ex">pkg</span>::present vim</span></code></pre></div>
 </section>
 <section id="pkgexists-namepackage" class="level3 function">
-<h3>pkg::exists <code>[name=]&lt;package&gt;</code></h3>
+<h3 class="function">pkg::exists <code>[name=]&lt;package&gt;</code></h3>
 <p>return true if the specific package is present in the system.</p>
 </section>
 <section id="pkgpresent-namepackage" class="level3 function">
-<h3>pkg::present <code>[name=]&lt;package&gt;</code></h3>
+<h3 class="function">pkg::present <code>[name=]&lt;package&gt;</code></h3>
 <p>ensure that specified package is installed on the system.</p>
 </section>
 <section id="pkgabsent-namepackage" class="level3 function">
-<h3>pkg::absent <code>[name=]&lt;package&gt;</code></h3>
+<h3 class="function">pkg::absent <code>[name=]&lt;package&gt;</code></h3>
 <p>ensure that specified package is not present on the system.</p>
 </section>
 </section>
+<section id="refresh" class="level2 module">
+<h2 class="module">refresh</h2>
+<p>The <code>refresh</code> add functionality to refresh services or other resources.</p>
+<section id="refresh-resource" class="level3 function">
+<h3 class="function">refresh <code>&lt;resource&gt;</code></h3>
+<p>refresh specified resource</p>
+</section>
+</section>
+<section id="secret" class="level2 module">
+<h2 class="module">secret</h2>
+<p>The <code>secret</code> module allows you to get/set passwords or secret config keys from diferent sources instead of save them in plain text in the potion file.</p>
+<section id="environment-variables" class="level4">
+<h4>Environment variables</h4>
+<dl>
+<dt><code>SECRET_MASTERKEY</code></dt>
+<dd>Path to file where the master key for secrets lives. By default <code>/etc/potion.key</code>
+</dd>
+</dl>
+</section>
+<section id="secretdump-namename" class="level3 function">
+<h3 class="function">secret::dump <code>[name=]&lt;name&gt;</code></h3>
+<p>dump the encrypted file of a secret plain file.</p>
+</section>
+<section id="secretload-namename" class="level3 function">
+<h3 class="function">secret::load <code>[name=]&lt;name&gt;</code></h3>
+<p>load a secret file</p>
+</section>
+<section id="secretload_inline-format-content" class="level3 function">
+<h3 class="function">secret::load_inline <code>&lt;format&gt;</code> <code>&lt;content&gt;</code></h3>
+<p>load scripts from the inline string. Available formats are plain, crypt or gpg.</p>
+</section>
+<section id="secretadd-namename-contentcontent" class="level3 function">
+<h3 class="function">secret::add <code>[name=]&lt;name&gt;</code> <code>content=&lt;content&gt;</code></h3>
+<p>add new secret with specified content associated with key passed as argument.</p>
+</section>
+<section id="secret-name" class="level3 function">
+<h3 class="function">secret <code>&lt;name&gt;</code></h3>
+<p>return the secret text associated with specified name</p>
+</section>
+</section>
 <section id="srv" class="level2 module">
-<h2>srv</h2>
+<h2 class="module">srv</h2>
 <p>The <code>srv</code> module provides high-level functions to manage package installations.</p>
 <section id="usage-example-8" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb24-1" title="1"><span class="ex">srv</span>::present sshd</a></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true"></a><span class="ex">srv</span>::present sshd</span></code></pre></div>
 </section>
 <section id="srvexists-nameservice" class="level3 function">
-<h3>srv::exists <code>[name=]&lt;service&gt;</code></h3>
+<h3 class="function">srv::exists <code>[name=]&lt;service&gt;</code></h3>
 <p>return true if the specific service is present in the system.</p>
 </section>
 <section id="srvpresent-nameservice" class="level3 function">
-<h3>srv::present <code>[name=]&lt;service&gt;</code></h3>
+<h3 class="function">srv::present <code>[name=]&lt;service&gt;</code></h3>
 <p>ensure that specified service is installed on the system.</p>
 </section>
 <section id="srvabsent-nameservice" class="level3 function">
-<h3>srv::absent <code>[name=]&lt;service&gt;</code></h3>
+<h3 class="function">srv::absent <code>[name=]&lt;service&gt;</code></h3>
 <p>ensure that specified service is not present on the system.</p>
 </section>
 </section>
 <section id="swap" class="level2 module">
-<h2>swap</h2>
+<h2 class="module">swap</h2>
 <p>The <code>swap</code> module contains functions to create and configure swap space.</p>
 <section id="usage-example-9" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb25-1" title="1"><span class="ex">swap</span>::present \</a>
-<a class="sourceLine" id="cb25-2" title="2">  /tmp/swapfile \</a>
-<a class="sourceLine" id="cb25-3" title="3">  size=1G \</a>
-<a class="sourceLine" id="cb25-4" title="4">  format=true</a></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true"></a><span class="ex">swap</span>::present <span class="kw">\</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true"></a>  <span class="ex">/tmp/swapfile</span> <span class="kw">\</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true"></a>  <span class="va">size=</span>1G <span class="kw">\</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true"></a>  <span class="va">format=</span>true</span></code></pre></div>
 </section>
 <section id="swapexists" class="level3 function">
-<h3>swap::exists</h3>
+<h3 class="function">swap::exists</h3>
 <p>return true if swap is enabled</p>
 </section>
 <section id="swappresent-namedevicefile-sizesize-formattruefalse" class="level3 function">
-<h3>swap::present <code>[name=&lt;device|file&gt;]</code> <code>[size=&lt;size&gt;]</code> <code>[format=&lt;true|false&gt;]</code></h3>
+<h3 class="function">swap::present <code>[name=&lt;device|file&gt;]</code> <code>[size=&lt;size&gt;]</code> <code>[format=&lt;true|false&gt;]</code></h3>
 <p>ensure that swap is enable in specified device or file and specified size.</p>
 <section id="parameters-13" class="level4">
 <h4>Parameters</h4>
@@ -770,7 +893,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="swapabsent-namedevicefile" class="level3 function">
-<h3>swap::absent <code>[name=]&lt;device|file&gt;</code></h3>
+<h3 class="function">swap::absent <code>[name=]&lt;device|file&gt;</code></h3>
 <p>ensure that specified device is not enabled for swap</p>
 <section id="parameters-14" class="level4">
 <h4>Parameters</h4>
@@ -783,9 +906,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="tz" class="level2 module">
-<h2>tz</h2>
+<h2 class="module">tz</h2>
 <p>The <code>tz</code> module provides functions to configure timezone in the system.</p>
-<section id="environment-variables" class="level4">
+<section id="environment-variables-1" class="level4">
 <h4>Environment variables</h4>
 <dl>
 <dt><code>TZ_DIR</code></dt>
@@ -795,35 +918,35 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 <section id="usage-example-10" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb26-1" title="1"><span class="ex">tz</span>::present Europe/Madrid</a></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true"></a><span class="ex">tz</span>::present Europe/Madrid</span></code></pre></div>
 </section>
 <section id="tzexists-namezonename" class="level3 function">
-<h3>tz::exists <code>[name=]&lt;zonename&gt;</code></h3>
+<h3 class="function">tz::exists <code>[name=]&lt;zonename&gt;</code></h3>
 <p>if timezone especified in argument is set return true, otherwise return false.</p>
 </section>
 <section id="tzpresent-namezonename" class="level3 function">
-<h3>tz::present <code>[name=]&lt;zonename&gt;</code></h3>
+<h3 class="function">tz::present <code>[name=]&lt;zonename&gt;</code></h3>
 <p>ensure that specified timezone is set.</p>
 </section>
 <section id="tzabsent-namezonename" class="level3 function">
-<h3>tz::absent <code>[name=]&lt;zonename&gt;</code></h3>
+<h3 class="function">tz::absent <code>[name=]&lt;zonename&gt;</code></h3>
 <p>ensure that the specified timezone is not set.</p>
 </section>
 </section>
 <section id="user" class="level2 module">
-<h2>user</h2>
+<h2 class="module">user</h2>
 <p>The <code>user</code> module provides functions to manage users in the system.</p>
 <section id="usage-example-11" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb27-1" title="1"><span class="ex">group</span>::present mygroup</a>
-<a class="sourceLine" id="cb27-2" title="2"><span class="ex">user</span>::present someuser \</a>
-<a class="sourceLine" id="cb27-3" title="3">  groups=adm,mygroup \</a>
-<a class="sourceLine" id="cb27-4" title="4">  nohome=true \</a>
-<a class="sourceLine" id="cb27-5" title="5">  system=true \</a>
-<a class="sourceLine" id="cb27-6" title="6">  shel=/bin/false</a></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true"></a><span class="ex">group</span>::present mygroup</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true"></a><span class="ex">user</span>::present someuser <span class="kw">\</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true"></a>  <span class="va">groups=</span>adm,mygroup <span class="kw">\</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true"></a>  <span class="va">nohome=</span>true <span class="kw">\</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true"></a>  <span class="va">system=</span>true <span class="kw">\</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true"></a>  <span class="va">shel=</span>/bin/false</span></code></pre></div>
 </section>
 <section id="userpresent-nameusername-options" class="level3 function">
-<h3>user::present <code>[name=&lt;username&gt;]</code> <code>[options]</code></h3>
+<h3 class="function">user::present <code>[name=&lt;username&gt;]</code> <code>[options]</code></h3>
 <p>create user if not exists</p>
 <section id="parameters-15" class="level4">
 <h4>Parameters</h4>
@@ -856,7 +979,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 </section>
 <section id="userabsent-nameusername-keepdatatrue" class="level3 function">
-<h3>user::absent <code>[name=]&lt;username&gt;</code> <code>[keepdata=true]</code></h3>
+<h3 class="function">user::absent <code>[name=]&lt;username&gt;</code> <code>[keepdata=true]</code></h3>
 <p>destroy username if exists</p>
 <section id="parameters-16" class="level4">
 <h4>Parameters</h4>
@@ -865,11 +988,148 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <dd>if true do not remove user data.
 </dd>
 </dl>
-<hr />
 </section>
+</section>
+</section>
+</section>
+<section id="internal-api-reference" class="level1">
+<h1>Internal API Reference</h1>
+<section id="artifact" class="level2 module">
+<h2 class="module">artifact</h2>
+<p>The <code>artifact</code> module contains function to access to artifacts. An artifact is a file embedded in potion compiled object, usually you want to set some configuration files as artifacts.</p>
+<section id="artifacthmac-artifact_name" class="level3 function">
+<h3 class="function">artifact::hmac <code>&lt;artifact_name&gt;</code></h3>
+<p>print to stdout the HMAC of the artifact passed as argument.</p>
+<section id="environment-variables-2" class="level4">
+<h4>Environment variables</h4>
+<dl>
+<dt><code>ALGO</code></dt>
+<dd>set the algorithm to use for calculate HMAC. Valid values are: sha1, md5, sha256, sha512. The proper helper tool must be installed on the system.
+</dd>
+</dl>
+</section>
+</section>
+<section id="artifactextract" class="level3 function">
+<h3 class="function">artifact::extract</h3>
+<p>extract artifacts if artifact support is enabled.</p>
+</section>
+<section id="artifactexists-artifact_name" class="level3 function">
+<h3 class="function">artifact::exists <code>&lt;artifact_name&gt;</code></h3>
+<p>return true if the artifact exists, false otherwise.</p>
+</section>
+<section id="artifactread-artifact_name" class="level3 function">
+<h3 class="function">artifact::read <code>&lt;artifact_name&gt;</code></h3>
+<p>read a specific artifact from potion.</p>
+</section>
+<section id="artifacteval-artifact_name" class="level3 function">
+<h3 class="function">artifact::eval <code>&lt;artifact_name&gt;</code></h3>
+<p>read and eval specific artifact from potion.</p>
+</section>
+<section id="artifactbuild-directory" class="level3 function">
+<h3 class="function">artifact::build <code>&lt;directory&gt;</code></h3>
+<p>scan the directory passed as argument and return a POTION_ARTIFACTS variable to stdout with the encoded version of the artifacts.</p>
+</section>
+<section id="artifactload-directory" class="level3 function">
+<h3 class="function">artifact::load <code>&lt;directory&gt;</code></h3>
+<p>load in environment potion artifacts</p>
+</section>
+</section>
+<section id="context" class="level2 module">
+<h2 class="module">context</h2>
+<p>This internal module provides functionality to run different context in paralell.</p>
+<section id="contexttaskenqueue-fun" class="level3 function">
+<h3 class="function">context::task::enqueue <code>&lt;fun&gt;</code></h3>
+<p>enqueue a task to be done when context finished.</p>
+</section>
+<section id="contexttaskapply-context" class="level3 function">
+<h3 class="function">context::task::apply <code>&lt;context&gt;</code></h3>
+<p>apply functions enqueued by context::task::enqueue.</p>
+</section>
+<section id="contextexecute-name" class="level3 function">
+<h3 class="function">context::execute <code>&lt;name&gt;</code></h3>
+<p>Execute a context named as name.</p>
+<section id="environment-variables-3" class="level4">
+<h4>Environment variables</h4>
+<dl>
+<dt><code>CONTEXT</code></dt>
+<dd>contains the context name, and this variable will be propagated to other functions in the same context.
+</dd>
+</dl>
+</section>
+</section>
+<section id="contextrun" class="level3 function">
+<h3 class="function">context::run</h3>
+<p>run all context in paralell.</p>
+</section>
+</section>
+<section id="deprecated" class="level2 module">
+<h2 class="module">deprecated</h2>
+<p>This internal module provides a way to mark deprecated features or modules.</p>
+<section id="deprecated-namename-versionversion-datedate" class="level3 function">
+<h3 class="function">deprecated <code>[name=]&lt;name&gt;</code> <code>[version=version]</code> <code>[date=date]</code></h3>
+<p>set a deprecation mark called name (could be a message), when potion version is lower to specified version a warning is raised, otherwise execution fails with an error. The same behaviour can be used with a date in the format %y-%m-%d, until that date the deprecation warning message will show, after that date execution breaks.</p>
+</section>
+</section>
+<section id="main" class="level2 module">
+<h2 class="module">main</h2>
+<p>The <code>main</code> module contain the specified potion body.</p>
+<section id="maininit" class="level3 function">
+<h3 class="function">main::init</h3>
+<p>print nice potion logo and some custom messages at the beginning.</p>
+<section id="environment-variables-4" class="level4">
+<h4>Environment variables</h4>
+<dl>
+<dt><code>POTION_DEFAULT_SOURCE</code></dt>
+<dd>If set, always try to get potion files from this url. Note that if ther arguments are passed in the command line, potion will load all of them plus the defined in <code>POTION_DEFAULT_SOURCE</code>.
+</dd>
+<dt><code>VERSION</code></dt>
+<dd>a readonly variable which contains the potion version number.
+</dd>
+</dl>
+</section>
+</section>
+</section>
+<section id="meta" class="level2 module">
+<h2 class="module">meta</h2>
+<p>This internal module provides information about metadata. The metadata information is used internally by potion to store data discovered from the system, like num of CPUs, the hostname, etc. This is an internal module, so you might be not need to override metadata ever.</p>
+<section id="metaget-key" class="level3 function">
+<h3 class="function">meta::get <code>&lt;key&gt;</code></h3>
+<p>get the current value of key</p>
+</section>
+<section id="metaset-key-value" class="level3 function">
+<h3 class="function">meta::set <code>&lt;key&gt;</code> <code>&lt;value&gt;</code></h3>
+<p>add new value to the metadata</p>
+</section>
+<section id="metapolulate" class="level3 function">
+<h3 class="function">meta::polulate</h3>
+<p>poplulate metadata values from the system</p>
+</section>
+</section>
+<section id="res" class="level2 module">
+<h2 class="module">res</h2>
+<p>The <code>res</code> module provides a way to work with potion resources.</p>
+<section id="resvariables-varvalue" class="level3 function">
+<h3 class="function">res::variables <code>&lt;var=value&gt;+</code></h3>
+<p>pretty priting resources variables</p>
+</section>
+<section id="rescreated-resource" class="level3 function">
+<h3 class="function">res::created <code>&lt;resource&gt;</code></h3>
+<p>print the properly message when resource is created</p>
+</section>
+<section id="resdeleted-resource" class="level3 function">
+<h3 class="function">res::deleted <code>&lt;resource&gt;</code></h3>
+<p>print the properly message when resource is deleted</p>
+</section>
+<section id="resrefreshed-resource" class="level3 function">
+<h3 class="function">res::refreshed <code>&lt;resource&gt;</code></h3>
+<p>print the properly message when resource is refreshed</p>
+</section>
+<section id="resoverride-resource_name-function_name" class="level3 function">
+<h3 class="function">res::override <code>&lt;resource_name&gt;</code> <code>&lt;function_name&gt;</code></h3>
+<p>override a resource with another function, the new function will receive the same parameters than the original resource. The original one can be invoked with <code>resource_name</code> (prepending a backslash).</p>
+<hr />
 </section>
 </section>
 </section>
 </div>
 </body>
-

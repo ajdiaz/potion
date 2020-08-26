@@ -1,10 +1,15 @@
 #! /bin/bash
 # mod: meta
-# txt: This internal module provides information about metadata
+# api: Internal
+# txt: This internal module provides information about metadata. The metadata
+#      information is used internally by potion to store data discovered from
+#      the system, like num of CPUs, the hostname, etc. This is an internal
+#      module, so you might be not need to override metadata ever.
 
 declare -A POTION_METADATA=()
 
 # fun: meta::get <key>
+# api: Internal
 # txt: get the current value of key
 meta::get ()
 {
@@ -12,6 +17,7 @@ meta::get ()
 }
 
 # fun: meta::set <key> <value>
+# api: Internal
 # txt: add new value to the metadata
 meta::set ()
 {
@@ -19,6 +25,7 @@ meta::set ()
 }
 
 # fun: meta::polulate
+# api: Internal
 # txt: poplulate metadata values from the system
 meta::populate ()
 {

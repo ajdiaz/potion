@@ -1,12 +1,12 @@
 #! /bin/bash
 # mod: pkg
-# api: potion
+# api: External
 # txt: The `pkg` module provides functions to ensure package installation
 #      on the system.
 # use: pkg::present vim
 
 # fun: pkg::exists [name=]<package>
-# api: potion
+# api: External
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
   local os name
@@ -22,7 +22,7 @@ pkg::exists () {
 }
 
 # fun: pkg::present [name=]<package>
-# api: potion
+# api: External
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
   local os name
@@ -38,7 +38,7 @@ pkg::present () {
 }
 
 # fun: pkg::absent [name=]<package>
-# api: potion
+# api: External
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
   local os

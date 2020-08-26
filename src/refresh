@@ -1,8 +1,12 @@
 #! /bin/bash
 # mod: refresh
+# api: External
 # txt: The `refresh` add functionality to refresh services or other
 #      resources.
 
+# fun: refresh <resource>
+# api: External
+# txt: refresh specified resource
 refresh () {
   local res="$1"; shift
 

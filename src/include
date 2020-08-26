@@ -1,9 +1,11 @@
 #!/bin/bash
 # mod: include
+# api: External
 # txt: The `include` module allows you to include other potions from remote
 #      sites.
 
 # fun: include <url>
+# api: External
 # api: potion
 # txt: include a potion from URL, git repo or file.
 include ()
@@ -29,7 +31,7 @@ include ()
 }
 
 # fun: include::path <glob_expr>
-# api: potion
+# api: External
 # txt: include all files matches with glob expression
 include::path ()
 {

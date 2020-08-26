@@ -1,9 +1,11 @@
 #! /bin/bash
 # mod: deprecated
+# api: Internal
 # txt: This internal module provides a way to mark deprecated features or
 #      modules.
 
 # fun: deprecated [name=]<name> [version=version] [date=date]
+# api: Internal
 # txt: set a deprecation mark called name (could be a message), when potion
 #      version is lower to specified version a warning is raised, otherwise
 #      execution fails with an error. The same behaviour can be used with

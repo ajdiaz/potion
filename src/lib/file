@@ -1,6 +1,6 @@
 #! /bin/bash
 # mod: file
-# api: potion
+# api: External
 # txt: The `file` module provides functions to ensure that specified file
 #      exists or not in the system and also has specified content.
 #      To creat content, use the ``content`` parameter, usually this parameter
@@ -56,7 +56,7 @@ file::_data () {
 }
 
 # fun: file::exists [name=]<fname> [options]
-# api: potion
+# api: External
 # txt: return true if file exists, or none otherwise
 # opt: name: the filename to check for.
 # opt: content: the content URL
@@ -115,7 +115,7 @@ file::_group ()
 }
 
 # fun: file::present [name=]<name> [options]
-# api: potion
+# api: External
 # txt: ensure that file passed as argument exists.
 # opt: name: then file name to ensure
 # opt: user: the user owner the file
@@ -178,7 +178,7 @@ file::present () {
 }
 
 # fun: file::absent [name=]<name> [options]
-# api: potion
+# api: External
 # txt: ensure that file passed as argument does not exist.
 # opt: content: the content url (only removes the file if content is the same).
 file::absent () {

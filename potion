@@ -930,241 +930,10 @@ std::str2array () {
   str2array_ret=( "$@" )
 }
 declare -xa str2array_ret
-BLIB_VERSION='1.2-5-g84801fd'
-#!/bin/bash
-# mod: artifact
-# txt: The `artifact` module contains function to access to artifacts. An
-#      artifact is a file embedded in potion compiled object, usually you
-#      want to set some configuration files as artifacts.
-
-# fun: artifact::hmac <artifact_name>
-# txt: print to stdout the HMAC of the artifact passed as argument.
-# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
-#      sha1, md5, sha256, sha512. The proper helper tool must be installed
-#      on the system.
-artifact::hmac () {
-  if artifact::exists "$1"; then
-    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
-  else
-    err::trace "Missing artifact while calculating HMAC: $1"
-  fi
-}
-
-# fun: artifact::extract
-# txt: extract artifacts if artifact support is enabled.
-artifact::extract () {
-  [ "$POTION_ARTIFACTS" ] || return 0
-  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
-
-  mutex::adquire _artifacts
-  tmp::create _artifacts
-  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
-    err::trace "Unable to extract artifacts"
-  touch "${BLIB_TMPDIR}/.artifacts"
-  tmp::exit
-  mutex::release _artifacts
-}
-
-# fun: artifact::exists <artifact_name>
-# txt: return true if the artifact exists, false otherwise.
-artifact::exists () {
-  artifact::extract
-  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
-}
-
-# fun: artifact::read <artifact_name>
-# txt: read a specific artifact from potion.
-artifact::read () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  cat "${BLIB_TMPDIR}/_artifacts/$1"
-}
-
-
-# fun: artifact::eval <artifact_name>
-# txt: read and eval specific artifact from potion.
-artifact::eval () {
-  artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
-
-  local content
-
-  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
-  eval echo \""${content//\"/\\\"}"\"
-}
-
-# fun: artifact::build <directory>
-# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
-#      variable to stdout with the encoded version of the artifacts.
-artifact::build () {
-  local artifacts
-  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
-  echo "POTION_ARTIFACTS='${artifacts}'"
-  echo
-}
-
-# fun: artifact::load <directory>
-# txt: load in environment potion artifacts
-artifact::load ()
-{
-  eval "$(artifact::build "${1}")"
-  out::user "dumped artifacts from: ${1}"
-}
-#! /bin/bash
-# mod: context
-# txt: This internal module provides functionality to run different context
-#      in paralell.
-
-alias context=function
-
-declare -A __context__task
-# fun: context::task::enqueue <fun>
-# txt: enqueue a task to be done when context finished.
-context::task::enqueue () {
-  if ! std::strin "${__context__task["${CONTEXT}"]}" ",$1,"; then
-    __context__task["${CONTEXT}"]+=",$1,"
-  fi
-}
-
-# fun: context::task::apply <context>
-# txt: apply functions enqueued by context::task::enqueue.
-context::task::apply () {
-  task="${__context__task["${1}"]}"
-  if [ "$task" ]; then
-    export IFS=,
-    for t in $task; do
-      [ "$t" ] || continue
-      eval "${t}" || err::trace "Unable to apply post-context task: $t ($CONTEXT)"
-    done
-  fi
-}
-
-# fun: context::execute <name>
-# txt: Execute a context named as name.
-# env: CONTEXT: contains the context name, and this variable will be
-#      propagated to other functions in the same context.
-context::execute () {
-  export CONTEXT="$1" && $1 && context::task::apply "$1"
-}
-
-# fun: context::run
-# txt: run all context in paralell.
-declare -a context__run__pids=()
-context::run () {
-  local tim cctx=0
-
-  tim="$(std::timestamp)"
-  # shellcheck disable=SC2015
-  [ "$POTION_COMPILED" ] && local kind="compiled" || local kind="in-line"
-  while read -r _ _ context; do
-    ((cctx++))
-  done < <(declare -F | grep '^declare -f @')
-
-  out::user "found ${cctx} contexts"
-  # shellcheck disable=SC2015
-  ${PRETEND:-false} &&
-    out::info "Starting $kind potion execution (pretending)" ||
-    out::info "Starting $kind potion execution"
-
-  while read -r _ _ context; do
-    context::execute "$context" &
-    if ${ONETHREAD:-false}; then
-      wait $!
-    else
-      context__run__pids+=( "$!" )
-    fi
-  done < <(declare -F | grep '^declare -f @')
-  if ! ${ONETHREAD:-false}; then
-    [[ ${#context__run__pids[@]} -gt 0 ]] && 
-      wait "${context__run__pids[@]}"
-  fi
-  context::task::apply "main"
-  tim="$(( $(std::timestamp) - tim ))"
-  out::info "Finished potion exection in ${tim} seconds."
-}
-#! /bin/bash
-# mod: deprecated
-# txt: This internal module provides a way to mark deprecated features or
-#      modules.
-
-# fun: deprecated [name=]<name> [version=version] [date=date]
-# txt: set a deprecation mark called name (could be a message), when potion
-#      version is lower to specified version a warning is raised, otherwise
-#      execution fails with an error. The same behaviour can be used with
-#      a date in the format %y-%m-%d, until that date the deprecation
-#      warning message will show, after that date execution breaks.
-deprecated () {
-  local line file; read -r line _ file < <(caller 1)
-  local version date name message="deprecation mark"
-  eval "$(std::parse "$@")"
-
-  # shellcheck disable=SC2153
-  version::cmp "$VERSION" "$version"
-  case $? in
-    0|255)
-      err::trace "Deprecated $name: $message (at $file:$line)";;
-    1)
-      out::warn "deprecated $name: $message (at $file:$line)";;
-  esac
-
-  [[ "$date" ]] || return
-
-  local year month day
-
-  { IFS='-' read -r year month day <<< "$date"; }
-
-  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
-    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
-    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
-  then
-      out::warn "deprecated $name: $message (at $file:$line)"
-  else
-    err::trace "Deprecated $name: $message (at $file:$line)"
-  fi
-}
-#!/bin/bash
-# mod: include
-# txt: The `include` module allows you to include other potions from remote
-#      sites.
-
-# fun: include <url>
-# api: potion
-# txt: include a potion from URL, git repo or file.
-include ()
-{
-  local url=
-  case "$1" in
-    git://*|ssh+git://*)
-      url="${1/ssh+git:/ssh:}"
-      tmp::create origin
-      out::info $"Cloning remote potion spells from: ${url}..."
-      std::mute git clone --depth 1 "$url" . ||
-        err::trace $"Unable to clone repository: $url"
-      [[ -r ./init.potion ]] ||
-        err::trace $"Cloned repository does not provide init.potion file"
-      curl::source ./init.potion ||
-        err::trace $"Unable to load init.potion file"
-      tmp::exit
-      ;;
-    *)
-      curl::source "$1"
-      ;;
-  esac
-}
-
-# fun: include::path <glob_expr>
-# api: potion
-# txt: include all files matches with glob expression
-include::path ()
-{
-  for f in "$@"; do
-    include "$f" || exit 1
-  done
-}
+BLIB_VERSION='1.2-6-g88770a8'
 #! /bin/bash
 # mod: dir
-# api: potion
+# api: External
 # txt: The `dir` module provides functions to ensure that specified
 #      directory is created or destroyed.
 # use: dir::present "/mnt" mode=0755
@@ -1182,7 +951,7 @@ dir::_destroy () {
 }
 
 # fun: dir::present [name=]<name> [options]
-# api: potion
+# api: External
 # txt: ensure that specified directory name passed as argument exists, and
 #      create it if not.
 # opt: name: the name of the directory to be created.
@@ -1205,7 +974,7 @@ dir::present () {
 }
 
 # fun: dir::absent [name=]<name>
-# api: potion
+# api: External
 # txt: ensure that directory named as arguement, does not exist, removing it
 #      if necessary.
 # opt: name: the name of the directory to be removed
@@ -1223,7 +992,7 @@ dir::absent () {
 }
 
 # fun: dir::exists [name=<fname>]
-# api: potion
+# api: External
 # txt: return true if directory name passed as argument exists, or false
 #      otherwise.
 dir::exists () {
@@ -1232,7 +1001,7 @@ dir::exists () {
 }
 #! /bin/bash
 # mod: file
-# api: potion
+# api: External
 # txt: The `file` module provides functions to ensure that specified file
 #      exists or not in the system and also has specified content.
 #      To creat content, use the ``content`` parameter, usually this parameter
@@ -1288,7 +1057,7 @@ file::_data () {
 }
 
 # fun: file::exists [name=]<fname> [options]
-# api: potion
+# api: External
 # txt: return true if file exists, or none otherwise
 # opt: name: the filename to check for.
 # opt: content: the content URL
@@ -1347,7 +1116,7 @@ file::_group ()
 }
 
 # fun: file::present [name=]<name> [options]
-# api: potion
+# api: External
 # txt: ensure that file passed as argument exists.
 # opt: name: then file name to ensure
 # opt: user: the user owner the file
@@ -1410,7 +1179,7 @@ file::present () {
 }
 
 # fun: file::absent [name=]<name> [options]
-# api: potion
+# api: External
 # txt: ensure that file passed as argument does not exist.
 # opt: content: the content url (only removes the file if content is the same).
 file::absent () {
@@ -1425,7 +1194,7 @@ file::absent () {
 }
 #! /bin/bash
 # mod: format
-# api: potion
+# api: External
 # txt: The `format` module provides a way to format and mount specified
 #      block devices.
 # use: format::present /dev/sda1 fstype=xfs
@@ -1436,7 +1205,7 @@ format::_exists::format () {
 }
 
 # fun: format::exists [name=]<device> [options]
-# api: potion
+# api: External
 # txt: return true if device exists and it's mounted on mountpoint
 # opt: name: the device name
 format::exists () {
@@ -1459,7 +1228,7 @@ format::_create::mount () {
 }
 
 # fun: format::present [name=]<device> [options]
-# api: potion
+# api: External
 # txt: ensure that specified device has format
 # opt: name: the device to be initialized
 # opt: fstype: the filesystem type to format the device
@@ -1479,7 +1248,7 @@ format::present () {
 }
 
 # fun: format::absent [name=]<device>
-# api: potion
+# api: External
 # txt: ensure that specific device is not formatted.
 format::absent () {
   out::warn "To avoid data loss format::absent do nothing for device $*"
@@ -1496,7 +1265,7 @@ format::absent () {
 #        remount=true
 
 # fun: fstab::exists [name=]<device>
-# api: potion
+# api: External
 # txt: return true if device is set in fstab
 fstab::exists () {
   local name
@@ -1530,7 +1299,7 @@ fstab::_destroy () {
 }
 
 # fun: fstab::present [name=]<device> mount=<mountpoint> [options]
-# api: potion
+# api: External
 # txt: ensure that fstab entry for device is present
 # opt: name: the device name to ensure
 # opt: mount: the mountpoint for the device
@@ -1553,7 +1322,7 @@ fstab::present () {
 }
 
 # fun: fstab::absent [name=]<device>
-# api: potion
+# api: External
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
   eval "$(std::parse "$@")"
@@ -1569,13 +1338,13 @@ fstab::absent () {
 }
 #! /bin/bash
 # mod: group
-# api: potion
+# api: External
 # txt: The `group` module offers a way to ensure that specified group of
 #      uses is created or not in the system.
 # use: group::present mygroup
 
 # fun: group::exists [name=]<groupname>
-# api: potion
+# api: External
 # txt: return true or false if the specific groupname exists or not,
 #      respectively.
 group::exists () {
@@ -1603,7 +1372,7 @@ group::_destroy () {
 
 
 # fun: group::present [name=]<groupname> system=<true|false> [gid=gid]
-# api: potion
+# api: External
 # txt: create group if not exists
 # opt: name: the name of the group to create.
 # opt: system: if true create a system group.
@@ -1624,7 +1393,7 @@ group::present () {
 }
 
 # fun: group::absent [name=]<groupname>
-# api: potion
+# api: External
 # txt: destroy groupname if exists
 group::absent () {
   eval "$(std::parse "$@")"
@@ -1640,13 +1409,13 @@ group::absent () {
 }
 #! /bin/bash
 # mod: host
-# api: potion
+# api: External
 # txt: The `host` module provides functions to configure hostname of the
 #      machine.
 # use: host::present myhost.mydomain.com
 
 # fun: host::exists [name=]<hostname>
-# api: potion
+# api: External
 # txt: return true if the FQDN of the node is equal to specified one.
 host::exists () {
   local host name
@@ -1676,7 +1445,7 @@ host::_destroy () {
 }
 
 # fun: host::present [name=]<hostname>
-# api: potion
+# api: External
 # txt: ensure than the node has the specified hostname.
 host::present () {
   eval "$(std::parse "$@")"
@@ -1692,7 +1461,7 @@ host::present () {
 }
 
 # fun: host::absent [name=]<hostname>
-# api: potion
+# api: External
 # txt: ensure than the node has not the specified hostname.
 host::absent () {
   eval "$(std::parse "$@")"
@@ -1708,13 +1477,13 @@ host::absent () {
 }
 #! /bin/bash
 # mod: link
-# api: potion
+# api: External
 # txt: The `link` module provides functions to ensure that specified
 #      symlink exists in the system and points to specified file.
 # use: link::present /mylink target=/etc/motd
 
 # fun: link::exists [name=]<link> target=<source>
-# api: potion
+# api: External
 # txt: returnt true if the specified link exists and point to source.
 # opt: target: the target where link points to
 link::exists () {
@@ -1736,7 +1505,7 @@ link::_destroy () {
 }
 
 # fun: link::present [name=]<link> target=<source>
-# api: potion
+# api: External
 # txt: ensure that the link exists and point to source.
 # opt: target: the target where link points to
 link::present () {
@@ -1753,7 +1522,7 @@ link::present () {
 }
 
 # fun: link::absent [name=]<link> target=<source>
-# api: potion
+# api: External
 # txt: ensure that the specified link does not exists or not point to
 #      specified source.
 # opt: target: the target where link points to
@@ -1772,13 +1541,13 @@ link::absent () {
 
 #! /bin/bash
 # mod: mount
-# api: potion
+# api: External
 # txt: The `mount` module provides functions to ensure that specific
 #      mountpoint is mounted.
 # use: mount::present /mnt device=/dev/sda1 fstype=xfs
 
 # fun: mount::exists [name=]<name> [opts]
-# api: potion
+# api: External
 # txt: return true if specific device is mounted with passed options
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
@@ -1802,7 +1571,7 @@ mount::_destroy () {
 }
 
 # fun: mount::present [name=]<name> [opts]
-# api: potion
+# api: External
 # txt: ensure that specific device is mounted according with passed options.
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
@@ -1817,7 +1586,7 @@ mount::present () {
 }
 
 # fun: mount::absent [name=]<name>
-# api: potion
+# api: External
 # txt: ensure that specific mount point is not mounted.
 mount::absent () {
   if mount::exists "$@"; then
@@ -1830,13 +1599,13 @@ mount::absent () {
 }
 #! /bin/bash
 # mod: pkg
-# api: potion
+# api: External
 # txt: The `pkg` module provides functions to ensure package installation
 #      on the system.
 # use: pkg::present vim
 
 # fun: pkg::exists [name=]<package>
-# api: potion
+# api: External
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
   local os name
@@ -1852,7 +1621,7 @@ pkg::exists () {
 }
 
 # fun: pkg::present [name=]<package>
-# api: potion
+# api: External
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
   local os name
@@ -1868,7 +1637,7 @@ pkg::present () {
 }
 
 # fun: pkg::absent [name=]<package>
-# api: potion
+# api: External
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
   local os
@@ -1997,7 +1766,7 @@ pkg::_destroy::ubuntu () {
 }
 #! /bin/bash
 # mod: srv
-# api: potion
+# api: External
 # txt: The `srv` module provides high-level functions to manage package
 #      installations.
 # use: srv::present sshd
@@ -2023,7 +1792,7 @@ srv::_sysinit () {
 }
 
 # fun: srv::exists [name=]<service>
-# api: potion
+# api: External
 # txt: return true if the specific service is present in the system.
 srv::exists () {
   local si name
@@ -2038,7 +1807,7 @@ srv::exists () {
 }
 
 # fun: srv::present [name=]<service>
-# api: potion
+# api: External
 # txt: ensure that specified service is installed on the system.
 srv::present () {
   local si name
@@ -2053,7 +1822,7 @@ srv::present () {
 }
 
 # fun: srv::absent [name=]<service>
-# api: potion
+# api: External
 # txt: ensure that specified service is not present on the system.
 srv::absent () {
   local si name
@@ -2242,7 +2011,7 @@ sudo::_syntax () {
 }
 
 # fun: sudo::user::exists [name=]<username> grant=<permissions>
-# api: potion
+# api: External
 # txt: return true if user has specific permissions
 # opt: name: the username to check permissions
 # opt: grant: the permissions to granted to the user.
@@ -2275,7 +2044,7 @@ sudo::user::_destroy () {
 }
 
 # fun: sudo::user::present [name=]<username> grant=[permissions]
-# api: potion
+# api: External
 # txt: ensure that specific user has permissions passed as argument, or if
 #      not permissions defined grant root permissions.
 # opt: name: the username to give permissions
@@ -2295,7 +2064,7 @@ sudo::user::present () {
 }
 
 # fun: sudo::user::absent [name=]<username> grant=[permissions]
-# api: potion
+# api: External
 # txt: ensure that the specific permission for the specific username is not
 #      granted.
 # opt: name: the username to give permissions
@@ -2314,7 +2083,7 @@ sudo::user::absent () {
 }
 
 # fun: sudo::group::exists [name=]<username> grant=<sudoline>
-# api: potion
+# api: External
 # txt: return true if group has configured the specific sudoline.
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
@@ -2347,7 +2116,7 @@ sudo::group::_destroy () {
 }
 
 # fun: sudo::group::present [name=]<groupname> [grant=permissions]
-# api: potion
+# api: External
 # txt: ensure that specific group has permissions passed as argument, or if
 #      not permissions defined grant root permissions.
 # opt: name: the username to give permissions
@@ -2367,7 +2136,7 @@ sudo::group::present () {
 }
 
 # fun: sudo::group::absent [name=]<groupname> [grant=permissions]
-# api: potion
+# api: External
 # txt: ensure that the specific permission for the specific groupname is not
 #      granted.
 # opt: name: the username to give permissions
@@ -2387,7 +2156,7 @@ sudo::group::absent () {
 }
 #! /bin/bash
 # mod: swap
-# api: potion
+# api: External
 # txt: The `swap` module contains functions to create and configure swap
 #      space.
 # use: swap::present \\
@@ -2396,7 +2165,7 @@ sudo::group::absent () {
 #        format=true
 
 # fun: swap::exists
-# api: potion
+# api: External
 # txt: return true if swap is enabled
 swap::exists () {
   read -r _ swap _ < <(free | grep '^Swap:')
@@ -2434,7 +2203,7 @@ swap::_destroy () {
 }
 
 # fun: swap::present [name=<device|file>] [size=<size>] [format=<true|false>]
-# api: potion
+# api: External
 # txt: ensure that swap is enable in specified device or file and specified
 #      size.
 # opt: name: the device use as swap space.
@@ -2454,7 +2223,7 @@ swap::present () {
 }
 
 # fun: swap::absent [name=]<device|file>
-# api: potion
+# api: External
 # txt: ensure that specified device is not enabled for swap
 # opt: name: the device use as swap space.
 swap::absent () {
@@ -2471,7 +2240,7 @@ swap::absent () {
 }
 #! /bin/bash
 # mod: tz
-# api: potion
+# api: External
 # txt: The `tz` module provides functions to configure timezone in the
 #      system.
 # env: TZ_DIR: path where zoneinfo live. By default `/usr/share/zoneinfo`.
@@ -2480,7 +2249,7 @@ swap::absent () {
 TZ_DIR="/usr/share/zoneinfo"
 
 # fun: tz::exists [name=]<zonename>
-# api: potion
+# api: External
 # txt: if timezone especified in argument is set return true, otherwise
 #      return false.
 tz::exists () {
@@ -2495,7 +2264,7 @@ tz::exists () {
 }
 
 # fun: tz::present [name=]<zonename>
-# api: potion
+# api: External
 # txt: ensure that specified timezone is set.
 tz::present () {
   eval "$(std::parse "$@")"
@@ -2512,7 +2281,7 @@ tz::present () {
 }
 
 # fun: tz::absent [name=]<zonename>
-# api: potion
+# api: External
 # txt: ensure that the specified timezone is not set.
 tz::absent () {
   eval "$(std::parse "$@")"
@@ -2529,7 +2298,7 @@ tz::absent () {
 }
 #! /bin/bash
 # mod: user
-# api: potion
+# api: External
 # txt: The `user` module provides functions to manage users in the system.
 # use: group::present mygroup
 #      user::present someuser \\
@@ -2593,7 +2362,7 @@ user::_destroy () {
 
 
 # fun: user::present [name=<username>] [options]
-# api: potion
+# api: External
 # txt: create user if not exists
 # opt: basedir: set the base director to create home directories.
 # opt: gecos: set the GECOS field in user record.
@@ -2625,7 +2394,7 @@ user::present () {
 }
 
 # fun: user::absent [name=]<username> [keepdata=true]
-# api: potion
+# api: External
 # txt: destroy username if exists
 # opt: keepdata: if true do not remove user data.
 user::absent () {
@@ -2640,20 +2409,449 @@ user::absent () {
   fi
 }
 #! /bin/bash
+# mod: meta
+# api: Internal
+# txt: This internal module provides information about metadata. The metadata
+#      information is used internally by potion to store data discovered from
+#      the system, like num of CPUs, the hostname, etc. This is an internal
+#      module, so you might be not need to override metadata ever.
+
+declare -A POTION_METADATA=()
+
+# fun: meta::get <key>
+# api: Internal
+# txt: get the current value of key
+meta::get ()
+{
+  echo "${POTION_METADATA["$1"]}"
+}
+
+# fun: meta::set <key> <value>
+# api: Internal
+# txt: add new value to the metadata
+meta::set ()
+{
+  POTION_METADATA["$1"]="$2"
+}
+
+# fun: meta::polulate
+# api: Internal
+# txt: poplulate metadata values from the system
+meta::populate ()
+{
+  meta::set "core.processors" "$(getconf _NPROCESSORS_ONLN)"
+  meta::set "core.hostname" "$(hostname)"
+  meta::set "core.fqdn" "$(hostname -f)"
+
+  out::user "loaded metadata: ${#POTION_METADATA[@]} variables loaded"
+}
+#!/bin/bash
+# mod: artifact
+# api: Internal
+# txt: The `artifact` module contains function to access to artifacts. An
+#      artifact is a file embedded in potion compiled object, usually you
+#      want to set some configuration files as artifacts.
+
+# fun: artifact::hmac <artifact_name>
+# api: Internal
+# txt: print to stdout the HMAC of the artifact passed as argument.
+# env: ALGO: set the algorithm to use for calculate HMAC. Valid values are:
+#      sha1, md5, sha256, sha512. The proper helper tool must be installed
+#      on the system.
+artifact::hmac () {
+  if artifact::exists "$1"; then
+    file::hmac "${BLIB_TMPDIR}/_artifacts/$1"
+  else
+    err::trace "Missing artifact while calculating HMAC: $1"
+  fi
+}
+
+# fun: artifact::extract
+# api: Internal
+# txt: extract artifacts if artifact support is enabled.
+artifact::extract () {
+  [ "$POTION_ARTIFACTS" ] || return 0
+  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
+
+  mutex::adquire _artifacts
+  tmp::create _artifacts
+  echo "${POTION_ARTIFACTS}" | base64 -d | tar x -C . ||
+    err::trace "Unable to extract artifacts"
+  touch "${BLIB_TMPDIR}/.artifacts"
+  tmp::exit
+  mutex::release _artifacts
+}
+
+# fun: artifact::exists <artifact_name>
+# api: Internal
+# txt: return true if the artifact exists, false otherwise.
+artifact::exists () {
+  artifact::extract
+  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
+}
+
+# fun: artifact::read <artifact_name>
+# api: Internal
+# txt: read a specific artifact from potion.
+artifact::read () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  cat "${BLIB_TMPDIR}/_artifacts/$1"
+}
+
+
+# fun: artifact::eval <artifact_name>
+# api: Internal
+# txt: read and eval specific artifact from potion.
+artifact::eval () {
+  artifact::exists "$1" ||
+    err::trace "Missing artifact: '$1'"
+
+  local content
+
+  content="$(< "${BLIB_TMPDIR}/_artifacts/$1")"
+  eval echo \""${content//\"/\\\"}"\"
+}
+
+# fun: artifact::build <directory>
+# api: Internal
+# txt: scan the directory passed as argument and return a POTION_ARTIFACTS
+#      variable to stdout with the encoded version of the artifacts.
+artifact::build () {
+  local artifacts
+  artifacts="$(cd "$1" && tar -c . | base64 -w0)"
+  echo "POTION_ARTIFACTS='${artifacts}'"
+  echo
+}
+
+# fun: artifact::load <directory>
+# api: Internal
+# txt: load in environment potion artifacts
+artifact::load ()
+{
+  eval "$(artifact::build "${1}")"
+  out::user "dumped artifacts from: ${1}"
+}
+#! /bin/bash
+# mod: deprecated
+# api: Internal
+# txt: This internal module provides a way to mark deprecated features or
+#      modules.
+
+# fun: deprecated [name=]<name> [version=version] [date=date]
+# api: Internal
+# txt: set a deprecation mark called name (could be a message), when potion
+#      version is lower to specified version a warning is raised, otherwise
+#      execution fails with an error. The same behaviour can be used with
+#      a date in the format %y-%m-%d, until that date the deprecation
+#      warning message will show, after that date execution breaks.
+deprecated () {
+  local line file; read -r line _ file < <(caller 1)
+  local version date name message="deprecation mark"
+  eval "$(std::parse "$@")"
+
+  # shellcheck disable=SC2153
+  version::cmp "$VERSION" "$version"
+  case $? in
+    0|255)
+      err::trace "Deprecated $name: $message (at $file:$line)";;
+    1)
+      out::warn "deprecated $name: $message (at $file:$line)";;
+  esac
+
+  [[ "$date" ]] || return
+
+  local year month day
+
+  { IFS='-' read -r year month day <<< "$date"; }
+
+  if [[ "$year" -lt "$(printf "%(%Y)T" -1)" ]] &&
+    [[ "$month" -lt "$(printf "%(%m)T" -1)" ]] &&
+    [[ "$day" -lt "$(printf "%(%d)T" -1)" ]]
+  then
+      out::warn "deprecated $name: $message (at $file:$line)"
+  else
+    err::trace "Deprecated $name: $message (at $file:$line)"
+  fi
+}
+#!/bin/bash
+# mod: include
+# api: External
+# txt: The `include` module allows you to include other potions from remote
+#      sites.
+
+# fun: include <url>
+# api: External
+# api: potion
+# txt: include a potion from URL, git repo or file.
+include ()
+{
+  local url=
+  case "$1" in
+    git://*|ssh+git://*)
+      url="${1/ssh+git:/ssh:}"
+      tmp::create origin
+      out::info $"Cloning remote potion spells from: ${url}..."
+      std::mute git clone --depth 1 "$url" . ||
+        err::trace $"Unable to clone repository: $url"
+      [[ -r ./init.potion ]] ||
+        err::trace $"Cloned repository does not provide init.potion file"
+      curl::source ./init.potion ||
+        err::trace $"Unable to load init.potion file"
+      tmp::exit
+      ;;
+    *)
+      curl::source "$1"
+      ;;
+  esac
+}
+
+# fun: include::path <glob_expr>
+# api: External
+# txt: include all files matches with glob expression
+include::path ()
+{
+  for f in "$@"; do
+    include "$f" || exit 1
+  done
+}
+#! /bin/bash
+# mod: refresh
+# api: External
+# txt: The `refresh` add functionality to refresh services or other
+#      resources.
+
+# fun: refresh <resource>
+# api: External
+# txt: refresh specified resource
+refresh () {
+  local res="$1"; shift
+
+  if std::func "${res}::refresh"; then
+    "${res}::refresh" "$@" &&
+      res::refreshed "${res}" "$1"
+  else
+    out::warn "unable to refresh ${res}: cannot found refresh handler"
+  fi
+}
+#! /bin/bash
+# mod: res
+# api: Internal
+# txt: The ``res`` module provides a way to work with potion resources.
+
+# fun: res::variables <var=value>+
+# api: Internal
+# txt: pretty priting resources variables
+res::variables () {
+  for word in "$@"; do
+    case "$word" in
+      *=*) echo -n "${COLOR_BOLD}${word%%=*}${COLOR_NONE}"
+           echo -n "${C}=${word#*=}${COLOR_NONE} ";;
+      *) echo -n "$word "
+    esac
+  done
+  echo
+}
+
+# fun: res::created <resource>
+# api: Internal
+# txt: print the properly message when resource is created
+res::created () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}CREATED${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::info "created $1: $(C="$COLOR_INFO" res::variables "$2")"
+}
+
+
+# fun: res::deleted <resource>
+# api: Internal
+# txt: print the properly message when resource is deleted
+res::deleted () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}DELETED${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::warn "deleted $1: $(C="$COLOR_WARN" res::variables "$2")"
+}
+
+# fun: res::refreshed <resource>
+# api: Internal
+# txt: print the properly message when resource is refreshed
+res::refreshed () {
+  if ${VERBOSE:-false}; then
+    local mod="$1"; shift
+    printf -v _m "%-12s %-10s %-8s %s" \
+      "${CONTEXT}" \
+      "${COLOR_BOLD}REFRESH${COLOR_NONE}" \
+      "$mod" \
+      "$*"
+    out::user "${_m}"
+  fi
+  out::info "refreshed $1: $(C="$COLOR_INFO" res::variables "$2")"
+}
+
+# fun: res::override <resource_name> <function_name>
+# api: Internal
+# txt: override a resource with another function, the new function will
+#      receive the same parameters than the original resource. The original
+#      one can be invoked with `\resource_name` (prepending a backslash).
+res::override ()
+{
+  # shellcheck disable=2139
+  alias "$1=$2"
+}
+#! /bin/bash
+# mod: secret
+# api: External
+# txt: The `secret` module allows you to get/set passwords or secret config
+#      keys from diferent sources instead of save them in plain text in the
+#      potion file.
+# env: SECRET_MASTERKEY: Path to file where the master key for secrets lives.
+#      By default ``/etc/potion.key``
+
+SECRET_MASTERKEY="${SECRET_MASTERKEY:-/etc/potion.key}"
+
+declare -A _secrets
+
+# fun: secret::dump [name=]<name>
+# api: External
+# txt: dump the encrypted file of a secret plain file.
+secret::dump ()
+{
+  _gpg () {
+    gpg --symmetric -z 9 --require-secmem \
+        --cipher-algo AES256 --s2k-cipher-algo AES256 \
+        --s2k-digest-algo SHA512 --s2k-mode 3 --batch \
+        --s2k-count 65000000 --compress-algo BZIP2 --armor \
+        --passphrase-file "${SECRET_MASTERKEY}"
+  }
+
+  local url="${1#name=}"
+  case "$url" in
+    gpg://*|gpg+file://*)
+      url="${url#*://}"
+      _gpg < "$url";;
+    gpg+*)
+      url="${url#gpg+}"
+      curl -sqL "$url" | _gpg;;
+    crypt+*)
+      url="${url#crypt+}"
+      curl -sqL "$url" |
+              openssl enc -e -a -aes-256-cbc -kfile "${SECRET_MASTERKEY}";;
+    *) url="${url#file://}"
+       # shellcheck disable=SC1090
+       cat "$url" || err::trace "Invalid secret file format" ;;
+  esac
+}
+
+# fun: secret::load [name=]<name>
+# api: External
+# txt: load a secret file
+secret::load () {
+  local err=$"Unable to load secrets"
+  local url="${1#name=}"
+  case "$url" in
+    gpg://*|gpg+file://*)
+      url="${url#*://}"
+      eval "$(gpg -d --batch --passphrase-file "$SECRET_MASTERKEY" "$url")" ||
+        err::trace "$err"
+      ;;
+    gpg+*)
+      url="${url#gpg+}"
+      eval "$(curl -sqL "$url" |
+              gpg -d --batch --passphrase-file "$SECRET_MASTERKEY")" ||
+                err::trace "$err"
+      ;;
+    crypt+*)
+      url="${url#crypt+}"
+      eval "$(curl -sqL "$url" |
+              openssl enc -d -a -aes-256-cbc -kfile "${SECRET_MASTERKEY}")" ||
+        err::trace "$err"
+      ;;
+    crypt2+*)
+      url="${url#crypt2+}"
+      eval "$(curl -sqL "$url" |
+              openssl enc -d -a -pbkdf2 -aes-256-cbc -kfile "${SECRET_MASTERKEY}")" ||
+        err::trace "$err"
+      ;;
+    *) url="${url#file://}"
+       # shellcheck disable=SC1090
+       source "$url" || err::trace "$err" ;;
+  esac
+}
+
+# fun: secret::load_inline <format> <content>
+# api: External
+# txt: load scripts from the inline string. Available formats are plain,
+#      crypt or gpg.
+secret::load_inline () {
+  local err=$"Unable to load secrets inline"
+  local format="${1#name=}"
+  case "$format" in
+    gpg)
+      eval "$(gpg --batch --passphrase-file "${SECRET_MASTERKEY}" -d <<<"$2")" ||
+        err::trace "$err"
+      ;;
+    crypt)
+      eval "$(openssl enc -d -a -aes-256-cbc -kfile "${SECRET_MASTERKEY}" <<<"$2")" ||
+        err::trace "$err"
+      ;;
+    plain)
+      eval "$2" || err::trace "$err"
+      ;;
+    *)
+      # shellcheck disable=SC1090
+      source "$url" || err::trace "$err"
+      ;;
+  esac
+}
+
+# fun: secret::add [name=]<name> content=<content>
+# api: External
+# txt: add new secret with specified content associated with key passed as
+#      argument.
+secret::add () {
+  eval "$(std::parse "$@")"
+  # shellcheck disable=2154
+  _secrets["$name"]="$content"
+}
+
+# fun: secret <name>
+# api: External
+# txt: return the secret text associated with specified name
+secret () {
+  echo "${_secrets["$1"]}"
+}
+#! /bin/bash
 # mod: main
+# api: Internal
 # txt: The ``main`` module contain the specified potion body.
 
-VERSION="0.2.10"
+readonly VERSION="0.2.11"
 export CONTEXT="main"
 
-# env: POTION_DEFAULT_SOURCE
-# txt: If set, always try to get potion files from this url. Note that if
-#      other arguments are passed in the command line, potion will load
-#      all of them plus the defined in ``POTION_DEFAULT_SOURCE.``
 export POTION_DEFAULT_SOURCE=
 
 # fun: main::init
+# api: Internal
 # txt: print nice potion logo and some custom messages at the beginning.
+# env: POTION_DEFAULT_SOURCE: If set, always try to get potion files from this
+#      url. Note that if ther arguments are passed in the command line, potion
+#      will load all of them plus the defined in `POTION_DEFAULT_SOURCE`.
+# env: VERSION: a readonly variable which contains the potion version number.
 main::init () {
 
   if ! ${NOLOGO:-false}; then
@@ -2832,218 +3030,82 @@ main () {
 }
 shopt -s expand_aliases
 #! /bin/bash
-# mod: meta
-# txt: This internal module provides information about metadata
+# mod: context
+# api: Internal
+# txt: This internal module provides functionality to run different context
+#      in paralell.
 
-declare -A POTION_METADATA=()
+alias context=function
+alias namespace=function
 
-# fun: meta::get <key>
-# txt: get the current value of key
-meta::get ()
-{
-  echo "${POTION_METADATA["$1"]}"
-}
-
-# fun: meta::set <key> <value>
-# txt: add new value to the metadata
-meta::set ()
-{
-  POTION_METADATA["$1"]="$2"
-}
-
-# fun: meta::polulate
-# txt: poplulate metadata values from the system
-meta::populate ()
-{
-  meta::set "core.processors" "$(getconf _NPROCESSORS_ONLN)"
-  meta::set "core.hostname" "$(hostname)"
-  meta::set "core.fqdn" "$(hostname -f)"
-
-  out::user "loaded metadata: ${#POTION_METADATA[@]} variables loaded"
-}
-#! /bin/bash
-# mod: refresh
-# txt: The `refresh` add functionality to refresh services or other
-#      resources.
-
-refresh () {
-  local res="$1"; shift
-
-  if std::func "${res}::refresh"; then
-    "${res}::refresh" "$@" &&
-      res::refreshed "${res}" "$1"
-  else
-    out::warn "unable to refresh ${res}: cannot found refresh handler"
+declare -A __context__task
+# fun: context::task::enqueue <fun>
+# api: Internal
+# txt: enqueue a task to be done when context finished.
+context::task::enqueue () {
+  if ! std::strin "${__context__task["${CONTEXT}"]}" ",$1,"; then
+    __context__task["${CONTEXT}"]+=",$1,"
   fi
 }
-#! /bin/bash
-# mod: res
-# txt: The ``res`` module provides a way to work with potion resources.
 
-res::variables () {
-  for word in "$@"; do
-    case "$word" in
-      *=*) echo -n "${COLOR_BOLD}${word%%=*}${COLOR_NONE}"
-           echo -n "${C}=${word#*=}${COLOR_NONE} ";;
-      *) echo -n "$word "
-    esac
-  done
-  echo
-}
-
-res::created () {
-  if ${VERBOSE:-false}; then
-    local mod="$1"; shift
-    printf -v _m "%-12s %-10s %-8s %s" \
-      "${CONTEXT}" \
-      "${COLOR_BOLD}CREATED${COLOR_NONE}" \
-      "$mod" \
-      "$*"
-    out::user "${_m}"
+# fun: context::task::apply <context>
+# api: Internal
+# txt: apply functions enqueued by context::task::enqueue.
+context::task::apply () {
+  task="${__context__task["${1}"]}"
+  if [ "$task" ]; then
+    export IFS=,
+    for t in $task; do
+      [ "$t" ] || continue
+      eval "${t}" || err::trace "Unable to apply post-context task: $t ($CONTEXT)"
+    done
   fi
-  out::info "created $1: $(C="$COLOR_INFO" res::variables "$2")"
 }
 
-res::deleted () {
-  if ${VERBOSE:-false}; then
-    local mod="$1"; shift
-    printf -v _m "%-12s %-10s %-8s %s" \
-      "${CONTEXT}" \
-      "${COLOR_BOLD}DELETED${COLOR_NONE}" \
-      "$mod" \
-      "$*"
-    out::user "${_m}"
+# fun: context::execute <name>
+# api: Internal
+# txt: Execute a context named as name.
+# env: CONTEXT: contains the context name, and this variable will be
+#      propagated to other functions in the same context.
+context::execute () {
+  export CONTEXT="$1" && $1 && context::task::apply "$1"
+}
+
+# fun: context::run
+# api: Internal
+# txt: run all context in paralell.
+declare -a context__run__pids=()
+context::run () {
+  local tim cctx=0
+
+  tim="$(std::timestamp)"
+  # shellcheck disable=SC2015
+  [ "$POTION_COMPILED" ] && local kind="compiled" || local kind="in-line"
+  while read -r _ _ context; do
+    ((cctx++))
+  done < <(declare -F | grep '^declare -f @')
+
+  out::user "found ${cctx} contexts"
+  # shellcheck disable=SC2015
+  ${PRETEND:-false} &&
+    out::info "Starting $kind potion execution (pretending)" ||
+    out::info "Starting $kind potion execution"
+
+  while read -r _ _ context; do
+    context::execute "$context" &
+    if ${ONETHREAD:-false}; then
+      wait $!
+    else
+      context__run__pids+=( "$!" )
+    fi
+  done < <(declare -F | grep '^declare -f @')
+  if ! ${ONETHREAD:-false}; then
+    [[ ${#context__run__pids[@]} -gt 0 ]] && 
+      wait "${context__run__pids[@]}"
   fi
-  out::warn "deleted $1: $(C="$COLOR_WARN" res::variables "$2")"
-}
-
-res::refreshed () {
-  if ${VERBOSE:-false}; then
-    local mod="$1"; shift
-    printf -v _m "%-12s %-10s %-8s %s" \
-      "${CONTEXT}" \
-      "${COLOR_BOLD}REFRESH${COLOR_NONE}" \
-      "$mod" \
-      "$*"
-    out::user "${_m}"
-  fi
-  out::info "refreshed $1: $(C="$COLOR_INFO" res::variables "$2")"
-}
-#! /bin/bash
-# mod: secret
-# txt: The `secret` module allows you to get/set passwords or secret config
-#      keys from diferent sources instead of save them in plain text in the
-#      potion file.
-# env: SECRET_MASTERKEY: Path to file where the master key for secrets lives.
-#      By default ``/etc/potion.key``
-
-SECRET_MASTERKEY="${SECRET_MASTERKEY:-/etc/potion.key}"
-
-declare -A _secrets
-
-# fun: secret::dump [name=]<name>
-# txt: dump the encrypted file of a secret plain file.
-secret::dump ()
-{
-  _gpg () {
-    gpg --symmetric -z 9 --require-secmem \
-        --cipher-algo AES256 --s2k-cipher-algo AES256 \
-        --s2k-digest-algo SHA512 --s2k-mode 3 --batch \
-        --s2k-count 65000000 --compress-algo BZIP2 --armor \
-        --passphrase-file "${SECRET_MASTERKEY}"
-  }
-
-  local url="${1#name=}"
-  case "$url" in
-    gpg://*|gpg+file://*)
-      url="${url#*://}"
-      _gpg < "$url";;
-    gpg+*)
-      url="${url#gpg+}"
-      curl -sqL "$url" | _gpg;;
-    crypt+*)
-      url="${url#crypt+}"
-      curl -sqL "$url" |
-              openssl enc -e -a -aes-256-cbc -kfile "${SECRET_MASTERKEY}";;
-    *) url="${url#file://}"
-       # shellcheck disable=SC1090
-       cat "$url" || err::trace "Invalid secret file format" ;;
-  esac
-}
-
-# fun: secret::load [name=]<name>
-# txt: load a secret file
-secret::load () {
-  local err=$"Unable to load secrets"
-  local url="${1#name=}"
-  case "$url" in
-    gpg://*|gpg+file://*)
-      url="${url#*://}"
-      eval "$(gpg -d --batch --passphrase-file "$SECRET_MASTERKEY" "$url")" ||
-        err::trace "$err"
-      ;;
-    gpg+*)
-      url="${url#gpg+}"
-      eval "$(curl -sqL "$url" |
-              gpg -d --batch --passphrase-file "$SECRET_MASTERKEY")" ||
-                err::trace "$err"
-      ;;
-    crypt+*)
-      url="${url#crypt+}"
-      eval "$(curl -sqL "$url" |
-              openssl enc -d -a -aes-256-cbc -kfile "${SECRET_MASTERKEY}")" ||
-        err::trace "$err"
-      ;;
-    crypt2+*)
-      url="${url#crypt2+}"
-      eval "$(curl -sqL "$url" |
-              openssl enc -d -a -pbkdf2 -aes-256-cbc -kfile "${SECRET_MASTERKEY}")" ||
-        err::trace "$err"
-      ;;
-    *) url="${url#file://}"
-       # shellcheck disable=SC1090
-       source "$url" || err::trace "$err" ;;
-  esac
-}
-
-# fun: secret::load_inline <format> <content>
-# txt: load scripts from the inline string. Available formats are plain,
-#      crypt or gpg.
-secret::load_inline () {
-  local err=$"Unable to load secrets inline"
-  local format="${1#name=}"
-  case "$format" in
-    gpg)
-      eval "$(gpg --batch --passphrase-file "${SECRET_MASTERKEY}" -d <<<"$2")" ||
-        err::trace "$err"
-      ;;
-    crypt)
-      eval "$(openssl enc -d -a -aes-256-cbc -kfile "${SECRET_MASTERKEY}" <<<"$2")" ||
-        err::trace "$err"
-      ;;
-    plain)
-      eval "$2" || err::trace "$err"
-      ;;
-    *)
-      # shellcheck disable=SC1090
-      source "$url" || err::trace "$err"
-      ;;
-  esac
-}
-
-# fun: secret::add [name=]<name> content=<content>
-# txt: add new secret with specified content associated with key passed as
-#      argument.
-secret::add () {
-  eval "$(std::parse "$@")"
-  # shellcheck disable=2154
-  _secrets["$name"]="$content"
-}
-
-# fun: secret <name>
-# txt: return the secret text associated with specified name
-secret () {
-  echo "${_secrets["$1"]}"
+  context::task::apply "main"
+  tim="$(( $(std::timestamp) - tim ))"
+  out::info "Finished potion exection in ${tim} seconds."
 }
 std::installed 'grep' ||  err::trace 'grep is required but not found'
 std::installed 'egrep' ||  err::trace 'egrep is required but not found'

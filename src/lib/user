@@ -1,6 +1,6 @@
 #! /bin/bash
 # mod: user
-# api: potion
+# api: External
 # txt: The `user` module provides functions to manage users in the system.
 # use: group::present mygroup
 #      user::present someuser \\
@@ -64,7 +64,7 @@ user::_destroy () {
 
 
 # fun: user::present [name=<username>] [options]
-# api: potion
+# api: External
 # txt: create user if not exists
 # opt: basedir: set the base director to create home directories.
 # opt: gecos: set the GECOS field in user record.
@@ -96,7 +96,7 @@ user::present () {
 }
 
 # fun: user::absent [name=]<username> [keepdata=true]
-# api: potion
+# api: External
 # txt: destroy username if exists
 # opt: keepdata: if true do not remove user data.
 user::absent () {

@@ -1,12 +1,12 @@
 #! /bin/bash
 # mod: group
-# api: potion
+# api: External
 # txt: The `group` module offers a way to ensure that specified group of
 #      uses is created or not in the system.
 # use: group::present mygroup
 
 # fun: group::exists [name=]<groupname>
-# api: potion
+# api: External
 # txt: return true or false if the specific groupname exists or not,
 #      respectively.
 group::exists () {
@@ -34,7 +34,7 @@ group::_destroy () {
 
 
 # fun: group::present [name=]<groupname> system=<true|false> [gid=gid]
-# api: potion
+# api: External
 # txt: create group if not exists
 # opt: name: the name of the group to create.
 # opt: system: if true create a system group.
@@ -55,7 +55,7 @@ group::present () {
 }
 
 # fun: group::absent [name=]<groupname>
-# api: potion
+# api: External
 # txt: destroy groupname if exists
 group::absent () {
   eval "$(std::parse "$@")"

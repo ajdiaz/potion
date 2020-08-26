@@ -9,7 +9,7 @@
 #        remount=true
 
 # fun: fstab::exists [name=]<device>
-# api: potion
+# api: External
 # txt: return true if device is set in fstab
 fstab::exists () {
   local name
@@ -43,7 +43,7 @@ fstab::_destroy () {
 }
 
 # fun: fstab::present [name=]<device> mount=<mountpoint> [options]
-# api: potion
+# api: External
 # txt: ensure that fstab entry for device is present
 # opt: name: the device name to ensure
 # opt: mount: the mountpoint for the device
@@ -66,7 +66,7 @@ fstab::present () {
 }
 
 # fun: fstab::absent [name=]<device>
-# api: potion
+# api: External
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
   eval "$(std::parse "$@")"

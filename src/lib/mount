@@ -1,12 +1,12 @@
 #! /bin/bash
 # mod: mount
-# api: potion
+# api: External
 # txt: The `mount` module provides functions to ensure that specific
 #      mountpoint is mounted.
 # use: mount::present /mnt device=/dev/sda1 fstype=xfs
 
 # fun: mount::exists [name=]<name> [opts]
-# api: potion
+# api: External
 # txt: return true if specific device is mounted with passed options
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
@@ -30,7 +30,7 @@ mount::_destroy () {
 }
 
 # fun: mount::present [name=]<name> [opts]
-# api: potion
+# api: External
 # txt: ensure that specific device is mounted according with passed options.
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
@@ -45,7 +45,7 @@ mount::present () {
 }
 
 # fun: mount::absent [name=]<name>
-# api: potion
+# api: External
 # txt: ensure that specific mount point is not mounted.
 mount::absent () {
   if mount::exists "$@"; then

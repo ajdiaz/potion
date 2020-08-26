@@ -51,7 +51,7 @@ the repo is loaded automatically, as potion starting point.
 ### Using default recipes
 
 ~~~~~ {.bash}
-export POTION\_DEFAULT_SOURCE="ssh+git://myremoterepohost/mirepo.git"
+export POTION_DEFAULT_SOURCE="ssh+git://myremoterepohost/mirepo.git"
 potion run
 ~~~~~
 
@@ -85,19 +85,19 @@ parallel. You can configure context with the following syntax in the Potion
 file:
 
 ~~~~~~ {.bash}
-@context1
+context @foo
 {
   # do some actions
 }
 
-@context2
+context @bar
 {
   # do other actions
 }
 ~~~~~~
 
 In this example we create two context which will be running in parallel in
-the host.
+the host. Please note that context must be start with `@` character.
 
 ### Artifacts
 

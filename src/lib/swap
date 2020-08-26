@@ -1,6 +1,6 @@
 #! /bin/bash
 # mod: swap
-# api: potion
+# api: External
 # txt: The `swap` module contains functions to create and configure swap
 #      space.
 # use: swap::present \\
@@ -9,7 +9,7 @@
 #        format=true
 
 # fun: swap::exists
-# api: potion
+# api: External
 # txt: return true if swap is enabled
 swap::exists () {
   read -r _ swap _ < <(free | grep '^Swap:')
@@ -47,7 +47,7 @@ swap::_destroy () {
 }
 
 # fun: swap::present [name=<device|file>] [size=<size>] [format=<true|false>]
-# api: potion
+# api: External
 # txt: ensure that swap is enable in specified device or file and specified
 #      size.
 # opt: name: the device use as swap space.
@@ -67,7 +67,7 @@ swap::present () {
 }
 
 # fun: swap::absent [name=]<device|file>
-# api: potion
+# api: External
 # txt: ensure that specified device is not enabled for swap
 # opt: name: the device use as swap space.
 swap::absent () {
