@@ -8,9 +8,9 @@
 #      to read from static artifact or ``artifact+eval://`` to read from an
 #      evaluated artifact.
 #
-# use: file::present /etc/somefile \\
+# use: file::present /etc/somefile \
 #        content="artifact://someartifact"
-# use: file::present /etc/otherfile \\
+# use: file::present /etc/otherfile \
 #        content="some string content"
 
 # private file::hmac <url>

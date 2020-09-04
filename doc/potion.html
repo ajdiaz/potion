@@ -155,13 +155,21 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
         font-style: italic;
       }
 
-    .module h2 { margin-bottom:0.2em; margin-top: 2.5em;}
+    .module h2 {
+      border-bottom:1px solid #444;
+      margin:2em 0 1em 0;
+    }
     .module h2:before {
        content: "module";
-       color: #888;
+       color: #444;
        font-family: monospace;
        font-size: 90%;
        padding-right:0.4em;
+    }
+
+    .module h3 {
+      border-bottom:1px solid #dadada;
+      margin:2em 0 1em 0;
     }
 
     .module h3:before {
@@ -865,9 +873,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <p>The <code>swap</code> module contains functions to create and configure swap space.</p>
 <section id="usage-example-9" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true"></a><span class="ex">swap</span>::present <span class="kw">\</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true"></a>  <span class="ex">/tmp/swapfile</span> <span class="kw">\</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true"></a>  <span class="va">size=</span>1G <span class="kw">\</span></span>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true"></a><span class="ex">swap</span>::present <span class="dt">\\</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true"></a>  <span class="ex">/tmp/swapfile</span> <span class="dt">\\</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true"></a>  <span class="va">size=</span>1G <span class="dt">\\</span></span>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true"></a>  <span class="va">format=</span>true</span></code></pre></div>
 </section>
 <section id="swapexists" class="level3 function">
@@ -1126,7 +1134,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </section>
 <section id="resoverride-resource_name-function_name" class="level3 function">
 <h3 class="function">res::override <code>&lt;resource_name&gt;</code> <code>&lt;function_name&gt;</code></h3>
-<p>override a resource with another function, the new function will receive the same parameters than the original resource. The original one can be invoked with <code>resource_name</code> (prepending a backslash).</p>
+<p>override a resource with another function, the new function will receive the same parameters than the original resource. The original one can be invoked with <code>\resource_name</code> (prepending a backslash).</p>
 <hr />
 </section>
 </section>

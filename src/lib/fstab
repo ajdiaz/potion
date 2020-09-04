@@ -2,10 +2,10 @@
 # vim: ft=sh:
 # mod: fstab
 # txt: The `fstab` module provides functions to add entries to fstab file.
-# use: fstab::present /dev/sda1 \\
-#        mount=/ \\
-#        fstype=xfs \\
-#        opts=default,noauto \\
+# use: fstab::present /dev/sda1 \
+#        mount=/ \
+#        fstype=xfs \
+#        opts=default,noauto \
 #        remount=true
 
 # fun: fstab::exists [name=]<device>

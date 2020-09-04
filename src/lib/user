@@ -3,10 +3,10 @@
 # api: External
 # txt: The `user` module provides functions to manage users in the system.
 # use: group::present mygroup
-#      user::present someuser \\
-#        groups=adm,mygroup \\
-#        nohome=true \\
-#        system=true \\
+#      user::present someuser \
+#        groups=adm,mygroup \
+#        nohome=true \
+#        system=true \
 #        shel=/bin/false
 
 # fun: user::exists [name=]<username>
