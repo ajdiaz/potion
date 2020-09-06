@@ -2278,7 +2278,7 @@ file::_data () {
 # opt: name: the filename to check for.
 # opt: content: the content URL
 file::exists () {
-  local content
+  local name user group mode content data
   eval "$(std::parse "$@")"
 
   [ -r "$name" ] || return 1
@@ -2340,12 +2340,12 @@ file::_group ()
 # opt: mode: the four digit octal mode of the file (i.e. 0644)
 # opt: content: the content url
 file::present () {
+  local name user group mode content data
   eval "$(std::parse "$@")"
   local group="${group:-$LOGNAME}"
   local user="${user:-$LOGNAME}"
 
   # Deprecation check
-  local data
   if [[ "$data" ]] && [[ ! "$content" ]]; then
     local content="$data"
     deprecated data \
@@ -2399,6 +2399,7 @@ file::present () {
 # txt: ensure that file passed as argument does not exist.
 # opt: content: the content url (only removes the file if content is the same).
 file::absent () {
+  local name user group mode content data
   eval "$(std::parse "$@")"
   if file::exists "$name" "content=$content"; then
     # shellcheck disable=2015
