@@ -255,6 +255,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <li><a href="#fileexists-namefname-options">file::exists <code>[name=]&lt;fname&gt;</code> <code>[options]</code></a></li>
 <li><a href="#filepresent-namename-options">file::present <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
 <li><a href="#fileabsent-namename-options">file::absent <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
+<li><a href="#filelinespresent-namename-lines">file::lines::present <code>[name=]&lt;name&gt;</code> <code>[lines]</code></a></li>
+<li><a href="#filelinesabsent-namename-lines">file::lines::absent <code>[name=]&lt;name&gt;</code> <code>[lines]</code></a></li>
 </ul></li>
 <li><a href="#format">format</a>
 <ul>
@@ -600,13 +602,32 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </dl>
 </section>
 </section>
+<section id="filelinespresent-namename-lines" class="level3 function">
+<h3 class="function">file::lines::present <code>[name=]&lt;name&gt;</code> <code>[lines]</code></h3>
+<p>ensure that specified lines (one per argument) are present in the file.</p>
+<section id="usage-example-2" class="level4">
+<h4>Usage example</h4>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true"></a><span class="ex">file</span>::lines::present <span class="st">&quot;/etc/sudoers&quot;</span> <span class="kw">\</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true"></a>   <span class="st">&quot;%wheel ALL=(ALL) NOPASSWD: ALL&quot;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true"></a>   <span class="st">&quot;root ALL=(ALL) ALL&quot;</span></span></code></pre></div>
+</section>
+</section>
+<section id="filelinesabsent-namename-lines" class="level3 function">
+<h3 class="function">file::lines::absent <code>[name=]&lt;name&gt;</code> <code>[lines]</code></h3>
+<p>ensure that specifie lines are NOT present in the file.</p>
+<section id="usage-example-3" class="level4">
+<h4>Usage example</h4>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true"></a><span class="ex">file</span>::lines::absent <span class="st">&quot;/etc/sudoers&quot;</span> <span class="kw">\</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true"></a>  <span class="st">&quot;%users ALL=(ALL) NOPASSWD: ALL&quot;</span></span></code></pre></div>
+</section>
+</section>
 </section>
 <section id="format" class="level2 module">
 <h2 class="module">format</h2>
 <p>The <code>format</code> module provides a way to format and mount specified block devices.</p>
-<section id="usage-example-2" class="level4">
+<section id="usage-example-4" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true"></a><span class="ex">format</span>::present /dev/sda1 fstype=xfs</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true"></a><span class="ex">format</span>::present /dev/sda1 fstype=xfs</span></code></pre></div>
 </section>
 <section id="formatexists-namedevice-options" class="level3 function">
 <h3 class="function">format::exists <code>[name=]&lt;device&gt;</code> <code>[options]</code></h3>
@@ -643,9 +664,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="group" class="level2 module">
 <h2 class="module">group</h2>
 <p>The <code>group</code> module offers a way to ensure that specified group of uses is created or not in the system.</p>
-<section id="usage-example-3" class="level4">
+<section id="usage-example-5" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true"></a><span class="ex">group</span>::present mygroup</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true"></a><span class="ex">group</span>::present mygroup</span></code></pre></div>
 </section>
 <section id="groupexists-namegroupname" class="level3 function">
 <h3 class="function">group::exists <code>[name=]&lt;groupname&gt;</code></h3>
@@ -677,9 +698,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="host" class="level2 module">
 <h2 class="module">host</h2>
 <p>The <code>host</code> module provides functions to configure hostname of the machine.</p>
-<section id="usage-example-4" class="level4">
+<section id="usage-example-6" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true"></a><span class="ex">host</span>::present myhost.mydomain.com</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true"></a><span class="ex">host</span>::present myhost.mydomain.com</span></code></pre></div>
 </section>
 <section id="hostexists-namehostname" class="level3 function">
 <h3 class="function">host::exists <code>[name=]&lt;hostname&gt;</code></h3>
@@ -705,9 +726,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="link" class="level2 module">
 <h2 class="module">link</h2>
 <p>The <code>link</code> module provides functions to ensure that specified symlink exists in the system and points to specified file.</p>
-<section id="usage-example-5" class="level4">
+<section id="usage-example-7" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true"></a><span class="ex">link</span>::present /mylink target=/etc/motd</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true"></a><span class="ex">link</span>::present /mylink target=/etc/motd</span></code></pre></div>
 </section>
 <section id="linkexists-namelink-targetsource" class="level3 function">
 <h3 class="function">link::exists <code>[name=]&lt;link&gt;</code> <code>target=&lt;source&gt;</code></h3>
@@ -749,9 +770,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="mount" class="level2 module">
 <h2 class="module">mount</h2>
 <p>The <code>mount</code> module provides functions to ensure that specific mountpoint is mounted.</p>
-<section id="usage-example-6" class="level4">
+<section id="usage-example-8" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true"></a><span class="ex">mount</span>::present /mnt device=/dev/sda1 fstype=xfs</span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true"></a><span class="ex">mount</span>::present /mnt device=/dev/sda1 fstype=xfs</span></code></pre></div>
 </section>
 <section id="mountexists-namename-opts" class="level3 function">
 <h3 class="function">mount::exists <code>[name=]&lt;name&gt;</code> <code>[opts]</code></h3>
@@ -791,9 +812,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="pkg" class="level2 module">
 <h2 class="module">pkg</h2>
 <p>The <code>pkg</code> module provides functions to ensure package installation on the system.</p>
-<section id="usage-example-7" class="level4">
+<section id="usage-example-9" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true"></a><span class="ex">pkg</span>::present vim</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true"></a><span class="ex">pkg</span>::present vim</span></code></pre></div>
 </section>
 <section id="pkgexists-namepackage" class="level3 function">
 <h3 class="function">pkg::exists <code>[name=]&lt;package&gt;</code></h3>
@@ -851,9 +872,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="srv" class="level2 module">
 <h2 class="module">srv</h2>
 <p>The <code>srv</code> module provides high-level functions to manage package installations.</p>
-<section id="usage-example-8" class="level4">
+<section id="usage-example-10" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true"></a><span class="ex">srv</span>::present sshd</span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true"></a><span class="ex">srv</span>::present sshd</span></code></pre></div>
 </section>
 <section id="srvexists-nameservice" class="level3 function">
 <h3 class="function">srv::exists <code>[name=]&lt;service&gt;</code></h3>
@@ -871,12 +892,12 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="swap" class="level2 module">
 <h2 class="module">swap</h2>
 <p>The <code>swap</code> module contains functions to create and configure swap space.</p>
-<section id="usage-example-9" class="level4">
+<section id="usage-example-11" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true"></a><span class="ex">swap</span>::present <span class="dt">\\</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true"></a>  <span class="ex">/tmp/swapfile</span> <span class="dt">\\</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true"></a>  <span class="va">size=</span>1G <span class="dt">\\</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true"></a>  <span class="va">format=</span>true</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true"></a><span class="ex">swap</span>::present <span class="dt">\\</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true"></a>  <span class="ex">/tmp/swapfile</span> <span class="dt">\\</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true"></a>  <span class="va">size=</span>1G <span class="dt">\\</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true"></a>  <span class="va">format=</span>true</span></code></pre></div>
 </section>
 <section id="swapexists" class="level3 function">
 <h3 class="function">swap::exists</h3>
@@ -924,9 +945,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 </dd>
 </dl>
 </section>
-<section id="usage-example-10" class="level4">
+<section id="usage-example-12" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true"></a><span class="ex">tz</span>::present Europe/Madrid</span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true"></a><span class="ex">tz</span>::present Europe/Madrid</span></code></pre></div>
 </section>
 <section id="tzexists-namezonename" class="level3 function">
 <h3 class="function">tz::exists <code>[name=]&lt;zonename&gt;</code></h3>
@@ -944,14 +965,14 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <section id="user" class="level2 module">
 <h2 class="module">user</h2>
 <p>The <code>user</code> module provides functions to manage users in the system.</p>
-<section id="usage-example-11" class="level4">
+<section id="usage-example-13" class="level4">
 <h4>Usage example</h4>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true"></a><span class="ex">group</span>::present mygroup</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true"></a><span class="ex">user</span>::present someuser <span class="kw">\</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true"></a>  <span class="va">groups=</span>adm,mygroup <span class="kw">\</span></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true"></a>  <span class="va">nohome=</span>true <span class="kw">\</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true"></a>  <span class="va">system=</span>true <span class="kw">\</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true"></a>  <span class="va">shel=</span>/bin/false</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true"></a><span class="ex">group</span>::present mygroup</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true"></a><span class="ex">user</span>::present someuser <span class="kw">\</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true"></a>  <span class="va">groups=</span>adm,mygroup <span class="kw">\</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true"></a>  <span class="va">nohome=</span>true <span class="kw">\</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true"></a>  <span class="va">system=</span>true <span class="kw">\</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true"></a>  <span class="va">shel=</span>/bin/false</span></code></pre></div>
 </section>
 <section id="userpresent-nameusername-options" class="level3 function">
 <h3 class="function">user::present <code>[name=&lt;username&gt;]</code> <code>[options]</code></h3>

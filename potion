@@ -2022,199 +2022,6 @@ tz::absent () {
   fi
 }
 #! /bin/bash
-# mod: file
-# api: External
-# txt: The `file` module provides functions to ensure that specified file
-#      exists or not in the system and also has specified content.
-#      To creat content, use the ``content`` parameter, usually this parameter
-#      accepts a URL (in the usual curl accepted format or ``artifact://``
-#      to read from static artifact or ``artifact+eval://`` to read from an
-#      evaluated artifact.
-#
-# use: file::present /etc/somefile \
-#        content="artifact://someartifact"
-# use: file::present /etc/otherfile \
-#        content="some string content"
-
-# private file::hmac <url>
-file::_hmac () {
-  ALGO="${ALGO:=sha1}"
-  local hmac=
-  local path; path="$(os::path ${ALGO}sum)"
-
-  if [ "$path" ]; then
-    hmac="$(file::_data "$1" | ${ALGO}sum)"
-    read -r hmac _ <<<"${hmac}"
-    echo "$hmac"
-  else
-    err::trace "Required binary '${ALGO}sum' is not installed"
-  fi
-}
-
-# private file::_data <url>
-file::_data () {
-  case "$1" in
-    artifact://*) 
-      local name="${1##artifact://}"
-      artifact::exists "${name}" ||
-        err::trace "Missing artifact: $1"
-      artifact::read "$name"
-      ;;
-    artifact+eval://*)
-      local name="${1##artifact+eval://}"
-      artifact::exists "${name}" ||
-        err::trace "Missing artifact: $1"
-      artifact::eval "$name"
-      ;;
-    http://*|https://*|ftp://*)
-      curl::get "$1"
-      ;;
-    file://*)
-      cat "${1#file://}"
-      ;;
-    *)
-      echo "$1"
-      ;;
-  esac
-}
-
-# fun: file::exists [name=]<fname> [options]
-# api: External
-# txt: return true if file exists, or none otherwise
-# opt: name: the filename to check for.
-# opt: content: the content URL
-file::exists () {
-  local content
-  eval "$(std::parse "$@")"
-
-  [ -r "$name" ] || return 1
-
-  local old_hmac; old_hmac="$(file::_hmac "file://$name")"
-  local new_hmac; new_hmac="$(file::_hmac "$content")"
-  if [[ "$new_hmac" == "$old_hmac" ]]; then
-    return 0
-  elif ${SHOWDIFF:-false}; then
-    # shellcheck disable=SC2086
-    echo "$content" | diff ${DIFF_OPTIONS:--Naurr --color=always} "$name" -
-  fi
-  return 1
-}
-
-# private file::create <fname> <owner:group> <mode> <content>
-file::_create () {
-  # we required an explitic if here because of the redirection.
-  if ! ${PRETEND:-false}; then
-    file::_data "$4" > "$1" ||
-      err::trace "Unable to dump content to file: $1"
-  fi
-
-  # shellcheck disable=SC2015
-  std::run chown "${2:-0:0}" "$1" &&
-    std::run chmod "${3:-644}" "$1" ||
-    err::trace "Unable to set permissions to file: $1"
-}
-
-# private file::destroy <fname>
-file::_destroy () {
-  std::run rm -f "$1"
-}
-
-# private file::_mode <fname>
-file::_mode ()
-{
-  stat -c '%#a' "$1"
-}
-
-# private file::_owner <fname>
-file::_owner ()
-{
-  stat -c '%U' "$1"
-}
-
-# private file::_group <fname>
-file::_group ()
-{
-  stat -c '%G' "$1"
-}
-
-# fun: file::present [name=]<name> [options]
-# api: External
-# txt: ensure that file passed as argument exists.
-# opt: name: then file name to ensure
-# opt: user: the user owner the file
-# opt: group: the group owner the file
-# opt: mode: the four digit octal mode of the file (i.e. 0644)
-# opt: content: the content url
-file::present () {
-  eval "$(std::parse "$@")"
-  local group="${group:-$LOGNAME}"
-  local user="${user:-$LOGNAME}"
-
-  # Deprecation check
-  local data
-  if [[ "$data" ]] && [[ ! "$content" ]]; then
-    local content="$data"
-    deprecated data \
-      version=1.0 \
-      message="'data' parameter in file is deprecated, use 'content' instead"
-  fi
-
-  if ! file::exists "$name" "content=$content"; then
-    if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$content"
-    then
-      res::created file \
-        "name=$name user=${user} group=${group} mode=${mode:-0644}"
-    else
-      err::trace "Unable to create file: $name"
-    fi
-  else
-    local ret=1
-    if [[ "$(file::_mode "$name")" -ne "${mode:-0644}" ]]; then
-      if std::run chmod "${mode:-0644}" "$name"; then
-        res::created file "name=$name mode=${mode:-0644}"
-        ret=0
-      else
-        err::trace "Unable to re-set permissions to file: $name"
-      fi
-    fi
-
-    if [[ "$(file::_owner "$name")" != "${user}" ]]; then
-      if std::run chown "${user}" "$name"; then
-        res::created file "name=$name user=${user}"
-        ret=0
-      else
-        err::trace "Unable to re-set owner to file: $name"
-      fi
-    fi
-
-    if [[ "$(file::_group "$name")" != "${group}" ]]; then
-      if std::run chgrp "${group}" "$name"; then
-        res::created file "name=$name group=${group}"
-        ret=0
-      else
-        err::trace "Unable to re-set group to file: $name"
-      fi
-    fi
-
-    return "$ret"
-  fi
-}
-
-# fun: file::absent [name=]<name> [options]
-# api: External
-# txt: ensure that file passed as argument does not exist.
-# opt: content: the content url (only removes the file if content is the same).
-file::absent () {
-  eval "$(std::parse "$@")"
-  if file::exists "$name" "content=$content"; then
-    file::_destroy "$name" &&
-      res::deleted file "name=$name" ||
-      err::trace "Unable to destroy file: $name"
-  else
-    return 1
-  fi
-}
-#! /bin/bash
 # mod: user
 # api: External
 # txt: The `user` module provides functions to manage users in the system.
@@ -2407,6 +2214,257 @@ fstab::absent () {
   else
     return 1
   fi
+}
+#! /bin/bash
+# mod: file
+# api: External
+# txt: The `file` module provides functions to ensure that specified file
+#      exists or not in the system and also has specified content.
+#      To creat content, use the ``content`` parameter, usually this parameter
+#      accepts a URL (in the usual curl accepted format or ``artifact://``
+#      to read from static artifact or ``artifact+eval://`` to read from an
+#      evaluated artifact.
+#
+# use: file::present /etc/somefile \
+#        content="artifact://someartifact"
+# use: file::present /etc/otherfile \
+#        content="some string content"
+
+# private file::hmac <url>
+file::_hmac () {
+  ALGO="${ALGO:=sha1}"
+  local hmac=
+  local path; path="$(os::path ${ALGO}sum)"
+
+  if [ "$path" ]; then
+    hmac="$(file::_data "$1" | ${ALGO}sum)"
+    read -r hmac _ <<<"${hmac}"
+    echo "$hmac"
+  else
+    err::trace "Required binary '${ALGO}sum' is not installed"
+  fi
+}
+
+# private file::_data <url>
+file::_data () {
+  case "$1" in
+    artifact://*) 
+      local name="${1##artifact://}"
+      artifact::exists "${name}" ||
+        err::trace "Missing artifact: $1"
+      artifact::read "$name"
+      ;;
+    artifact+eval://*)
+      local name="${1##artifact+eval://}"
+      artifact::exists "${name}" ||
+        err::trace "Missing artifact: $1"
+      artifact::eval "$name"
+      ;;
+    http://*|https://*|ftp://*)
+      curl::get "$1"
+      ;;
+    file://*)
+      cat "${1#file://}"
+      ;;
+    *)
+      echo "$1"
+      ;;
+  esac
+}
+
+# fun: file::exists [name=]<fname> [options]
+# api: External
+# txt: return true if file exists, or none otherwise
+# opt: name: the filename to check for.
+# opt: content: the content URL
+file::exists () {
+  local content
+  eval "$(std::parse "$@")"
+
+  [ -r "$name" ] || return 1
+
+  local old_hmac; old_hmac="$(file::_hmac "file://$name")"
+  local new_hmac; new_hmac="$(file::_hmac "$content")"
+  if [[ "$new_hmac" == "$old_hmac" ]]; then
+    return 0
+  elif ${SHOWDIFF:-false}; then
+    # shellcheck disable=SC2086
+    echo "$content" | diff ${DIFF_OPTIONS:--Naurr --color=always} "$name" -
+  fi
+  return 1
+}
+
+# private file::create <fname> <owner:group> <mode> <content>
+file::_create () {
+  # we required an explitic if here because of the redirection.
+  if ! ${PRETEND:-false}; then
+    file::_data "$4" > "$1" ||
+      err::trace "Unable to dump content to file: $1"
+  fi
+
+  # shellcheck disable=SC2015
+  std::run chown "${2:-0:0}" "$1" &&
+    std::run chmod "${3:-644}" "$1" ||
+    err::trace "Unable to set permissions to file: $1"
+}
+
+# private file::destroy <fname>
+file::_destroy () {
+  std::run rm -f "$1"
+}
+
+# private file::_mode <fname>
+file::_mode ()
+{
+  stat -c '%#a' "$1"
+}
+
+# private file::_owner <fname>
+file::_owner ()
+{
+  stat -c '%U' "$1"
+}
+
+# private file::_group <fname>
+file::_group ()
+{
+  stat -c '%G' "$1"
+}
+
+# fun: file::present [name=]<name> [options]
+# api: External
+# txt: ensure that file passed as argument exists.
+# opt: name: then file name to ensure
+# opt: user: the user owner the file
+# opt: group: the group owner the file
+# opt: mode: the four digit octal mode of the file (i.e. 0644)
+# opt: content: the content url
+file::present () {
+  eval "$(std::parse "$@")"
+  local group="${group:-$LOGNAME}"
+  local user="${user:-$LOGNAME}"
+
+  # Deprecation check
+  local data
+  if [[ "$data" ]] && [[ ! "$content" ]]; then
+    local content="$data"
+    deprecated data \
+      version=1.0 \
+      message="'data' parameter in file is deprecated, use 'content' instead"
+  fi
+
+  if ! file::exists "$name" "content=$content"; then
+    if file::_create "$name" "${user}:${group}" "${mode:-0644}" "$content"
+    then
+      res::created file \
+        "name=$name user=${user} group=${group} mode=${mode:-0644}"
+    else
+      err::trace "Unable to create file: $name"
+    fi
+  else
+    local ret=1
+    if [[ "$(file::_mode "$name")" -ne "${mode:-0644}" ]]; then
+      if std::run chmod "${mode:-0644}" "$name"; then
+        res::created file "name=$name mode=${mode:-0644}"
+        ret=0
+      else
+        err::trace "Unable to re-set permissions to file: $name"
+      fi
+    fi
+
+    if [[ "$(file::_owner "$name")" != "${user}" ]]; then
+      if std::run chown "${user}" "$name"; then
+        res::created file "name=$name user=${user}"
+        ret=0
+      else
+        err::trace "Unable to re-set owner to file: $name"
+      fi
+    fi
+
+    if [[ "$(file::_group "$name")" != "${group}" ]]; then
+      if std::run chgrp "${group}" "$name"; then
+        res::created file "name=$name group=${group}"
+        ret=0
+      else
+        err::trace "Unable to re-set group to file: $name"
+      fi
+    fi
+
+    return "$ret"
+  fi
+}
+
+# fun: file::absent [name=]<name> [options]
+# api: External
+# txt: ensure that file passed as argument does not exist.
+# opt: content: the content url (only removes the file if content is the same).
+file::absent () {
+  eval "$(std::parse "$@")"
+  if file::exists "$name" "content=$content"; then
+    # shellcheck disable=2015
+    file::_destroy "$name" &&
+      res::deleted file "name=$name" ||
+      err::trace "Unable to destroy file: $name"
+  else
+    return 1
+  fi
+}
+
+
+# fun: file::lines::present [name=]<name> [lines]
+# api: External
+# txt: ensure that specified lines (one per argument) are present in the file.
+# use: file::lines::present "/etc/sudoers" \
+#         "%wheel ALL=(ALL) NOPASSWD: ALL"
+#         "root ALL=(ALL) ALL"
+file::lines::present () {
+  local ret=1 line name="${1#name=}"; shift
+
+  [[ -z "$name" ]] && err::trace "Missing file nam"
+  [[ $# -eq 0 ]] && err::trace "No lines provided"
+
+  for line in "$@"; do
+    if ! grep -qe "^$line$" "$name"; then
+      echo "$line" >> "$name"
+      res::refreshed file "name=$name line=${line}"
+      ret=0
+    fi
+  done
+  return $ret
+}
+
+file::lines::_remove () {
+  local ret=1 line out name="${1#name=}"; shift
+  local -a args=()
+
+  for line in "$@"; do
+    args+=("-e" "^$line$")
+  done
+
+  out="$(grep -v "${args[@]}" "$name")"
+  echo "$out" > "$name"
+  for line in "$@"; do
+    res::refreshed file "name=$name line=$line"
+    ret=0
+  done
+  return $ret
+}
+
+# fun: file::lines::absent [name=]<name> [lines]
+# api: External
+# txt: ensure that specifie lines are NOT present in the file.
+# use: file::lines::absent "/etc/sudoers" \
+#        "%users ALL=(ALL) NOPASSWD: ALL"
+file::lines::absent () {
+  local ret=1 line name="${1#name=}"; shift
+
+  [[ -z "$name" ]] && err::trace "Missing file nam"
+  [[ $# -eq 0 ]] && err::trace "No lines provided"
+
+  for line in "$@"; do
+    grep -qe "^$line$" "$name" && file::lines::_remove "$name" "$@" && ret=0
+  done
+  return $ret
 }
 #! /bin/bash
 # mod: meta

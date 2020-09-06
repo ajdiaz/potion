@@ -184,10 +184,68 @@ file::present () {
 file::absent () {
   eval "$(std::parse "$@")"
   if file::exists "$name" "content=$content"; then
+    # shellcheck disable=2015
     file::_destroy "$name" &&
       res::deleted file "name=$name" ||
       err::trace "Unable to destroy file: $name"
   else
     return 1
   fi
+}
+
+
+# fun: file::lines::present [name=]<name> [lines]
+# api: External
+# txt: ensure that specified lines (one per argument) are present in the file.
+# use: file::lines::present "/etc/sudoers" \
+#         "%wheel ALL=(ALL) NOPASSWD: ALL"
+#         "root ALL=(ALL) ALL"
+file::lines::present () {
+  local ret=1 line name="${1#name=}"; shift
+
+  [[ -z "$name" ]] && err::trace "Missing file nam"
+  [[ $# -eq 0 ]] && err::trace "No lines provided"
+
+  for line in "$@"; do
+    if ! grep -qe "^$line$" "$name"; then
+      echo "$line" >> "$name"
+      res::refreshed file "name=$name line=${line}"
+      ret=0
+    fi
+  done
+  return $ret
+}
+
+file::lines::_remove () {
+  local ret=1 line out name="${1#name=}"; shift
+  local -a args=()
+
+  for line in "$@"; do
+    args+=("-e" "^$line$")
+  done
+
+  out="$(grep -v "${args[@]}" "$name")"
+  echo "$out" > "$name"
+  for line in "$@"; do
+    res::refreshed file "name=$name line=$line"
+    ret=0
+  done
+  return $ret
+}
+
+# fun: file::lines::absent [name=]<name> [lines]
+# api: External
+# txt: ensure that specifie lines are NOT present in the file.
+# use: file::lines::absent "/etc/sudoers" \
+#        "%users ALL=(ALL) NOPASSWD: ALL"
+file::lines::absent () {
+  local ret=1 line name="${1#name=}"; shift
+
+  [[ -z "$name" ]] && err::trace "Missing file nam"
+  [[ $# -eq 0 ]] && err::trace "No lines provided"
+
+  for line in "$@"; do
+    grep -qe "^$line$" "$name" && file::lines::_remove "$name" "$@" && ret=0
+  done
+  return $ret
 }
