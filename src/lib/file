@@ -62,7 +62,7 @@ file::_data () {
 # opt: content: the content URL
 file::exists () {
   local name user group mode content data
-  eval "$(std::parse "$@")"
+  std::parse "$@"
 
   [ -r "$name" ] || return 1
 
@@ -124,7 +124,7 @@ file::_group ()
 # opt: content: the content url
 file::present () {
   local name user group mode content data
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   local group="${group:-$LOGNAME}"
   local user="${user:-$LOGNAME}"
 
@@ -183,7 +183,7 @@ file::present () {
 # opt: content: the content url (only removes the file if content is the same).
 file::absent () {
   local name user group mode content data
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if file::exists "$name" "content=$content"; then
     # shellcheck disable=2015
     file::_destroy "$name" &&

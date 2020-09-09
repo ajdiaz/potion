@@ -27,7 +27,7 @@ dir::_destroy () {
 # opt: group: the group owner the directory (root by default)
 dir::present () {
   local name user group mode
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if ! dir::exists "$name"; then
     if dir::_create "$name" "${user:-0}:${group:-0}" "${mode:-755}"; then
       res::created dir "name=$name user=${user:-0} " \
@@ -46,7 +46,7 @@ dir::present () {
 #      if necessary.
 # opt: name: the name of the directory to be removed
 dir::absent () {
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if dir::exists "$name"; then
     if dir::_destroy "$name"; then
       res::deleted dir "name=$name"
@@ -63,6 +63,6 @@ dir::absent () {
 # txt: return true if directory name passed as argument exists, or false
 #      otherwise.
 dir::exists () {
-  eval "$(std::parse "$@")"
-  [ -d "$name" ]
+  std::parse "$@"
+  [[ -d "$name" ]]
 }

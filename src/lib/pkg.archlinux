@@ -5,9 +5,11 @@
 
 # private pkg::_update::archlinux
 pkg::_update::archlinux () {
-  mutex::run pkg_archlinux std::run std::mute pacman -Sy --noconfirm &&
-    out::user "updated package database" ||
+  if mutex::run pkg_archlinux std::run std::mute pacman -Sy --noconfirm; then
+    out::user "updated package database"
+  else
     err::trace "Unable to update package database"
+  fi
   if ! ${NOCACHE:-false}; then
     tmp::touch pkg_update_archlinux
   fi
@@ -21,9 +23,11 @@ pkg::_exists::archlinux () {
 # private pkg::_present::archlinux <package>
 pkg::_present::archlinux () {
   if ! pkg::_exists::archlinux "$1"; then
-    pkg::_create::archlinux "$1" &&
-      res::created pkg "$1" ||
+    if pkg::_create::archlinux "$1"; then
+      res::created pkg "$1"
+    else
       err::trace "Unable to create package: $1"
+    fi
   else
     return 1
   fi
@@ -32,9 +36,11 @@ pkg::_present::archlinux () {
 # private pkg::_absent::archlinux <package>
 pkg::_absent::archlinux () {
   if pkg::_exists::archlinux "$1"; then
-    pkg::_destroy::archlinux "$1" &&
-      res::deleted pkg "$1" ||
+    if pkg::_destroy::archlinux "$1"; then
+      res::deleted pkg "$1"
+    else
       err::trace "Unable to destroy package: $1"
+    fi
   else
     return 1
   fi

@@ -10,7 +10,7 @@
 # txt: return true if the specific package is present in the system.
 pkg::exists () {
   local os name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   os="$(os::provider)"
 
   if std::func "pkg::_exists::${os}"; then
@@ -26,7 +26,7 @@ pkg::exists () {
 # txt: ensure that specified package is installed on the system.
 pkg::present () {
   local os name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   os="$(os::provider)"
 
   if std::func "pkg::_present::${os}"; then
@@ -41,8 +41,8 @@ pkg::present () {
 # api: External
 # txt: ensure that specified package is not present on the system.
 pkg::absent () {
-  local os
-  eval "$(std::parse "$@")"
+  local os name
+  std::parse "$@"
   os="$(os::provider)"
 
   if std::func "pkg::_absent::${os}"; then

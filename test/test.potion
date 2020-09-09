@@ -131,8 +131,8 @@ context @test_user
     name=foobar \
     uid=1000 \
     shell=/bin/sh \
-    gecos="one,two,,"
-    password="$(secret test)"
+    gecos="one,two,," \
+    "password=$(secret test)"
 
   user::absent root
 }
@@ -157,8 +157,8 @@ context @test_mount
   mount::absent /nonexistant
 
   mount::present \
-    name=/dev/null \
-    mount=/mnt \
+    name=/mnt \
+    device=/dev/null \
     fstype="ext4"
 
   mount::absent proc

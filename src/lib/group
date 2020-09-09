@@ -11,7 +11,7 @@
 #      respectively.
 group::exists () {
   local name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   std::mute grep "^$name" /etc/group
 }
 
@@ -41,7 +41,7 @@ group::_destroy () {
 # opt: gid: the GID of the new group
 group::present () {
   local system gid
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if ! group::exists "$name"; then
     # shellcheck disable=SC2015
     GROUP_SYSTEM="${system}" \
@@ -58,7 +58,7 @@ group::present () {
 # api: External
 # txt: destroy groupname if exists
 group::absent () {
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if group::exists "$name"; then
     if group::_destroy "$name"; then
       res::deleted group "$name"

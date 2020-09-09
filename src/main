@@ -47,7 +47,6 @@ main::init () {
 }
 
 # general options handlers
-main::opt_debug () { set -x; return 1;}
 main::opt_version () { out::info "Potion $VERSION"; exit 0;}
 main::opt_quiet () { QUIET=true; return 1;}
 main::opt_pretend () { export PRETEND=true; return 1;}
@@ -153,7 +152,6 @@ main () {
   
   arg::opt MAIN -q --quiet    main::opt_quiet   'do not output messages'
   arg::opt MAIN -v --verbose  main::opt_verbose 'enable verbose mode'
-  arg::opt MAIN -d --debug    main::opt_debug   'enable debug mode'
   arg::opt MAIN -p --pretend  main::opt_pretend 'do nothing, just pretending'
   arg::opt MAIN -V --version  main::opt_version 'show program version number'
   arg::opt MAIN -L --no-logo  main::opt_nologo  'do not show ASCI art logo :('

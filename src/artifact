@@ -23,8 +23,8 @@ artifact::hmac () {
 # api: Internal
 # txt: extract artifacts if artifact support is enabled.
 artifact::extract () {
-  [ "$POTION_ARTIFACTS" ] || return 0
-  [ -e "${BLIB_TMPDIR}/.artifacts" ] && return 0
+  [[ "$POTION_ARTIFACTS" ]] || return 0
+  [[ -e "${BLIB_TMPDIR}/.artifacts" ]] && return 0
 
   mutex::adquire _artifacts
   tmp::create _artifacts
@@ -40,7 +40,7 @@ artifact::extract () {
 # txt: return true if the artifact exists, false otherwise.
 artifact::exists () {
   artifact::extract
-  [ -r "${BLIB_TMPDIR}/_artifacts/$1" ]
+  [[ -r "${BLIB_TMPDIR}/_artifacts/$1" ]]
 }
 
 # fun: artifact::read <artifact_name>
@@ -48,7 +48,7 @@ artifact::exists () {
 # txt: read a specific artifact from potion.
 artifact::read () {
   artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
+    err::trace "Missing read artifact: '$1'"
 
   cat "${BLIB_TMPDIR}/_artifacts/$1"
 }
@@ -59,7 +59,7 @@ artifact::read () {
 # txt: read and eval specific artifact from potion.
 artifact::eval () {
   artifact::exists "$1" ||
-    err::trace "Missing artifact: '$1'"
+    err::trace "Missing eval artifact: '$1'"
 
   local content
 

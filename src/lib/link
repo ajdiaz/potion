@@ -10,7 +10,8 @@
 # txt: returnt true if the specified link exists and point to source.
 # opt: target: the target where link points to
 link::exists () {
-  eval "$(std::parse "$@")"
+  local name target
+  std::parse "$@"
   # shellcheck disable=2154
   [ "$target" ] || err::trace "Link::exists require parameter target"
   # shellcheck disable=2154
@@ -32,8 +33,9 @@ link::_destroy () {
 # txt: ensure that the link exists and point to source.
 # opt: target: the target where link points to
 link::present () {
+  local name target
   if ! link::exists "$@"; then
-    eval "$(std::parse "$@")"
+    std::parse "$@"
     if link::_create "$name" "$target"; then
       res::created link "$name" "target=$target"
     else
@@ -50,7 +52,8 @@ link::present () {
 #      specified source.
 # opt: target: the target where link points to
 link::absent () {
-  eval "$(std::parse "$@")"
+  local name target
+  std::parse "$@"
   if link::exists "$@"; then
     if link::_destroy "$name" "$target"; then
       res::deleted link "$name" "target=$target"

@@ -16,7 +16,7 @@ tz::exists () {
   local current decided name
   [ -r /etc/localtime ] || return 1
 
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   current="$(file::_hmac file:///etc/localtime)"
   decided="$(file::_hmac "file:///usr/share/zoneinfo/$name")"
 
@@ -27,7 +27,8 @@ tz::exists () {
 # api: External
 # txt: ensure that specified timezone is set.
 tz::present () {
-  eval "$(std::parse "$@")"
+  local name
+  std::parse "$@"
 
   if ! tz::exists "$name"; then
     if std::mute std::run ln -sf "${TZ_DIR}/$name" /etc/localtime; then
@@ -44,7 +45,8 @@ tz::present () {
 # api: External
 # txt: ensure that the specified timezone is not set.
 tz::absent () {
-  eval "$(std::parse "$@")"
+  local name
+  std::parse "$@"
 
   if tz::exists "$name"; then
     if std::mute std::run rm -f /etc/localtime; then

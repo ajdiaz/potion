@@ -30,7 +30,7 @@ srv::_sysinit () {
 # txt: return true if the specific service is present in the system.
 srv::exists () {
   local si name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   si="$(srv::_sysinit)"
 
   if std::func "srv::exists::_${si}"; then
@@ -45,7 +45,7 @@ srv::exists () {
 # txt: ensure that specified service is installed on the system.
 srv::present () {
   local si name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   si="$(srv::_sysinit)"
 
   if std::func "srv::present::_${si}"; then
@@ -60,7 +60,7 @@ srv::present () {
 # txt: ensure that specified service is not present on the system.
 srv::absent () {
   local si name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   si="$(srv::_sysinit)"
 
   if std::func "srv::absent::_${si}"; then
@@ -73,7 +73,7 @@ srv::absent () {
 # internal srv::refresh
 srv::refresh () {
   local si name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   si="$(srv::_sysinit)"
 
   if std::func "srv::refresh::_${si}"; then

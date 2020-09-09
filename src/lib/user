@@ -13,7 +13,8 @@
 # txt: return true or false if the specific username exists or not,
 #      respectively.
 user::exists () {
-  eval "$(std::parse "$@")"
+  local name basedir gecos groups nohome system uid shell password
+  std::parse "$@"
   # shellcheck disable=SC2154
   std::mute id "$name"
 }
@@ -59,9 +60,12 @@ user::_create () {
 # destroy the username passed as argument.
 # USER_KEEPDATA: if set do not remove home directory and other user files.
 user::_destroy () {
-  std::run userdel -f "${USER_KEEPDATA:--r}" "$1"
+  if [[ "$USER_KEEPDATA" ]]; then
+    std::run userdel -f "$1"
+  else
+    std::run userdel -f -r "$1"
+  fi
 }
-
 
 # fun: user::present [name=<username>] [options]
 # api: External
@@ -75,21 +79,24 @@ user::_destroy () {
 # opt: shell: set the shell of the username.
 # opt: password: the password for the user
 user::present () {
-  eval "$(std::parse "$@")"
+  local name basedir gecos groups nohome system uid shell password
+  std::parse "$@"
   # shellcheck disable=SC2154
   if ! user::exists "$name"; then
-    USER_BASE_DIR="${basedir}" \
-    USER_COMMENT="${gecos}" \
-    USER_GROUPS="${groups}" \
-    USER_NOHOME="${nohome}" \
-    USER_SYSTEM="${system}" \
-    USER_UID="${uid}" \
-    USER_SHELL="${shell}" \
-    user::_create "$name" "$password" &&
-      res::created user "$name" basedir="$basedir" gecos="$gecos" \
-        groups="$groups" nohome="$nohome" system="$system" uid="$uid" \
-        shell="$shell" ||
+    if USER_BASE_DIR="${basedir}" \
+      USER_COMMENT="${gecos}" \
+      USER_GROUPS="${groups}" \
+      USER_NOHOME="${nohome}" \
+      USER_SYSTEM="${system}" \
+      USER_UID="${uid}" \
+      USER_SHELL="${shell}" \
+      user::_create "$name" "$password"; then
+        res::created user "$name" basedir="$basedir" gecos="$gecos" \
+          groups="$groups" nohome="$nohome" system="$system" uid="$uid" \
+          shell="$shell"
+    else
       err::trace "unable to create user: $name"
+    fi
   else
     return 1
   fi
@@ -100,12 +107,15 @@ user::present () {
 # txt: destroy username if exists
 # opt: keepdata: if true do not remove user data.
 user::absent () {
-  eval "$(std::parse "$@")"
+  local name basedir gecos groups nohome system uid shell password keepdata
+  std::parse "$@"
   if user::exists "$name"; then
-    USER_KEEPDATA="${data}" \
-    user::_destroy "$name" &&
-      res::deleted user "$name" ||
+    if USER_KEEPDATA="${keepdata}" \
+      user::_destroy "$name"; then
+      res::deleted user "$name"
+    else
       err::trace "unable to destroy user $name"
+    fi
   else
     return 1
   fi

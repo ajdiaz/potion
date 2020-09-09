@@ -16,7 +16,7 @@ format::_exists::format () {
 # opt: name: the device name
 format::exists () {
   local name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   format::_exists::format "$name"
 }
 
@@ -40,7 +40,7 @@ format::_create::mount () {
 # opt: fstype: the filesystem type to format the device
 format::present () {
   local name fstype
-  eval "$(std::parse "$@")"
+  std::parse "$@"
 
   if ! format::_exists::format "$name"; then
     if format::_create::format "$name" "${fstype}"; then

@@ -10,7 +10,7 @@
 # txt: return true if the FQDN of the node is equal to specified one.
 host::exists () {
   local host name
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   host="$(hostname -f 2>/dev/null)"
   [ "$host" == "$name" ]
 }
@@ -39,7 +39,7 @@ host::_destroy () {
 # api: External
 # txt: ensure than the node has the specified hostname.
 host::present () {
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if ! host::exists "$name"; then
     if host::_create "$name"; then
       res::created host "$name"
@@ -55,7 +55,7 @@ host::present () {
 # api: External
 # txt: ensure than the node has not the specified hostname.
 host::absent () {
-  eval "$(std::parse "$@")"
+  std::parse "$@"
   if host::exists "$name"; then
     if host::_destroy "$name"; then
       res::deleted host "$name"

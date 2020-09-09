@@ -11,21 +11,24 @@
 # opt: device: the device to mount
 # opt: fstype: the fstype of the device filesystem (default: auto)
 mount::exists () {
-  eval "$(std::parse "$@")"
-  while read _dev _ _mnt _ _fstype _; do
+  local name device fstype _mnt
+  std::parse "$@"
+  while read -r _ _ _mnt _ _ _; do
     [ "$_mnt" == "${name}" ] && return 0
   done < <(mount)
   return 1
 }
 
 mount::_create () {
-  eval "$(std::parse "$@")"
+  local name device fstype
+  std::parse "$@"
   mount_opt="${fstype:+-t $fstype}"
-  std::run mount ${mount_opt} ${device} "${name}"
+  std::run mount "${mount_opt}" "${device}" "${name}"
 }
 
 mount::_destroy () {
-  eval "$(std::parse "$@")"
+  local name device fstype
+  std::parse "$@"
   std::run umount "$name"
 }
 
@@ -36,9 +39,11 @@ mount::_destroy () {
 # opt: fstype: the fstype of the device filesystem (default: auto)
 mount::present () {
   if ! mount::exists "$@"; then
-    mount::_create "$@" &&
-      res::created mount "$@" ||
-      err::trace "Unable to mount $@"
+    if mount::_create "$@"; then
+      res::created mount "$@"
+    else
+      err::trace "Unable to mount $*"
+    fi
   else
     return 1
   fi
@@ -49,9 +54,11 @@ mount::present () {
 # txt: ensure that specific mount point is not mounted.
 mount::absent () {
   if mount::exists "$@"; then
-    mount::_destroy "$@" &&
-      res::deleted mount "$@" ||
-      err::trace "Unable to umont $@"
+    if mount::_destroy "$@"; then
+      res::deleted mount "$@"
+    else
+      err::trace "Unable to umont $*"
+    fi
   else
     return 1
   fi

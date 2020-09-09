@@ -22,7 +22,10 @@ sudo::_syntax () {
 # opt: name: the username to check permissions
 # opt: grant: the permissions to granted to the user.
 sudo::user::exists () {
-  eval "$(std::parse "$@")"
+  local name grant
+  std::parse "$@"
+  [[ "$grant" ]] ||
+      err::trace "The grant parameter is mandatory in sudo::user::exists"
   std::mute grep "^$name $grant$" "${SUDOERS_DIR}/20_user_$name"
 }
 
@@ -40,7 +43,7 @@ sudo::user::_create () {
 # private sudo::user::_destroy <username> <sudoline>
 sudo::user::_destroy () {
   if ! ${PRETEND:-false}; then
-    local data="$(grep -v "^$1 $2$" "${SUDOERS_DIR}/20_user_$1")"
+    local data; data="$(grep -v "^$1 $2$" "${SUDOERS_DIR}/20_user_$1")"
     echo "$data" > "${SUDOERS_DIR}/20_user_$1"
     if ! sudo::_syntax "${SUDOERS_DIR}/20_user_$1"; then
       rm -f "${SUDOERS_DIR}/20_user_$1"
@@ -57,13 +60,16 @@ sudo::user::_destroy () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::user::present () {
-  eval "$(std::parse "$@")"
-  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+  local name grant
+  std::parse "$@"
+  grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if ! sudo::user::exists "$name" "grant=$grant"; then
-    sudo::user::_create "$name" "${grant}" &&
-      res::created sudo "user=$name" "grant=${grant}" ||
+    if sudo::user::_create "$name" "${grant}"; then
+      res::created sudo "user=$name" "grant=${grant}"
+    else
       err::trace "Unable to create sudo permissions for user $1 ('$grant')"
+    fi
   else
     return 1
   fi
@@ -76,13 +82,16 @@ sudo::user::present () {
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
 sudo::user::absent () {
-  eval "$(std::parse "$@")"
+  local name grant
+  std::parse "$@"
   local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
   if sudo::user::exists "$1" "grant=$grant"; then
-    sudo::user::_destroy "$1" "${grant}" &&
-      res::deleted sudo "user=$user" "grant=$grant" ||
+    if sudo::user::_destroy "$1" "${grant}"; then
+      res::deleted sudo "user=$name" "grant=$grant"
+    else
       err::trace "Unable to destroy sudo permissions for user $name ('$grant')"
+    fi
   else
     return 1
   fi
@@ -94,7 +103,8 @@ sudo::user::absent () {
 # opt: name: the username to give permissions
 # opt: grant: the permissions to granted to the user
 sudo::group::exists () {
-  eval "$(std::parse "$@")"
+  local name grant
+  std::parse "$@"
   std::mute grep "^%$name $grant$" "${SUDOERS_DIR}/20_group_$name"
 }
 
@@ -112,7 +122,7 @@ sudo::group::_create () {
 # private sudo::group::_destroy <groupname> <sudoline>
 sudo::group::_destroy () {
   if ! ${PRETEND:-false}; then
-    local data="$(grep -v "^%$1 $2$" "${SUDOERS_DIR}/20_group_$1")"
+    local data; data="$(grep -v "^%$1 $2$" "${SUDOERS_DIR}/20_group_$1")"
     echo "$data" > "${SUDOERS_DIR}/20_group_$1"
     if ! sudo::_syntax "${SUDOERS_DIR}/20_group_$1"; then
       rm -f "${SUDOERS_DIR}/20_group_$1"
@@ -129,13 +139,16 @@ sudo::group::_destroy () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::group::present () {
-  eval "$(std::parse "$@")"
-  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+  local name grant
+  std::parse "$@"
+  grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
-  if ! sudo::group::exists "$name" "$grant"; then
-    sudo::group::_create "$name" "${grant}" &&
-      res::created sudo "group=$name" "grant=${grant}" ||
+  if ! sudo::group::exists "$name" "grant=$grant"; then
+    if sudo::group::_create "$name" "${grant}"; then
+      res::created sudo "group=$name" "grant=${grant}"
+    else
       err::trace "Unable to create sudo permissions for group $name ('$grant')"
+    fi
   else
     return 1
   fi
@@ -149,13 +162,16 @@ sudo::group::present () {
 # opt: grant: the permissions to granted to the user (by default ALL
 #      NOPASSWD)
 sudo::group::absent () {
-  eval "$(std::parse "$@")"
-  local grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
+  local name grant
+  std::parse "$@"
+  grant="${grant:-ALL=(ALL) NOPASSWD: ALL}"
 
-  if sudo::group::exists "$name" "$grant"; then
-    sudo::group::destroy "$name" "${grant}" &&
-      res::deleted sudo "group=$name" "grant=${grant}" ||
+  if sudo::group::exists "$name" "grant=$grant"; then
+    if sudo::group::destroy "$name" "${grant}"; then
+      res::deleted sudo "group=$name" "grant=${grant}"
+    else
       err::trace "Unable to destroy sudo permissions for group $name ('$grant')"
+    fi
   else
     return 1
   fi

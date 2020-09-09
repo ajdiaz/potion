@@ -12,15 +12,15 @@
 # api: External
 # txt: return true if device is set in fstab
 fstab::exists () {
-  local name
-  eval "$(std::parse "$@")"
+  local mount name fstype opts dump pass remount
+  std::parse "$@"
   std::mute grep -q "^$name" /etc/fstab
 }
 
 # private fstab::_create <device> <mntpoint> <type> [options] [dump] [pass]
 fstab::_create () {
-  local mount
-  eval "$(std::parse "$@")"
+  local mount name fstype opts dump pass remount
+  std::parse "$@"
   [ "$mount" ] || err::trace "fstab require mount parameter"
   ${PRETEND:-false} || 
     echo "$name $mount ${fstype:-auto} ${opts:-defaults}" \
@@ -69,7 +69,8 @@ fstab::present () {
 # api: External
 # txt: ensure that specified device has not entry in fstab
 fstab::absent () {
-  eval "$(std::parse "$@")"
+  local mount name fstype opts dump pass remount
+  std::parse "$@"
   if fstab::exists "$name"; then
     if fstab::_destroy "$name"; then
       res::deleted fstab "device=$name"

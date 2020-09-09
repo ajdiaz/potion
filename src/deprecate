@@ -14,7 +14,7 @@
 deprecated () {
   local line file; read -r line _ file < <(caller 1)
   local version date name message="deprecation mark"
-  eval "$(std::parse "$@")"
+  std::parse "$@"
 
   # shellcheck disable=SC2153
   version::cmp "$VERSION" "$version"
