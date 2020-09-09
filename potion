@@ -936,7 +936,7 @@ std::str2array () {
   str2array_ret=( "$@" )
 }
 declare -xa str2array_ret
-BLIB_VERSION='1.2-6-g88770a8'
+BLIB_VERSION='2.0'
 #! /bin/bash
 # mod: srv.systemd
 # txt: The ``srv.systemd`` module contains specific functions to configure
