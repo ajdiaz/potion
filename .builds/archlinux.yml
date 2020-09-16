@@ -1,0 +1,10 @@
+image: archlinux
+sources:
+  - https://git.sr.ht/~ajdiaz/potion
+  - https://git.sr.ht/~ajdiaz/blib
+tasks:
+  - build: |
+      make -C blib
+      make -C potion
+  - test: |
+      make -C potion test
