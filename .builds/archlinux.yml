@@ -2,6 +2,8 @@ image: archlinux
 sources:
   - https://git.sr.ht/~ajdiaz/potion
   - https://git.sr.ht/~ajdiaz/blib
+packages:
+  - inetutils
 tasks:
   - build: |
       make -C blib
