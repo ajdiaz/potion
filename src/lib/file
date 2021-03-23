@@ -208,7 +208,7 @@ file::lines::present () {
   [[ $# -eq 0 ]] && err::trace "No lines provided"
 
   for line in "$@"; do
-    if ! grep -qe "^$line$" "$name"; then
+    if ! std::mute grep -qe "^$line$" "$name"; then
       echo "$line" >> "$name"
       res::refreshed file "name=$name line=${line}"
       ret=0
