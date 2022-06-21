@@ -936,7 +936,7 @@ std::str2array () {
   str2array_ret=( "$@" )
 }
 declare -xa str2array_ret
-BLIB_VERSION='2.0'
+BLIB_VERSION='2.0-3-g07b963f'
 #! /bin/bash
 # mod: srv.systemd
 # txt: The ``srv.systemd`` module contains specific functions to configure
@@ -2483,7 +2483,7 @@ file::lines::present () {
   [[ $# -eq 0 ]] && err::trace "No lines provided"
 
   for line in "$@"; do
-    if ! grep -qe "^$line$" "$name"; then
+    if ! std::mute grep -qe "^$line$" "$name"; then
       echo "$line" >> "$name"
       res::refreshed file "name=$name line=${line}"
       ret=0
