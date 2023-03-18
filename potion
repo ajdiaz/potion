@@ -806,13 +806,10 @@ std::strin () {
   [[ "${1//$2/}" != "${1}" ]]
 }
 
-# fun: std::sleep <seconds>
-# api: blib
-# txt: sleep for specified number of seconds. This function is pure-bash, so
-#      not need sleep(1) command.
-std::sleep () {
-  read -N 0 -t "$1" -s -r </dev/tty 3<&- 3<&0 <&3
-}
+
+if [[ -z "${BLIB_USE_SLEEP_COMMAND}" ]] && [[ -e /usr/lib/bash/sleep ]]; then
+  enable -f /usr/lib/bash/sleep sleep
+fi
 
 # fun: std::func <func_name>
 # api: blib
@@ -936,6 +933,27 @@ std::str2array () {
   str2array_ret=( "$@" )
 }
 declare -xa str2array_ret
+#! /bin/bash
+# mod: proc
+# api: blib
+# txt: The `proc` module provides a number of functions to manage parallel
+#      processes
+
+if [[ -z "$BLIB_NPROC" ]]; then
+  type nproc >/dev/null 2>/dev/null && BLIB_NPROC="$(nproc)" || BLIB_NPROC=2
+fi
+
+# fun: proc::waitn [number]
+# api: blib
+# txt: wait for n procs to finished, or for everyone if no number specify
+# opt: number: the number of proccess to wait for or none if wait for everyone.
+proc::waitn () {
+  if [[ "$1" ]]; then
+    (( (++proc__count % ${BLIB_PROC:-2}) == 0 )) && wait
+  else
+    wait
+  fi
+}
 BLIB_VERSION='2.0-3-g07b963f'
 #! /bin/bash
 # mod: srv.systemd

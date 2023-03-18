@@ -85,6 +85,9 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
         float: left;
         background: #3E4042;
         color: #dadada;
+        overflow-y: scroll;
+        position: fixed;
+        max-height: 90vh;
       }
       body {
       font-family: "Work sans", Helvetica, Arial, sans-serif;
@@ -100,6 +103,8 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 
       #toc ul { padding:0; margin:0; }
       #toc > ul > li { margin-bottom: 2em; }
+      #toc > ul > li > a { font-weight: bold; color: #fff; }
+      #toc > ul > li > a:hover { text-decoration: underline; }
       #toc li { list-style: none; padding-left:0; }
       #toc ul ul { padding-left: 1.25em; }
       #toc code { display:none; }
@@ -127,10 +132,10 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
       }
 
       pre.sourceCode {
-        border-radius: 0;
+        border-radius: 5px;
         border: 0;
-        background: #ededed;
-        padding:10px 5px 10px 5px;
+        background: #dfdfdf;
+        padding:10px;
         width: auto;
         font-size: 90%;
       }
@@ -194,6 +199,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
     .module dd:after {
       display: block;
       content: "";
+      clear: both;
     }
     .module dt:after {
       content: ":";
@@ -222,233 +228,303 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
 <body class="book toc2 toc-left">
 <div id="toc" class="toc2">
 <ul>
-<li><a href="#potion">potion</a>
+<li><a href="#potion" id="toc-potion">potion</a>
 <ul>
-<li><a href="#usage">Usage</a>
+<li><a href="#usage" id="toc-usage">Usage</a>
 <ul>
-<li><a href="#using-potion-to-run-a-recipe">Using potion to run a
+<li><a href="#using-potion-to-run-a-recipe"
+id="toc-using-potion-to-run-a-recipe">Using potion to run a
 recipe</a></li>
-<li><a href="#using-potion-to-create-a-self-executable-recipe">Using
-potion to create a self-executable recipe</a></li>
-<li><a href="#using-potion-to-run-a-local-recipe-in-remote-host">Using
-potion to run a local recipe in remote host</a></li>
-<li><a href="#using-potion-with-remote-recipes">Using potion with remote
+<li><a href="#using-potion-to-create-a-self-executable-recipe"
+id="toc-using-potion-to-create-a-self-executable-recipe">Using potion to
+create a self-executable recipe</a></li>
+<li><a href="#using-potion-to-run-a-local-recipe-in-remote-host"
+id="toc-using-potion-to-run-a-local-recipe-in-remote-host">Using potion
+to run a local recipe in remote host</a></li>
+<li><a href="#using-potion-with-remote-recipes"
+id="toc-using-potion-with-remote-recipes">Using potion with remote
 recipes</a></li>
-<li><a href="#using-default-recipes">Using default recipes</a></li>
+<li><a href="#using-default-recipes"
+id="toc-using-default-recipes">Using default recipes</a></li>
 </ul></li>
-<li><a href="#using-potion-to-run-periodically">Using potion to run
+<li><a href="#using-potion-to-run-periodically"
+id="toc-using-potion-to-run-periodically">Using potion to run
 periodically</a></li>
-<li><a href="#writing-recipes">Writing recipes</a>
+<li><a href="#writing-recipes" id="toc-writing-recipes">Writing
+recipes</a>
 <ul>
-<li><a href="#contexts">Contexts</a></li>
-<li><a href="#artifacts">Artifacts</a></li>
+<li><a href="#contexts" id="toc-contexts">Contexts</a></li>
+<li><a href="#artifacts" id="toc-artifacts">Artifacts</a></li>
 </ul></li>
-<li><a href="#secrets">Secrets</a></li>
-<li><a href="#including-other-potion-files">Including other potion
+<li><a href="#secrets" id="toc-secrets">Secrets</a></li>
+<li><a href="#including-other-potion-files"
+id="toc-including-other-potion-files">Including other potion
 files</a></li>
-<li><a href="#testing-changes">Testing changes</a></li>
-<li><a href="#bonus-how-structure-your-recipes">Bonus: How structure
-your recipes</a></li>
+<li><a href="#testing-changes" id="toc-testing-changes">Testing
+changes</a></li>
+<li><a href="#bonus-how-structure-your-recipes"
+id="toc-bonus-how-structure-your-recipes">Bonus: How structure your
+recipes</a></li>
 </ul></li>
-<li><a href="#external-api-reference">External API Reference</a>
+<li><a href="#external-api-reference"
+id="toc-external-api-reference">External API Reference</a>
 <ul>
-<li><a href="#dir">dir</a>
+<li><a href="#dir" id="toc-dir">dir</a>
 <ul>
-<li><a href="#dirpresent-namename-options">dir::present
+<li><a href="#dirpresent-namename-options"
+id="toc-dirpresent-namename-options">dir::present
 <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
-<li><a href="#dirabsent-namename">dir::absent
+<li><a href="#dirabsent-namename"
+id="toc-dirabsent-namename">dir::absent
 <code>[name=]&lt;name&gt;</code></a></li>
-<li><a href="#direxists-namefname">dir::exists
+<li><a href="#direxists-namefname"
+id="toc-direxists-namefname">dir::exists
 <code>[name=&lt;fname&gt;]</code></a></li>
 </ul></li>
-<li><a href="#file">file</a>
+<li><a href="#file" id="toc-file">file</a>
 <ul>
-<li><a href="#fileexists-namefname-options">file::exists
+<li><a href="#fileexists-namefname-options"
+id="toc-fileexists-namefname-options">file::exists
 <code>[name=]&lt;fname&gt;</code> <code>[options]</code></a></li>
-<li><a href="#filepresent-namename-options">file::present
+<li><a href="#filepresent-namename-options"
+id="toc-filepresent-namename-options">file::present
 <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
-<li><a href="#fileabsent-namename-options">file::absent
+<li><a href="#fileabsent-namename-options"
+id="toc-fileabsent-namename-options">file::absent
 <code>[name=]&lt;name&gt;</code> <code>[options]</code></a></li>
-<li><a href="#filelinespresent-namename-lines">file::lines::present
+<li><a href="#filelinespresent-namename-lines"
+id="toc-filelinespresent-namename-lines">file::lines::present
 <code>[name=]&lt;name&gt;</code> <code>[lines]</code></a></li>
-<li><a href="#filelinesabsent-namename-lines">file::lines::absent
+<li><a href="#filelinesabsent-namename-lines"
+id="toc-filelinesabsent-namename-lines">file::lines::absent
 <code>[name=]&lt;name&gt;</code> <code>[lines]</code></a></li>
 </ul></li>
-<li><a href="#format">format</a>
+<li><a href="#format" id="toc-format">format</a>
 <ul>
-<li><a href="#formatexists-namedevice-options">format::exists
+<li><a href="#formatexists-namedevice-options"
+id="toc-formatexists-namedevice-options">format::exists
 <code>[name=]&lt;device&gt;</code> <code>[options]</code></a></li>
-<li><a href="#formatpresent-namedevice-options">format::present
+<li><a href="#formatpresent-namedevice-options"
+id="toc-formatpresent-namedevice-options">format::present
 <code>[name=]&lt;device&gt;</code> <code>[options]</code></a></li>
-<li><a href="#formatabsent-namedevice">format::absent
+<li><a href="#formatabsent-namedevice"
+id="toc-formatabsent-namedevice">format::absent
 <code>[name=]&lt;device&gt;</code></a></li>
 </ul></li>
-<li><a href="#group">group</a>
+<li><a href="#group" id="toc-group">group</a>
 <ul>
-<li><a href="#groupexists-namegroupname">group::exists
+<li><a href="#groupexists-namegroupname"
+id="toc-groupexists-namegroupname">group::exists
 <code>[name=]&lt;groupname&gt;</code></a></li>
-<li><a
-href="#grouppresent-namegroupname-systemtruefalse-gidgid">group::present
+<li><a href="#grouppresent-namegroupname-systemtruefalse-gidgid"
+id="toc-grouppresent-namegroupname-systemtruefalse-gidgid">group::present
 <code>[name=]&lt;groupname&gt;</code>
 <code>system=&lt;true|false&gt;</code> <code>[gid=gid]</code></a></li>
-<li><a href="#groupabsent-namegroupname">group::absent
+<li><a href="#groupabsent-namegroupname"
+id="toc-groupabsent-namegroupname">group::absent
 <code>[name=]&lt;groupname&gt;</code></a></li>
 </ul></li>
-<li><a href="#host">host</a>
+<li><a href="#host" id="toc-host">host</a>
 <ul>
-<li><a href="#hostexists-namehostname">host::exists
+<li><a href="#hostexists-namehostname"
+id="toc-hostexists-namehostname">host::exists
 <code>[name=]&lt;hostname&gt;</code></a></li>
-<li><a href="#hostpresent-namehostname">host::present
+<li><a href="#hostpresent-namehostname"
+id="toc-hostpresent-namehostname">host::present
 <code>[name=]&lt;hostname&gt;</code></a></li>
-<li><a href="#hostabsent-namehostname">host::absent
+<li><a href="#hostabsent-namehostname"
+id="toc-hostabsent-namehostname">host::absent
 <code>[name=]&lt;hostname&gt;</code></a></li>
 </ul></li>
-<li><a href="#include">include</a>
+<li><a href="#include" id="toc-include">include</a>
 <ul>
-<li><a href="#includepath-glob_expr">include::path
+<li><a href="#includepath-glob_expr"
+id="toc-includepath-glob_expr">include::path
 <code>&lt;glob_expr&gt;</code></a></li>
 </ul></li>
-<li><a href="#link">link</a>
+<li><a href="#link" id="toc-link">link</a>
 <ul>
-<li><a href="#linkexists-namelink-targetsource">link::exists
+<li><a href="#linkexists-namelink-targetsource"
+id="toc-linkexists-namelink-targetsource">link::exists
 <code>[name=]&lt;link&gt;</code>
 <code>target=&lt;source&gt;</code></a></li>
-<li><a href="#linkpresent-namelink-targetsource">link::present
+<li><a href="#linkpresent-namelink-targetsource"
+id="toc-linkpresent-namelink-targetsource">link::present
 <code>[name=]&lt;link&gt;</code>
 <code>target=&lt;source&gt;</code></a></li>
-<li><a href="#linkabsent-namelink-targetsource">link::absent
+<li><a href="#linkabsent-namelink-targetsource"
+id="toc-linkabsent-namelink-targetsource">link::absent
 <code>[name=]&lt;link&gt;</code>
 <code>target=&lt;source&gt;</code></a></li>
 </ul></li>
-<li><a href="#mount">mount</a>
+<li><a href="#mount" id="toc-mount">mount</a>
 <ul>
-<li><a href="#mountexists-namename-opts">mount::exists
+<li><a href="#mountexists-namename-opts"
+id="toc-mountexists-namename-opts">mount::exists
 <code>[name=]&lt;name&gt;</code> <code>[opts]</code></a></li>
-<li><a href="#mountpresent-namename-opts">mount::present
+<li><a href="#mountpresent-namename-opts"
+id="toc-mountpresent-namename-opts">mount::present
 <code>[name=]&lt;name&gt;</code> <code>[opts]</code></a></li>
-<li><a href="#mountabsent-namename">mount::absent
+<li><a href="#mountabsent-namename"
+id="toc-mountabsent-namename">mount::absent
 <code>[name=]&lt;name&gt;</code></a></li>
 </ul></li>
-<li><a href="#pkg">pkg</a>
+<li><a href="#pkg" id="toc-pkg">pkg</a>
 <ul>
-<li><a href="#pkgexists-namepackage">pkg::exists
+<li><a href="#pkgexists-namepackage"
+id="toc-pkgexists-namepackage">pkg::exists
 <code>[name=]&lt;package&gt;</code></a></li>
-<li><a href="#pkgpresent-namepackage">pkg::present
+<li><a href="#pkgpresent-namepackage"
+id="toc-pkgpresent-namepackage">pkg::present
 <code>[name=]&lt;package&gt;</code></a></li>
-<li><a href="#pkgabsent-namepackage">pkg::absent
+<li><a href="#pkgabsent-namepackage"
+id="toc-pkgabsent-namepackage">pkg::absent
 <code>[name=]&lt;package&gt;</code></a></li>
 </ul></li>
-<li><a href="#refresh">refresh</a>
+<li><a href="#refresh" id="toc-refresh">refresh</a>
 <ul>
-<li><a href="#refresh-resource">refresh
+<li><a href="#refresh-resource" id="toc-refresh-resource">refresh
 <code>&lt;resource&gt;</code></a></li>
 </ul></li>
-<li><a href="#secret">secret</a>
+<li><a href="#secret" id="toc-secret">secret</a>
 <ul>
-<li><a href="#secretdump-namename">secret::dump
+<li><a href="#secretdump-namename"
+id="toc-secretdump-namename">secret::dump
 <code>[name=]&lt;name&gt;</code></a></li>
-<li><a href="#secretload-namename">secret::load
+<li><a href="#secretload-namename"
+id="toc-secretload-namename">secret::load
 <code>[name=]&lt;name&gt;</code></a></li>
-<li><a href="#secretload_inline-format-content">secret::load_inline
+<li><a href="#secretload_inline-format-content"
+id="toc-secretload_inline-format-content">secret::load_inline
 <code>&lt;format&gt;</code> <code>&lt;content&gt;</code></a></li>
-<li><a href="#secretadd-namename-contentcontent">secret::add
+<li><a href="#secretadd-namename-contentcontent"
+id="toc-secretadd-namename-contentcontent">secret::add
 <code>[name=]&lt;name&gt;</code>
 <code>content=&lt;content&gt;</code></a></li>
-<li><a href="#secret-name">secret <code>&lt;name&gt;</code></a></li>
+<li><a href="#secret-name" id="toc-secret-name">secret
+<code>&lt;name&gt;</code></a></li>
 </ul></li>
-<li><a href="#srv">srv</a>
+<li><a href="#srv" id="toc-srv">srv</a>
 <ul>
-<li><a href="#srvexists-nameservice">srv::exists
+<li><a href="#srvexists-nameservice"
+id="toc-srvexists-nameservice">srv::exists
 <code>[name=]&lt;service&gt;</code></a></li>
-<li><a href="#srvpresent-nameservice">srv::present
+<li><a href="#srvpresent-nameservice"
+id="toc-srvpresent-nameservice">srv::present
 <code>[name=]&lt;service&gt;</code></a></li>
-<li><a href="#srvabsent-nameservice">srv::absent
+<li><a href="#srvabsent-nameservice"
+id="toc-srvabsent-nameservice">srv::absent
 <code>[name=]&lt;service&gt;</code></a></li>
 </ul></li>
-<li><a href="#swap">swap</a>
+<li><a href="#swap" id="toc-swap">swap</a>
 <ul>
-<li><a href="#swapexists">swap::exists</a></li>
-<li><a
-href="#swappresent-namedevicefile-sizesize-formattruefalse">swap::present
+<li><a href="#swapexists" id="toc-swapexists">swap::exists</a></li>
+<li><a href="#swappresent-namedevicefile-sizesize-formattruefalse"
+id="toc-swappresent-namedevicefile-sizesize-formattruefalse">swap::present
 <code>[name=&lt;device|file&gt;]</code> <code>[size=&lt;size&gt;]</code>
 <code>[format=&lt;true|false&gt;]</code></a></li>
-<li><a href="#swapabsent-namedevicefile">swap::absent
+<li><a href="#swapabsent-namedevicefile"
+id="toc-swapabsent-namedevicefile">swap::absent
 <code>[name=]&lt;device|file&gt;</code></a></li>
 </ul></li>
-<li><a href="#tz">tz</a>
+<li><a href="#tz" id="toc-tz">tz</a>
 <ul>
-<li><a href="#tzexists-namezonename">tz::exists
+<li><a href="#tzexists-namezonename"
+id="toc-tzexists-namezonename">tz::exists
 <code>[name=]&lt;zonename&gt;</code></a></li>
-<li><a href="#tzpresent-namezonename">tz::present
+<li><a href="#tzpresent-namezonename"
+id="toc-tzpresent-namezonename">tz::present
 <code>[name=]&lt;zonename&gt;</code></a></li>
-<li><a href="#tzabsent-namezonename">tz::absent
+<li><a href="#tzabsent-namezonename"
+id="toc-tzabsent-namezonename">tz::absent
 <code>[name=]&lt;zonename&gt;</code></a></li>
 </ul></li>
-<li><a href="#user">user</a>
+<li><a href="#user" id="toc-user">user</a>
 <ul>
-<li><a href="#userpresent-nameusername-options">user::present
+<li><a href="#userpresent-nameusername-options"
+id="toc-userpresent-nameusername-options">user::present
 <code>[name=&lt;username&gt;]</code> <code>[options]</code></a></li>
-<li><a href="#userabsent-nameusername-keepdatatrue">user::absent
+<li><a href="#userabsent-nameusername-keepdatatrue"
+id="toc-userabsent-nameusername-keepdatatrue">user::absent
 <code>[name=]&lt;username&gt;</code>
 <code>[keepdata=true]</code></a></li>
 </ul></li>
 </ul></li>
-<li><a href="#internal-api-reference">Internal API Reference</a>
+<li><a href="#internal-api-reference"
+id="toc-internal-api-reference">Internal API Reference</a>
 <ul>
-<li><a href="#artifact">artifact</a>
+<li><a href="#artifact" id="toc-artifact">artifact</a>
 <ul>
-<li><a href="#artifacthmac-artifact_name">artifact::hmac
+<li><a href="#artifacthmac-artifact_name"
+id="toc-artifacthmac-artifact_name">artifact::hmac
 <code>&lt;artifact_name&gt;</code></a></li>
-<li><a href="#artifactextract">artifact::extract</a></li>
-<li><a href="#artifactexists-artifact_name">artifact::exists
+<li><a href="#artifactextract"
+id="toc-artifactextract">artifact::extract</a></li>
+<li><a href="#artifactexists-artifact_name"
+id="toc-artifactexists-artifact_name">artifact::exists
 <code>&lt;artifact_name&gt;</code></a></li>
-<li><a href="#artifactread-artifact_name">artifact::read
+<li><a href="#artifactread-artifact_name"
+id="toc-artifactread-artifact_name">artifact::read
 <code>&lt;artifact_name&gt;</code></a></li>
-<li><a href="#artifacteval-artifact_name">artifact::eval
+<li><a href="#artifacteval-artifact_name"
+id="toc-artifacteval-artifact_name">artifact::eval
 <code>&lt;artifact_name&gt;</code></a></li>
-<li><a href="#artifactbuild-directory">artifact::build
+<li><a href="#artifactbuild-directory"
+id="toc-artifactbuild-directory">artifact::build
 <code>&lt;directory&gt;</code></a></li>
-<li><a href="#artifactload-directory">artifact::load
+<li><a href="#artifactload-directory"
+id="toc-artifactload-directory">artifact::load
 <code>&lt;directory&gt;</code></a></li>
 </ul></li>
-<li><a href="#context">context</a>
+<li><a href="#context" id="toc-context">context</a>
 <ul>
-<li><a href="#contexttaskenqueue-fun">context::task::enqueue
+<li><a href="#contexttaskenqueue-fun"
+id="toc-contexttaskenqueue-fun">context::task::enqueue
 <code>&lt;fun&gt;</code></a></li>
-<li><a href="#contexttaskapply-context">context::task::apply
+<li><a href="#contexttaskapply-context"
+id="toc-contexttaskapply-context">context::task::apply
 <code>&lt;context&gt;</code></a></li>
-<li><a href="#contextexecute-name">context::execute
+<li><a href="#contextexecute-name"
+id="toc-contextexecute-name">context::execute
 <code>&lt;name&gt;</code></a></li>
-<li><a href="#contextrun">context::run</a></li>
+<li><a href="#contextrun" id="toc-contextrun">context::run</a></li>
 </ul></li>
-<li><a href="#deprecated">deprecated</a>
+<li><a href="#deprecated" id="toc-deprecated">deprecated</a>
 <ul>
-<li><a href="#deprecated-namename-versionversion-datedate">deprecated
+<li><a href="#deprecated-namename-versionversion-datedate"
+id="toc-deprecated-namename-versionversion-datedate">deprecated
 <code>[name=]&lt;name&gt;</code> <code>[version=version]</code>
 <code>[date=date]</code></a></li>
 </ul></li>
-<li><a href="#main">main</a>
+<li><a href="#main" id="toc-main">main</a>
 <ul>
-<li><a href="#maininit">main::init</a></li>
+<li><a href="#maininit" id="toc-maininit">main::init</a></li>
 </ul></li>
-<li><a href="#meta">meta</a>
+<li><a href="#meta" id="toc-meta">meta</a>
 <ul>
-<li><a href="#metaget-key">meta::get <code>&lt;key&gt;</code></a></li>
-<li><a href="#metaset-key-value">meta::set <code>&lt;key&gt;</code>
-<code>&lt;value&gt;</code></a></li>
-<li><a href="#metapolulate">meta::polulate</a></li>
+<li><a href="#metaget-key" id="toc-metaget-key">meta::get
+<code>&lt;key&gt;</code></a></li>
+<li><a href="#metaset-key-value" id="toc-metaset-key-value">meta::set
+<code>&lt;key&gt;</code> <code>&lt;value&gt;</code></a></li>
+<li><a href="#metapolulate"
+id="toc-metapolulate">meta::polulate</a></li>
 </ul></li>
-<li><a href="#res">res</a>
+<li><a href="#res" id="toc-res">res</a>
 <ul>
-<li><a href="#resvariables-varvalue">res::variables
+<li><a href="#resvariables-varvalue"
+id="toc-resvariables-varvalue">res::variables
 <code>&lt;var=value&gt;+</code></a></li>
-<li><a href="#rescreated-resource">res::created
+<li><a href="#rescreated-resource"
+id="toc-rescreated-resource">res::created
 <code>&lt;resource&gt;</code></a></li>
-<li><a href="#resdeleted-resource">res::deleted
+<li><a href="#resdeleted-resource"
+id="toc-resdeleted-resource">res::deleted
 <code>&lt;resource&gt;</code></a></li>
-<li><a href="#resrefreshed-resource">res::refreshed
+<li><a href="#resrefreshed-resource"
+id="toc-resrefreshed-resource">res::refreshed
 <code>&lt;resource&gt;</code></a></li>
-<li><a href="#resoverride-resource_name-function_name">res::override
+<li><a href="#resoverride-resource_name-function_name"
+id="toc-resoverride-resource_name-function_name">res::override
 <code>&lt;resource_name&gt;</code>
 <code>&lt;function_name&gt;</code></a></li>
 </ul></li>

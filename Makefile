@@ -6,7 +6,7 @@
 SRCDIR=src
 LIBDIR=src/lib
 OUTBIN=./potion
-BASHDOC=bashdoc
+BASHDOC?=bashdoc
 REQUIREMENTS=./requirements.txt
 
 
